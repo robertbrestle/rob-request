@@ -1,7 +1,7 @@
 # Application Specification: RobRequest, a Blazor API Client (Simplified Postman Clone)
 
 ## Executive Summary
-A lightweight, modern REST API development client built with .NET 10 Blazor Web Application. This browser-based tool provides developers with a fast, intuitive interface for testing and debugging RESTful APIs, serving as a streamlined alternative to heavyweight desktop clients like Postman.
+A lightweight, modern REST API development client built with .NET 10 Blazor Web Application using **Interactive Server** rendering. This browser-based tool provides developers with a fast, intuitive interface for testing and debugging RESTful APIs, serving as a streamlined alternative to heavyweight desktop clients like Postman. The server-side rendering model enables full access to .NET server capabilities — including EF Core with SQLite for persistent storage and unrestricted `HttpClient` usage — while delivering a rich, interactive UI over a SignalR connection.
 
 ---
 
@@ -13,11 +13,12 @@ To create a responsive, feature-rich API testing tool that leverages modern web 
 ### Core Value Propositions
 - **Browser-native**: No installation required, works instantly in any modern browser
 - **Modern Tech Stack**: Built on .NET 10 Blazor with MudBlazor for a polished UI
-- **Performance Optimized**: Near-instant UI responsiveness with WebAssembly capabilities
+- **Performance Optimized**: Near-instant initial load (no large WASM payload); UI interactions processed server-side and pushed via SignalR
+- **Server-Side Power**: Full access to .NET libraries, EF Core, and unrestricted `HttpClient` — no browser sandbox or CORS limitations
 - **Developer Focused**: Designed by developers, for developers with essential features prioritized
 
 ### Success Criteria
-- < 2 second load time on standard broadband
+- < 1 second initial page load on standard broadband (no WASM download)
 - Support for 95% of common API testing workflows
 - Intuitive UI requiring < 5 minutes for first-time users
 - Responsive design working seamlessly on desktop and tablet devices
@@ -147,10 +148,10 @@ To create a responsive, feature-rich API testing tool that leverages modern web 
   - Description and documentation support
 
 #### Persistence Strategy
-- **Primary Storage**: IndexedDB via `Blazor.IndexedDB` (WASM-native, no server required)
-- **Backup Storage**: Browser localStorage for simple key-value data
+- **Primary Storage**: SQLite via Entity Framework Core (server-side; fully available in InteractiveServer mode)
+- **Backup Storage**: In-memory cache for transient session data
 - **Data Export**: JSON file download/upload for backup and portability
-- **Note**: SQLite/EF Core NOT available in pure WASM; use IndexedDB or server API
+- **Note**: Because all component logic executes on the server, full EF Core with SQLite is available — no IndexedDB or JS interop workarounds needed
 
 ### 3.4 Environment Variables
 
@@ -182,10 +183,10 @@ To create a responsive, feature-rich API testing tool that leverages modern web 
 ## 4. Non-Functional Requirements
 
 ### Performance Requirements
-- **Load Time**: < 2 seconds initial load on 3G connection
-- **Response Time**: < 100ms UI interactions, < 500ms API request initiation
-- **Memory Usage**: < 50MB baseline memory footprint
-- **Concurrent Requests**: Support for 10+ simultaneous requests
+- **Load Time**: < 1 second initial load on standard broadband (no WASM payload to download)
+- **Response Time**: < 100ms UI interactions (SignalR round-trip), < 500ms API request initiation
+- **Memory Usage**: < 100MB server-side memory per active circuit
+- **Concurrent Requests**: Support for 10+ simultaneous requests per user session
 
 ### Accessibility Requirements
 - **WCAG 2.1 AA Compliance**: Full keyboard navigation and screen reader support
@@ -201,58 +202,61 @@ To create a responsive, feature-rich API testing tool that leverages modern web 
 
 ### Reliability Requirements
 - **Uptime**: 99.9% availability for hosted version
-- **Data Integrity**: No data loss during browser crashes or refreshes
+- **Data Integrity**: No data loss during browser disconnects; SQLite provides durable server-side storage
 - **Error Logging**: Comprehensive error tracking and reporting
-- **Graceful Degradation**: Core functionality works without JavaScript (basic mode)
+- **Graceful Degradation**: Static SSR fallback for non-interactive content when circuit is unavailable
 
-### WASM-Specific Requirements
-- **Initial Load**: < 3 seconds on 3G (2s target is aggressive for WASM; includes ~2MB+ payload)
-- **Lazy Loading**: Use route-level lazy loading for non-critical features
-- **Build Optimization**: Enable `PublishTrimmed` and `PublishReadyToRun` for production
-- **Request Cancellation**: All HTTP requests support `CancellationToken`
+### InteractiveServer-Specific Requirements
+- **Initial Load**: < 1 second on standard broadband (HTML + SignalR handshake only; no WASM payload)
+- **SignalR Connection**: Automatic reconnection with configurable retry policy and user-visible reconnection UI
+- **Circuit Management**: Configure `CircuitOptions` for idle timeout, max retained disconnected circuits, and max buffer size
+- **Request Cancellation**: All HTTP requests support `CancellationToken`; cancellation propagated on circuit disconnect
 - **Timeout Configuration**: Configurable request timeout (default: 30s)
-- **Large Response Handling**: Stream responses >10MB or show warning
-- **Reconnection Handling**: PersistComponentState for prerendering; no circuit handling needed (WASM mode)
+- **Large Response Handling**: Stream responses >10MB or show warning; server memory must be monitored
+- **State Persistence**: Use `PersistentComponentState` for prerendering; implement `RevalidatingServerAuthenticationStateProvider` if auth is added
+- **Scalability**: Each connected user holds a server-side circuit consuming memory; plan capacity accordingly
 
 ### Security Requirements
-- **Data Privacy**: No API data sent to external servers
-- **XSS Protection**: Sanitization of all user inputs using `HtmlSanitizer` library
-- **CSRF Protection**: Not required for WASM (browser adds auth headers directly to external APIs)
-- **Secure Storage**: Use `sessionStorage` for sensitive data; localStorage is NOT encrypted
-- **Render Mode**: InteractiveWebAssembly - no server-side circuit to compromise
+- **Data Privacy**: API request data is processed server-side; responses are not stored beyond the user's session/history unless explicitly saved
+- **XSS Protection**: Blazor's built-in Razor encoding handles output sanitization; additionally use `HtmlSanitizer` for user-supplied HTML content
+- **CSRF Protection**: Required — Blazor's built-in antiforgery middleware (`app.UseAntiforgery()`) protects form posts and enhanced navigation; antiforgery tokens are automatically included via `<AntiforgeryToken />` in `App.razor`
+- **Secure Storage**: Sensitive data (tokens, API keys) stored server-side in memory or encrypted SQLite columns; never sent to browser localStorage
+- **Render Mode**: InteractiveServer — all component logic runs on the server; the browser receives only UI diffs over SignalR
+- **Circuit Security**: Validate that SignalR circuit cannot be hijacked; enforce HTTPS and configure `HubOptions` (e.g., `MaximumReceiveMessageSize`)
 
 ---
 
 ## 5. Technical Architecture
 
 ### Technology Stack
-- **Framework**: ASP.NET Core .NET 10.0 with **InteractiveWebAssembly** render mode
+- **Framework**: ASP.NET Core .NET 10.0 with **InteractiveServer** render mode
 - **UI Framework**: MudBlazor 8.x for Material Design components
-- **HTTP Client**: `System.Net.Http.HttpClient` with custom handlers (client-side, no proxy)
-- **Persistence**: IndexedDB via `Blazor.IndexedDB` for client-side storage
-- **State Management**: Singleton services (WASM has no Scoped - use `@inject` with `Singleton`)
+- **HTTP Client**: `System.Net.Http.HttpClient` via `IHttpClientFactory` (server-side; no browser CORS restrictions)
+- **Persistence**: SQLite via Entity Framework Core (server-side database)
+- **State Management**: Scoped services (one DI scope per SignalR circuit); use `@inject` with `Scoped` lifetime
 - **Code Editor**: BlazorMonaco or MudExCodeEditor (MudText insufficient for JSON)
+- **Testing**: xUnit, bUnit, FluentAssertions, Moq; EF Core in-memory/SQLite provider for integration tests
 - **Build Tool**: .NET CLI with GitHub Actions for CI/CD
 
 ### Solution Structure
-The solution uses a three-project layout to support InteractiveWebAssembly prerendering while keeping shared code DRY:
+The solution uses a **three-project layout**. Because InteractiveServer runs all component logic on the server, there is no need for a separate WebAssembly client project. A dedicated test project provides comprehensive automated testing:
 
-- **RobRequest** (Server): ASP.NET Core host that serves static files and prerenders Blazor components. References `RobRequest.Client` and `RobRequest.Shared`.
-- **RobRequest.Client** (WebAssembly): Blazor WebAssembly project containing interactive UI components (`.razor` pages). References `RobRequest.Shared`.
-- **RobRequest.Shared** (Class Library): Contains all **models** and **services** used by both server and client. Both projects register services from this single assembly in their DI containers, eliminating duplication.
+- **RobRequest.Server** (Web Application): ASP.NET Core host containing Razor components (`.razor` pages and layouts), static assets, and the application entry point (`Program.cs`). References `RobRequest.Shared`.
+- **RobRequest.Shared** (Class Library): Contains all **models**, **services**, and **EF Core DbContext** used by the server project. Keeping these in a shared library preserves clean separation of concerns and makes it easy for the test project to exercise business logic without depending on the server host.
+- **RobRequest.Tests** (xUnit Test Project): Contains all unit, integration, and component (bUnit) tests. References both `RobRequest.Shared` (for service/model tests) and `RobRequest.Server` (for bUnit component tests). Uses xUnit as the test framework with FluentAssertions, Moq, and bUnit.
 
-> **Why?** InteractiveWebAssembly components execute in two environments: server-side during prerendering and client-side in WASM. Injected services must be registered in both DI containers. A shared library lets both hosts reference the same types instead of maintaining duplicate copies.
+> **Why not a separate WebAssembly client project?** InteractiveServer components execute entirely on the server within a single ASP.NET Core process. There is only one DI container, so the duplicate-registration problem of InteractiveWebAssembly does not exist. The former `RobRequest.Client` project has been merged into `RobRequest.Server`.
 
 ### Architecture Patterns
 - **Clean Architecture**: Separation of concerns with layered approach
-- **Shared Library Pattern**: Models and services in `RobRequest.Shared`, referenced by both server and client projects
-- **Repository Pattern**: Data access abstraction for IndexedDB operations
+- **Shared Library Pattern**: Models, services, and data access in `RobRequest.Shared`, referenced by the server project
+- **Repository Pattern**: Data access abstraction for SQLite/EF Core operations
 - **Service Layer**: Business logic encapsulated in services within `RobRequest.Shared`
-- **Component Architecture**: Reusable Blazor components in `RobRequest.Client`
+- **Component Architecture**: Reusable Blazor components in `RobRequest.Server`
 
 ### Key Components
 
-#### Frontend Components
+#### Frontend Components (`RobRequest.Server/Components/`)
 - **Layout Components**: 
   - `MainLayout.razor`: Overall application structure
   - `Sidebar.razor`: Navigation and history panel
@@ -260,14 +264,17 @@ The solution uses a three-project layout to support InteractiveWebAssembly prere
   - `ResponsePanel.razor`: Response display interface
 
 #### Business Services (`RobRequest.Shared/Services/`)
-- **ApiService**: HTTP request execution and response handling
-- **HistoryService**: Request history management and persistence
-- **CollectionService**: Collection CRUD operations
+- **ApiService**: HTTP request execution and response handling (server-side `HttpClient`)
+- **HistoryService**: Request history management and persistence (EF Core)
+- **CollectionService**: Collection CRUD operations (EF Core)
 - **EnvironmentService**: Variable management and substitution
-- **StorageService**: IndexedDB operations via Blazor.IndexedDB
-- **SettingsService**: User preferences and configuration
+- **SettingsService**: User preferences and configuration (EF Core)
 
-> All services reside in `RobRequest.Shared` under the `RobRequest.Shared.Services` namespace and are registered in both the server and client DI containers.
+> All services reside in `RobRequest.Shared` under the `RobRequest.Shared.Services` namespace and are registered in the server's DI container with **Scoped** lifetime (one instance per circuit).
+
+#### Data Access (`RobRequest.Shared/Data/`)
+- **AppDbContext**: EF Core `DbContext` with `DbSet` properties for all entities
+- **Migrations**: EF Core code-first migrations for schema management
 
 #### Data Models (`RobRequest.Shared/Models/`)
 - **Request Models**: `HttpRequestModel`, `HeaderItem`, `QueryParamItem`
@@ -277,11 +284,16 @@ The solution uses a three-project layout to support InteractiveWebAssembly prere
 
 > All models reside in `RobRequest.Shared` under the `RobRequest.Shared.Models` namespace.
 
+#### Test Project (`RobRequest.Tests/`)
+- **Unit Tests** (`Tests/Unit/`): Service logic, model validation, utility functions
+- **Integration Tests** (`Tests/Integration/`): EF Core database operations, HttpClient integration
+- **Component Tests** (`Tests/Components/`): bUnit tests for Razor components (RequestPanel, ResponsePanel, Sidebar, Settings)
+
 ### Data Architecture
-- **IndexedDB Schema**: Object stores for history, collections, environments, settings
-- **Migration Strategy**: Schema versioning with upgrade handlers
-- **Indexing Strategy**: Proper indexes on URL, timestamp, and collection fields
-- **Backup Strategy**: Automatic export to JSON with user control
+- **SQLite Schema**: EF Core code-first with tables for history, collections, environments, settings
+- **Migration Strategy**: EF Core migrations applied automatically on startup (`DbContext.Database.MigrateAsync()`)
+- **Indexing Strategy**: EF Core index attributes on URL, timestamp, and collection fields
+- **Backup Strategy**: Export to JSON with user control; SQLite file can also be backed up directly
 
 ---
 
@@ -289,42 +301,61 @@ The solution uses a three-project layout to support InteractiveWebAssembly prere
 
 ### Component Diagram
 ```
-┌──────────────────────────────────────────────────────────────┐
-│  RobRequest.Client (Blazor WebAssembly)                      │
-│  ┌────────────────────────────────────────────────────────┐  │
-│  │  UI Layer (MudBlazor Components)                       │  │
-│  │  ┌────────────┬──────────────┬─────────┬────────────┐  │  │
-│  │  │RequestPanel│ResponsePanel │ Sidebar │ Settings   │  │  │
-│  │  └────────────┴──────────────┴─────────┴────────────┘  │  │
-│  └────────────────────────────────────────────────────────┘  │
-├──────────────────────────────────────────────────────────────┤
-│  RobRequest.Shared (Class Library)                           │
-│  ┌────────────────────────────────────────────────────────┐  │
-│  │  Service Layer (Singleton)                             │  │
-│  │  ┌──────────┬─────────────┬────────────┬────────────┐  │  │
-│  │  │ApiService│HistorySvc   │CollectionSvc│EnvironSvc │  │  │
-│  │  └──────────┴─────────────┴────────────┴────────────┘  │  │
-│  ├────────────────────────────────────────────────────────┤  │
-│  │  Models (shared data types)                            │  │
-│  │  ┌──────────────┬────────────────┬──────────────────┐  │  │
-│  │  │HttpRequestModel│HttpResponseModel│HistoryItem etc│  │  │
-│  │  └──────────────┴────────────────┴──────────────────┘  │  │
-│  ├────────────────────────────────────────────────────────┤  │
-│  │  Data Layer                                            │  │
-│  │  ┌────────────┬────────────┬───────────┬────────────┐  │  │
-│  │  │StorageSvc  │ Blazor.IDX │ IndexedDB │sessionStore│  │  │
-│  │  └────────────┴────────────┴───────────┴────────────┘  │  │
-│  └────────────────────────────────────────────────────────┘  │
-├──────────────────────────────────────────────────────────────┤
-│  RobRequest (Server - Minimal)                               │
-│  ┌────────────────────────────────────────────────────────┐  │
-│  │  Prerendering host + static file serving                │  │
-│  │  wwwroot/ (index.html, CSS, JS, Blazor boot files)      │  │
-│  └────────────────────────────────────────────────────────┘  │
-└──────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│  Browser                                                        │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │  Rendered HTML + SignalR Connection (blazor.web.js)        │  │
+│  │  UI diffs pushed from server; user events sent to server   │  │
+│  └───────────────────────────────────────────────────────────┘  │
+└──────────────────────────┬──────────────────────────────────────┘
+                           │ SignalR (WebSocket)
+┌──────────────────────────▼──────────────────────────────────────┐
+│  RobRequest.Server (ASP.NET Core + Blazor InteractiveServer)    │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │  UI Layer (MudBlazor Components)                          │  │
+│  │  ┌────────────┬──────────────┬──────────┬──────────────┐  │  │
+│  │  │RequestPanel│ResponsePanel │ Sidebar  │ Settings     │  │  │
+│  │  └────────────┴──────────────┴──────────┴──────────────┘  │  │
+│  ├───────────────────────────────────────────────────────────┤  │
+│  │  Program.cs / Middleware / Static Assets (wwwroot/)        │  │
+│  └───────────────────────────────────────────────────────────┘  │
+├─────────────────────────────────────────────────────────────────┤
+│  RobRequest.Shared (Class Library)                              │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │  Service Layer (Scoped — one instance per circuit)        │  │
+│  │  ┌──────────┬─────────────┬─────────────┬─────────────┐  │  │
+│  │  │ApiService│HistorySvc   │CollectionSvc│ EnvironSvc  │  │  │
+│  │  └──────────┴─────────────┴─────────────┴─────────────┘  │  │
+│  ├───────────────────────────────────────────────────────────┤  │
+│  │  Data Access (EF Core)                                    │  │
+│  │  ┌──────────────┬─────────────────────────────────────┐  │  │
+│  │  │ AppDbContext  │  SQLite (robrequest.db)             │  │  │
+│  │  └──────────────┴─────────────────────────────────────┘  │  │
+│  ├───────────────────────────────────────────────────────────┤  │
+│  │  Models (shared data types)                               │  │
+│  │  ┌──────────────┬────────────────┬────────────────────┐  │  │
+│  │  │HttpRequestModel│HttpResponseModel│HistoryItem etc │  │  │
+│  │  └──────────────┴────────────────┴────────────────────┘  │  │
+│  └───────────────────────────────────────────────────────────┘  │
+├─────────────────────────────────────────────────────────────────┤
+│  External APIs                                                  │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │  HttpClient requests execute server-side (no CORS limits) │  │
+│  └───────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│  RobRequest.Tests (xUnit Test Project)                          │
+│  References: RobRequest.Server, RobRequest.Shared               │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │  Unit Tests        │ Service logic, models, utilities      │  │
+│  │  Integration Tests │ EF Core (SQLite), HttpClient          │  │
+│  │  Component Tests   │ bUnit (RequestPanel, ResponsePanel…)  │  │
+│  └───────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-> **Note**: For InteractiveWebAssembly, no server-side API needed. HTTP requests execute directly from browser. The server project prerenders components and serves static files. Both server and client register services from `RobRequest.Shared`.
+> **Note**: With InteractiveServer, all component logic and HTTP requests execute on the server. The browser only receives pre-rendered HTML and subsequent UI diffs over SignalR. This eliminates CORS issues and enables full .NET library access including EF Core. Services are registered once in the server's DI container with Scoped lifetime. The `RobRequest.Tests` project references both `RobRequest.Server` and `RobRequest.Shared` to enable testing at every layer.
 
 ### Service Architecture
 
@@ -334,6 +365,7 @@ The solution uses a three-project layout to support InteractiveWebAssembly prere
 ```csharp
 public class ApiService
 {
+    // Uses IHttpClientFactory for server-side HTTP requests (no CORS restrictions)
     public async Task<HttpResponseModel> SendRequestAsync(HttpRequestModel request, CancellationToken ct = default);
     public void ConfigureHttpClient(Action<HttpClient> configure);
     public void SetTimeout(TimeSpan timeout);
@@ -345,6 +377,7 @@ public class ApiService
 ```csharp
 public class HistoryService
 {
+    // Persists to SQLite via EF Core (AppDbContext injected)
     public async Task<IEnumerable<HistoryItem>> GetHistoryAsync(int limit = 100);
     public async Task AddToHistoryAsync(HttpRequestModel request, HttpResponseModel response);
     public async Task ClearHistoryAsync();
@@ -363,10 +396,10 @@ public class EnvironmentService
 ```
 
 ### Data Flow
-1. **User Input** → UI Components → Service Layer
-2. **Service Processing** → Variable Substitution → HTTP Request
-3. **HTTP Response** → Response Processing → UI Update
-4. **Background Operations** → History Logging → Storage
+1. **User Input** → Browser (SignalR) → Server-side UI Components → Service Layer
+2. **Service Processing** → Variable Substitution → Server-side `HttpClient` Request to External API
+3. **HTTP Response** → Response Processing → UI Diff sent to Browser via SignalR
+4. **Background Operations** → History Logging → SQLite via EF Core
 
 ---
 
@@ -478,11 +511,12 @@ public class EnvironmentService
 **Goal**: Basic working API client
 
 #### Sprint 1.1: Core Infrastructure
-- [ ] Project setup with .NET 10 Blazor WebAssembly template (three-project layout: `RobRequest`, `RobRequest.Client`, `RobRequest.Shared`)
+- [ ] Project setup with .NET 10 Blazor Web App template using InteractiveServer render mode (three-project layout: `RobRequest.Server`, `RobRequest.Shared`, `RobRequest.Tests`)
+- [ ] `RobRequest.Tests` xUnit project setup with bUnit, FluentAssertions, and Moq; references to `RobRequest.Server` and `RobRequest.Shared`
 - [ ] MudBlazor integration and theme configuration
 - [ ] Basic project structure and folder organization (models and services in `RobRequest.Shared`)
-- [ ] IndexedDB setup with Blazor.IndexedDB
-- [ ] Basic HTTP client wrapper service in `RobRequest.Shared`
+- [ ] SQLite + EF Core setup with `AppDbContext` in `RobRequest.Shared`; auto-migrate on startup
+- [ ] Basic HTTP client wrapper service in `RobRequest.Shared` using `IHttpClientFactory`
 
 #### Sprint 1.2: Basic Request/Response
 - [ ] Request builder UI (method, URL, send button)
@@ -524,11 +558,11 @@ public class EnvironmentService
 **Goal**: Persistent storage and organization
 
 #### Sprint 3.1: History & Collections
-- [ ] Request history persistence to SQLite
+- [ ] Request history persistence to SQLite via EF Core
 - [ ] Collection creation and management
 - [ ] Request organization into collections
 - [ ] History search and filtering
-- [ ] Import/export functionality
+- [ ] Import/export functionality (JSON file download/upload)
 
 #### Sprint 3.2: UI Polish
 - [ ] Sidebar implementation
@@ -577,14 +611,14 @@ public class EnvironmentService
 - [ ] Real-time collaboration (optional)
 
 #### Sprint 5.2: Production Deployment
-- [ ] PWA configuration
-- [ ] Offline support
-- [ ] Performance optimization
-- [ ] Security audit
+- [ ] Docker containerization for self-hosting
+- [ ] SignalR reconnection UI and circuit resilience testing
+- [ ] Performance optimization (memory profiling, circuit limits)
+- [ ] Security audit (CSRF, XSS, SignalR hub hardening)
 - [ ] Documentation and help system
 
 **Acceptance Criteria**:
-- Application works offline as PWA
+- Application deployable via Docker or Azure App Service
 - Teams can share collections
 - Production-ready performance and security
 - Comprehensive documentation
@@ -601,6 +635,26 @@ public class EnvironmentService
 
 ## 9. Testing Strategy
 
+All tests reside in the **`RobRequest.Tests`** project (xUnit). This project references both `RobRequest.Shared` and `RobRequest.Server` and is organized into subdirectories by test type:
+
+```
+RobRequest.Tests/
+├── Unit/                  # Pure unit tests (no I/O, mocked dependencies)
+│   ├── Services/          # ApiServiceTests, HistoryServiceTests, etc.
+│   ├── Models/            # Model validation, serialization tests
+│   └── Utilities/         # URL parsing, variable substitution, etc.
+├── Integration/           # Tests with real dependencies (SQLite, HttpClient)
+│   ├── Database/          # EF Core CRUD, migrations, data consistency
+│   └── Http/              # HttpClient integration, error scenarios
+├── Components/            # bUnit Razor component tests
+│   ├── RequestPanelTests.razor
+│   ├── ResponsePanelTests.razor
+│   ├── SidebarTests.razor
+│   └── SettingsTests.razor
+├── Fixtures/              # Shared test fixtures, mock API server, sample data
+└── RobRequest.Tests.csproj
+```
+
 ### Testing Pyramid
 ```
     ┌─────────────────────┐
@@ -612,7 +666,11 @@ public class EnvironmentService
     └─────────────────────┘
 ```
 
+> Unit, integration, and component tests all live in `RobRequest.Tests`. E2E (Playwright) tests may be run separately or included in the same project with a test filter.
+
 ### Unit Testing (xUnit)
+
+> Location: `RobRequest.Tests/Unit/`
 
 #### Core Logic Tests
 - **Variable Substitution**: `{{variable}}` parsing and replacement
@@ -622,10 +680,10 @@ public class EnvironmentService
 - **Time Calculations**: Response time and performance metrics
 
 #### Service Layer Tests
-- **ApiService**: Request building and response parsing
-- **HistoryService**: History management and persistence
+- **ApiService**: Request building and response parsing (server-side `HttpClient`)
+- **HistoryService**: History management and persistence (EF Core)
 - **EnvironmentService**: Variable management and substitution
-- **StorageService**: Database operations and data integrity
+- **SettingsService**: User preferences CRUD and data integrity (EF Core)
 
 #### Data Model Tests
 - **Model Validation**: Request/response model validation rules
@@ -633,6 +691,8 @@ public class EnvironmentService
 - **Data Transformation**: Model conversion and serialization
 
 ### Integration Testing
+
+> Location: `RobRequest.Tests/Integration/`
 
 #### Database Integration
 - **SQLite Operations**: CRUD operations with EF Core
@@ -647,6 +707,8 @@ public class EnvironmentService
 - **Response Handling**: Different content types and status codes
 
 ### Component Testing (bUnit)
+
+> Location: `RobRequest.Tests/Components/`
 
 #### UI Component Tests
 - **RequestPanel**: User interactions and validation
@@ -702,9 +764,9 @@ public class EnvironmentService
 
 #### Performance Benchmarks
 - **Response Time**: < 500ms for API requests
-- **UI Responsiveness**: < 100ms for user interactions
-- **Memory Usage**: < 100MB baseline
-- **Load Time**: < 3 seconds initial load
+- **UI Responsiveness**: < 100ms for user interactions (SignalR round-trip)
+- **Memory Usage**: < 100MB server-side baseline per circuit
+- **Load Time**: < 1 second initial load (no WASM payload)
 
 ### Continuous Integration
 
@@ -733,10 +795,11 @@ public class EnvironmentService
 ### Deployment Architecture
 
 #### Hosting Options
-- **Static Hosting**: GitHub Pages, Netlify, Vercel (WebAssembly)
-- **Cloud Hosting**: Azure Static Web Apps, AWS Amplify
-- **Self-Hosting**: Docker containers with nginx
-- **Hybrid**: WebAssembly with optional server-side features
+- **Cloud Hosting**: Azure App Service, AWS Elastic Beanstalk, or any ASP.NET Core-compatible PaaS
+- **Self-Hosting**: Docker containers with Kestrel (reverse-proxied by nginx/Caddy)
+- **Local Development**: `dotnet run` with hot reload
+
+> **Note**: InteractiveServer requires a persistent ASP.NET Core process; static hosting (GitHub Pages, Netlify) is **not** compatible with this render mode.
 
 #### Build Pipeline
 ```yaml
@@ -769,13 +832,17 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     steps:
-      - name: Publish
-        run: dotnet publish -c Release -o publish
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./publish/wwwroot
+          dotnet-version: '10.0.x'
+      - name: Publish
+        run: dotnet publish RobRequest.Server/RobRequest.Server.csproj -c Release -o publish
+      - name: Build Docker Image
+        run: docker build -t robrequest:latest .
+      - name: Push to Container Registry
+        run: docker push ${{ secrets.REGISTRY_URL }}/robrequest:latest
 ```
 
 ### Environment Configuration
@@ -793,24 +860,24 @@ jobs:
 - **Monitoring**: Basic error tracking
 
 #### Production Environment
-- **Static Hosting**: CDN distribution
-- **Database**: Client-side SQLite only
-- **Configuration**: Build-time configuration
+- **Server Hosting**: ASP.NET Core behind reverse proxy (nginx/Caddy) or Azure App Service
+- **Database**: SQLite file on persistent volume (or upgrade to PostgreSQL for multi-instance)
+- **Configuration**: Environment variables and Azure Key Vault / secrets manager
 - **Monitoring**: Error tracking and analytics
 
 ### Performance Optimization
 
 #### Build Optimizations
-- **Tree Shaking**: Remove unused code
-- **Compression**: Brotli and gzip compression
-- **Lazy Loading**: Component and route lazy loading
-- **Bundle Optimization**: Minimize JavaScript and CSS bundles
+- **PublishTrimmed**: Enable trimming for smaller deployment size
+- **Compression**: Response compression middleware (Brotli/gzip) for static assets
+- **Static Asset Bundling**: Minimize CSS bundles; MudBlazor JS served from `_content/`
+- **ReadyToRun**: Enable `PublishReadyToRun` for faster server startup
 
 #### Runtime Optimizations
-- **Caching**: Aggressive browser caching strategies
-- **Service Worker**: Offline functionality and caching
-- **Image Optimization**: WebP format with fallbacks
-- **Code Splitting**: Separate bundles for different features
+- **Response Caching**: Cache static assets with fingerprinted URLs
+- **Circuit Configuration**: Tune `CircuitOptions.DisconnectedCircuitRetentionPeriod` and `MaxBufferedUnacknowledgedRenderBatches`
+- **Connection Management**: Configure SignalR `HubOptions` for `KeepAliveInterval` and `ClientTimeoutInterval`
+- **Memory Management**: Monitor per-circuit memory; set `MaximumReceiveMessageSize` limits
 
 ### Monitoring & Analytics
 
@@ -829,16 +896,17 @@ jobs:
 ### Security Considerations
 
 #### Application Security
-- **Content Security Policy**: Restrict resource loading
-- **XSS Protection**: Input sanitization and output encoding
-- **Authentication**: Secure token handling
-- **Data Privacy**: No sensitive data transmission
+- **Content Security Policy**: Restrict resource loading; allow SignalR WebSocket connections
+- **XSS Protection**: Blazor's built-in Razor encoding + `HtmlSanitizer` for user-supplied HTML
+- **CSRF Protection**: Blazor antiforgery middleware (`app.UseAntiforgery()`) with `<AntiforgeryToken />` in `App.razor`
+- **Authentication**: Secure token handling; sensitive values stored server-side only
+- **Data Privacy**: API request/response data processed server-side; never persisted to browser storage
 
 #### Infrastructure Security
-- **HTTPS Only**: Enforce secure connections
-- **Subresource Integrity**: Verify resource integrity
-- **Secure Headers**: Implement security headers
-- **Dependency Scanning**: Regular vulnerability scans
+- **HTTPS Only**: Enforce secure connections; required for SignalR WebSocket transport
+- **SignalR Hardening**: Configure `MaximumReceiveMessageSize`, enable authentication on hub if needed
+- **Secure Headers**: Implement `Strict-Transport-Security`, `X-Content-Type-Options`, `X-Frame-Options`
+- **Dependency Scanning**: Regular vulnerability scans via `dotnet list package --vulnerable`
 
 ## 11. Project Governance
 
@@ -868,25 +936,27 @@ jobs:
 This specification provides a comprehensive foundation for developing a modern, feature-rich API testing client using .NET 10 Blazor. The project balances simplicity with powerful features, ensuring it meets the needs of developers while maintaining excellent performance and user experience.
 
 ### Project Summary
-- **Technology Stack**: Modern .NET 10 Blazor WebAssembly with MudBlazor UI
-- **Architecture**: Clean, layered architecture with separation of concerns
+- **Technology Stack**: Modern .NET 10 Blazor InteractiveServer with MudBlazor UI and SQLite/EF Core persistence
+- **Architecture**: Clean, layered three-project architecture (`RobRequest.Server` + `RobRequest.Shared` + `RobRequest.Tests`)
 - **Features**: Complete API testing workflow with advanced capabilities
 - **Timeline**: 10-week phased approach with clear milestones
 - **Quality**: Comprehensive testing strategy with 80%+ code coverage
 
 ### Key Strengths
-1. **Modern Technology**: Leverages latest .NET 10 and Blazor capabilities
+1. **Modern Technology**: Leverages latest .NET 10 and Blazor InteractiveServer capabilities
 2. **Developer-Focused**: Built by developers, for developers
-3. **Performance Optimized**: WebAssembly with sub-second response times
-4. **Feature Complete**: Covers 95% of common API testing workflows
-5. **Extensible**: Clean architecture allows for future enhancements
+3. **Performance Optimized**: Near-instant initial load with server-side rendering; no WASM payload
+4. **Full .NET Power**: Server-side execution enables EF Core, unrestricted HttpClient, and no CORS limitations
+5. **Feature Complete**: Covers 95% of common API testing workflows
+6. **Extensible**: Clean architecture allows for future enhancements
 
 ### Competitive Advantages
-- **Browser-Native**: No installation required, instant access
-- **Privacy-Focused**: All data stays client-side
+- **Browser-Native**: No installation required, instant access via any modern browser
+- **Server-Side Security**: All data processed and stored server-side; nothing sensitive in browser storage
+- **No CORS Issues**: HTTP requests execute server-side, bypassing browser CORS restrictions entirely
 - **Open Source**: Community-driven development
 - **Modern UI**: Material Design 3 with excellent UX
-- **Cross-Platform**: Works on any modern browser
+- **Cross-Platform**: Works on any modern browser with WebSocket support
 
 ### Next Steps
 1. **Specification Review**: Stakeholder review and approval
@@ -897,9 +967,9 @@ This specification provides a comprehensive foundation for developing a modern, 
 
 ### Success Metrics
 #### Technical Metrics
-- **Performance**: < 2 second load time, < 500ms request response
+- **Performance**: < 1 second initial load, < 500ms request response
 - **Quality**: 80%+ test coverage, < 1% error rate
-- **Compatibility**: Support for 95%+ of modern browsers
+- **Compatibility**: Support for 95%+ of modern browsers (WebSocket required)
 - **Reliability**: 99.9% uptime for hosted version
 
 #### Business Metrics
@@ -916,10 +986,11 @@ This specification provides a comprehensive foundation for developing a modern, 
 
 ### Risk Mitigation
 #### Technical Risks
-- **Blazor Maturity**: Mitigated by .NET 10 stability
-- **Performance**: Addressed with WebAssembly optimization
-- **Browser Compatibility**: Comprehensive cross-browser testing
-- **Security**: Regular security audits and dependency scanning
+- **Blazor Maturity**: Mitigated by .NET 10 stability and mature InteractiveServer model
+- **SignalR Latency**: Mitigated by keeping UI interactions lightweight; monitor round-trip times
+- **Server Scalability**: Each circuit consumes server memory; mitigated by circuit limits and load testing
+- **Browser Compatibility**: WebSocket support required; comprehensive cross-browser testing
+- **Security**: Regular security audits, dependency scanning, and SignalR hub hardening
 
 #### Project Risks
 - **Scope Creep**: Managed through phased approach
@@ -951,7 +1022,8 @@ With proper execution of this specification, the resulting application will prov
 
 ---
 
-**Document Version**: 1.1  
-**Last Updated**: February 2026  
-**Next Review**: March 2026 or as needed
+**Document Version**: 2.0  
+**Last Updated**: March 2026  
+**Architecture**: InteractiveServer (migrated from InteractiveWebAssembly in v1.x)  
+**Next Review**: April 2026 or as needed
  

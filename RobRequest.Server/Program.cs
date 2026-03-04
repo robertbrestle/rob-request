@@ -1,21 +1,20 @@
 using MudBlazor.Services;
 using RobRequest.Shared.Services;
-using RobRequest.Components;
-using Microsoft.AspNetCore.Components.Web;
+using RobRequest.Server.Components;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
-    .AddInteractiveWebAssemblyComponents();
+    .AddInteractiveServerComponents();
 
 builder.Services.AddMudServices();
 
-// Register client services on server for prerendering
+// Register services with Scoped lifetime (one instance per SignalR circuit)
 builder.Services.AddHttpClient<ApiService>();
-builder.Services.AddSingleton<HistoryService>();
-builder.Services.AddSingleton<EnvironmentService>();
-builder.Services.AddSingleton<SettingsService>();
+builder.Services.AddScoped<HistoryService>();
+builder.Services.AddScoped<EnvironmentService>();
+builder.Services.AddScoped<SettingsService>();
 
 var app = builder.Build();
 
@@ -23,7 +22,6 @@ var app = builder.Build();
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
@@ -33,7 +31,6 @@ app.UseAntiforgery();
 
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
-    .AddInteractiveWebAssemblyRenderMode()
-    .AddAdditionalAssemblies(typeof(RobRequest.Client._Imports).Assembly);
+    .AddInteractiveServerRenderMode();
 
 app.Run();

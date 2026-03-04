@@ -1,5 +1,5 @@
 @page "/"
-@rendermode InteractiveWebAssembly
+@rendermode InteractiveServer
 @inject SettingsService SettingsService
 @using Microsoft.AspNetCore.Components.Sections
 @implements IDisposable
@@ -12,10 +12,7 @@
 <ResponsePanel Response="_response" IsSending="_isSending"/>
 
 <SectionContent SectionName="Drawer">
-    <MudDrawerHeader>
-        <MudText Typo="Typo.h6">History</MudText>
-    </MudDrawerHeader>
-    <Sidebar OnRequestSelected="OnHistoryItemSelected"/>
+    <HistorySidebar OnRequestSelected="OnHistoryItemSelected"/>
 </SectionContent>
 
 <SectionContent SectionName="EnvironmentSelector">

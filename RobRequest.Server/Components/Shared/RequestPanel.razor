@@ -57,7 +57,8 @@
                             GetEnabled="@(i => i.Enabled)"
                             SetKey="@((i, v) => i.Key = v)"
                             SetValue="@((i, v) => i.Value = v)"
-                            SetEnabled="@((i, v) => i.Enabled = v)" />
+                            SetEnabled="@((i, v) => i.Enabled = v)"
+                            Style="max-height: calc(40vh); overflow-y: auto;" />
         </MudTabPanel>
 
         <!-- Headers Tab -->
@@ -84,7 +85,8 @@
                                 GetEnabled="@(i => i.Enabled)"
                                 SetKey="@((i, v) => i.Key = v)"
                                 SetValue="@((i, v) => i.Value = v)"
-                                SetEnabled="@((i, v) => i.Enabled = v)" />
+                                SetEnabled="@((i, v) => i.Enabled = v)"
+                                Style="max-height: calc(40vh); overflow-y: auto;" />
             </MudStack>
         </MudTabPanel>
 

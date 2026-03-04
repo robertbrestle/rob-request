@@ -36,3 +36,8 @@ h1:focus {
 .blazor-error-boundary::after {
     content: "An error has occurred.";
 }
+
+.method-selector-dropdown {
+    width: 140px;
+    flex-grow: unset;
+}

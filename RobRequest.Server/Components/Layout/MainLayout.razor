@@ -3,7 +3,7 @@
 @inject SettingsService SettingsService
 @implements IDisposable
 
-<MudThemeProvider />
+<MudThemeProvider @bind-IsDarkMode="_isDarkMode"/>
 <MudPopoverProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
@@ -28,11 +28,12 @@
                        Class="ml-1"/>
     </MudAppBar>
 
+    
     <MudDrawer @bind-Open="_drawerOpen" Elevation="2" ClipMode="DrawerClipMode.Always" Width="320px">
         <SectionOutlet SectionName="Drawer"/>
     </MudDrawer>
 
-    <MudMainContent Class="pa-4" Style="min-height: calc(100vh - 48px);">
+    <MudMainContent>
         @Body
     </MudMainContent>
 </MudLayout>

@@ -1,0 +1,48 @@
+trigger:
+  - main
+
+pool:
+  vmImage: windows-latest
+
+variables:
+  BuildConfiguration: 'Release'
+
+steps:
+  - task: UseDotNet@2
+    inputs:
+      version: '10.x'
+      includePreviewVersions: true
+
+  - task: DotNetCoreCLI@2
+    displayName: 'restore'
+    inputs:
+      command: 'restore'
+      projects: |
+        **/RobRequest.Shared.csproj
+        **/RobRequest.Server.csproj
+
+  - task: DotNetCoreCLI@2
+    displayName: 'dotnet build $(BuildConfiguration)'
+    inputs:
+      command: 'build'
+      projects: |
+        **/RobRequest.Shared.csproj
+        **/RobRequest.Server.csproj
+      arguments: '--configuration $(BuildConfiguration)'
+
+  - task: DotNetCoreCLI@2
+    displayName: 'publish'
+    inputs:
+      command: publish
+      publishWebProjects: false
+      projects: |
+        **/RobRequest.Shared.csproj
+        **/RobRequest.Server.csproj
+      arguments: '--configuration $(BuildConfiguration) --output $(Build.ArtifactStagingDirectory)'
+      zipAfterPublish: true
+
+  - task: PublishPipelineArtifact@1
+    inputs:
+      targetPath: '$(Build.ArtifactStagingDirectory)'
+      artifactName: 'RobRequest'
+

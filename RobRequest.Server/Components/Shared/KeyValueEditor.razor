@@ -11,6 +11,7 @@
     [Parameter] public Action<TItem, string> SetKey { get; set; } = (_, _) => { };
     [Parameter] public Action<TItem, string> SetValue { get; set; } = (_, _) => { };
     [Parameter] public Action<TItem, bool> SetEnabled { get; set; } = (_, _) => { };
+    [Parameter] public string Style { get; set; } = string.Empty;
 
     private async Task AddItem()
     {
@@ -43,7 +44,7 @@
     }
 }
 
-<MudStack Spacing="1">
+<MudStack Spacing="1" Style="@Style">
     @foreach (var item in Items)
     {
         <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
@@ -72,11 +73,13 @@
                            OnClick="@(() => RemoveItem(item))" />
         </MudStack>
     }
-    <MudButton StartIcon="@Icons.Material.Filled.Add"
-               Size="Size.Small"
-               Variant="Variant.Text"
-               Color="Color.Primary"
-               OnClick="AddItem">
-        Add
-    </MudButton>
+    <MudStack Row="true" Justify="Justify.Center" Class="pa-2">
+        <MudButton StartIcon="@Icons.Material.Filled.Add"
+                   Size="Size.Small"
+                   Variant="Variant.Text"
+                   Color="Color.Primary"
+                   OnClick="AddItem">
+            Add
+        </MudButton>
+    </MudStack>
 </MudStack>
