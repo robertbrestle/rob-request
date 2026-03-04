@@ -1,11 +1,15 @@
-<Router AppAssembly="typeof(Program).Assembly"
-        AdditionalAssemblies="new[] { typeof(RobRequest.Client._Imports).Assembly }">
+<MudThemeProvider />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<Router AppAssembly="typeof(RobRequest.Client.Components.Pages.Home).Assembly">
     <Found Context="routeData">
-        <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)"/>
+        <RouteView RouteData="routeData" DefaultLayout="typeof(RobRequest.Client.Components.Layout.MainLayout)"/>
         <FocusOnNavigate RouteData="routeData" Selector="h1"/>
     </Found>
     <NotFound>
-        <LayoutView Layout="typeof(Layout.MainLayout)">
+        <LayoutView Layout="typeof(RobRequest.Client.Components.Layout.MainLayout)">
             <MudText Typo="Typo.h4" Align="Align.Center" Class="mt-8">Page Not Found</MudText>
         </LayoutView>
     </NotFound>

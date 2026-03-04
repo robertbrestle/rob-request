@@ -1,0 +1,42 @@
+@page "/test-mudblazor"
+@rendermode InteractiveWebAssembly
+
+<PageTitle>MudBlazor Test</PageTitle>
+
+<h3>MudBlazor Component Test</h3>
+
+<p>This page tests MudBlazor components in isolation.</p>
+
+<MudText Typo="Typo.h6">Basic MudSelect Test:</MudText>
+<MudSelect T="string" Label="Test Select" Variant="Variant.Outlined">
+    <MudSelectItem Value="@("option1")">Option 1</MudSelectItem>
+    <MudSelectItem Value="@("option2")">Option 2</MudSelectItem>
+    <MudSelectItem Value="@("option3")">Option 3</MudSelectItem>
+</MudSelect>
+
+<br />
+
+<MudText Typo="Typo.h6">Basic MudButton Test:</MudText>
+<MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="OnButtonClick">Test Button</MudButton>
+
+<br />
+
+<MudText Typo="Typo.h6">Basic MudTextField Test:</MudText>
+<MudTextField @bind-Value="testValue" Label="Test Input" Variant="Variant.Outlined" />
+
+<br />
+
+<MudText Typo="Typo.h6">Debug Info:</MudText>
+<p>Current value: @testValue</p>
+<p>Button clicks: @clickCount</p>
+
+@code {
+    private string testValue = "";
+    private int clickCount = 0;
+
+    private void OnButtonClick()
+    {
+        clickCount++;
+        Console.WriteLine($"Button clicked {clickCount} times!");
+    }
+}

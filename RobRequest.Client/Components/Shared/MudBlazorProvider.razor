@@ -1,14 +1,22 @@
 @using MudBlazor
-@inherits LayoutComponentBase
+@inject SettingsService SettingsService
+@implements IDisposable
 
-<MudThemeProvider Theme="_theme" IsDarkMode="true" />
+<MudThemeProvider Theme="_theme" @bind-IsDarkMode="_isDarkMode" />
 <MudPopoverProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
 
-@Body
+<CascadingValue Value="@this">
+    @ChildContent
+</CascadingValue>
 
 @code {
+    private bool _isDarkMode = true;
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
     private readonly MudTheme _theme = new()
     {
         PaletteLight = new PaletteLight
@@ -41,4 +49,23 @@
             }
         }
     };
+
+    protected override async Task OnInitializedAsync()
+    {
+        var settings = await SettingsService.GetSettingsAsync();
+        _isDarkMode = settings.DarkMode;
+        SettingsService.OnSettingsChanged += OnSettingsChanged;
+    }
+
+    private async void OnSettingsChanged()
+    {
+        var settings = await SettingsService.GetSettingsAsync();
+        _isDarkMode = settings.DarkMode;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        SettingsService.OnSettingsChanged -= OnSettingsChanged;
+    }
 }
