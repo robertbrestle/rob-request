@@ -1,0 +1,46 @@
+@inject EnvironmentService EnvironmentService
+@implements IDisposable
+
+@code {
+    private IReadOnlyList<EnvironmentModel> _environments = Array.Empty<EnvironmentModel>();
+    private string? _activeId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _environments = await EnvironmentService.GetEnvironmentsAsync();
+        _activeId = EnvironmentService.ActiveEnvironmentId;
+        EnvironmentService.OnEnvironmentChanged += OnChanged;
+    }
+
+    private async void OnChanged()
+    {
+        _environments = await EnvironmentService.GetEnvironmentsAsync();
+        _activeId = EnvironmentService.ActiveEnvironmentId;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void OnEnvironmentSelected(string? id)
+    {
+        EnvironmentService.ActiveEnvironmentId = id;
+    }
+
+    public void Dispose()
+    {
+        EnvironmentService.OnEnvironmentChanged -= OnChanged;
+    }
+}
+
+<MudSelect T="string"
+           Value="_activeId"
+           ValueChanged="OnEnvironmentSelected"
+           Variant="Variant.Outlined"
+           Dense="true"
+           Margin="Margin.Dense"
+           Label="Environment"
+           Style="min-width: 150px;"
+           Class="ml-2">
+    @foreach (var env in _environments)
+    {
+        <MudSelectItem Value="@env.Id">@env.Name</MudSelectItem>
+    }
+</MudSelect>

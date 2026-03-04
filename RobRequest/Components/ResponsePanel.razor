@@ -1,0 +1,228 @@
+@inject IJSRuntime JSRuntime
+
+<MudPaper Elevation="1" Class="pa-4">
+    @if (Response == null && !IsSending)
+    {
+        <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Style="min-height: 200px;">
+            <MudIcon Icon="@Icons.Material.Filled.Http" Size="Size.Large" Color="Color.Default" />
+            <MudText Typo="Typo.h6" Color="Color.Default" Align="Align.Center">
+                Enter a URL and click Send to get a response
+            </MudText>
+            <MudText Typo="Typo.body2" Color="Color.Default" Align="Align.Center">
+                Or press Ctrl+Enter to send the request
+            </MudText>
+        </MudStack>
+    }
+    else if (IsSending)
+    {
+        <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Style="min-height: 200px;">
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" Size="Size.Large" />
+            <MudText Typo="Typo.body1" Class="mt-3">Sending request...</MudText>
+        </MudStack>
+    }
+    else if (Response != null)
+    {
+        <!-- Status Bar -->
+        <StatusIndicator Response="Response" />
+
+        <MudDivider Class="my-3" />
+
+        <!-- Response Tabs -->
+        <MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-3">
+            <!-- Body Tab -->
+            <MudTabPanel Text="Body">
+                <MudStack Spacing="2">
+                    @if (!string.IsNullOrEmpty(Response.ErrorMessage))
+                    {
+                        <MudAlert Severity="Severity.Error">@Response.ErrorMessage</MudAlert>
+                    }
+                    else
+                    {
+                        <MudStack Row="true" Spacing="1" Class="mb-2">
+                            <MudButton Size="Size.Small"
+                                       Variant="Variant.Outlined"
+                                       StartIcon="@Icons.Material.Filled.ContentCopy"
+                                       OnClick="CopyBody">
+                                Copy
+                            </MudButton>
+                            @if (IsJsonResponse())
+                            {
+                                <MudButton Size="Size.Small"
+                                           Variant="Variant.Outlined"
+                                           StartIcon="@Icons.Material.Filled.FormatAlignLeft"
+                                           OnClick="ToggleFormatted">
+                                    @(_showFormatted ? "Raw" : "Formatted")
+                                </MudButton>
+                            }
+                            <MudSpacer />
+                            <MudTextField T="string"
+                                          @bind-Value="_searchText"
+                                          Placeholder="Search response..."
+                                          Variant="Variant.Outlined"
+                                          Margin="Margin.Dense"
+                                          Adornment="Adornment.Start"
+                                          AdornmentIcon="@Icons.Material.Filled.Search"
+                                          Style="max-width: 250px;"
+                                          Immediate="true" />
+                        </MudStack>
+
+                        <MudPaper Elevation="0" Class="pa-3 response-body" Style="background-color: var(--mud-palette-background-gray); border-radius: 4px; max-height: 500px; overflow: auto;">
+                            <pre style="margin: 0; white-space: pre-wrap; word-break: break-word; font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace; font-size: 0.85rem;">@GetDisplayBody()</pre>
+                        </MudPaper>
+                    }
+                </MudStack>
+            </MudTabPanel>
+
+            <!-- Headers Tab -->
+            <MudTabPanel Text="Headers" BadgeData="@Response.Headers.Count.ToString()" BadgeColor="Color.Info">
+                <MudStack Spacing="2">
+                    <MudStack Row="true" Spacing="1" Class="mb-2">
+                        <MudTextField T="string"
+                                      @bind-Value="_headerSearch"
+                                      Placeholder="Filter headers..."
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"
+                                      Adornment="Adornment.Start"
+                                      AdornmentIcon="@Icons.Material.Filled.Search"
+                                      Style="max-width: 300px;"
+                                      Immediate="true" />
+                        <MudSpacer />
+                        <MudButton Size="Size.Small"
+                                   Variant="Variant.Outlined"
+                                   StartIcon="@Icons.Material.Filled.ContentCopy"
+                                   OnClick="CopyHeaders">
+                            Copy as JSON
+                        </MudButton>
+                    </MudStack>
+
+                    <MudSimpleTable Dense="true" Hover="true" Striped="true" Elevation="0">
+                        <thead>
+                            <tr>
+                                <th style="cursor: pointer;" @onclick="@(() => SortHeaders("key"))">
+                                    Name
+                                    @if (_headerSortField == "key")
+                                    {
+                                        <MudIcon Icon="@(_headerSortAsc ? Icons.Material.Filled.ArrowUpward : Icons.Material.Filled.ArrowDownward)" Size="Size.Small" />
+                                    }
+                                </th>
+                                <th style="cursor: pointer;" @onclick="@(() => SortHeaders("value"))">
+                                    Value
+                                    @if (_headerSortField == "value")
+                                    {
+                                        <MudIcon Icon="@(_headerSortAsc ? Icons.Material.Filled.ArrowUpward : Icons.Material.Filled.ArrowDownward)" Size="Size.Small" />
+                                    }
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var header in GetFilteredHeaders())
+                            {
+                                <tr>
+                                    <td><strong>@header.Key</strong></td>
+                                    <td style="word-break: break-all;">@header.Value</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </MudSimpleTable>
+                </MudStack>
+            </MudTabPanel>
+        </MudTabs>
+    }
+</MudPaper>
+
+@code {
+    [Parameter] public HttpResponseModel? Response { get; set; }
+    [Parameter] public bool IsSending { get; set; }
+
+    private bool _showFormatted = true;
+    private string _searchText = string.Empty;
+    private string _headerSearch = string.Empty;
+    private string _headerSortField = "key";
+    private bool _headerSortAsc = true;
+
+    private bool IsJsonResponse()
+    {
+        if (Response == null) return false;
+        return Response.ContentType.Contains("json", StringComparison.OrdinalIgnoreCase) ||
+               (Response.Body.TrimStart().StartsWith('{') || Response.Body.TrimStart().StartsWith('['));
+    }
+
+    private string GetDisplayBody()
+    {
+        if (Response == null) return string.Empty;
+
+        var body = Response.Body;
+
+        if (_showFormatted && IsJsonResponse())
+        {
+            try
+            {
+                var parsed = System.Text.Json.JsonDocument.Parse(body);
+                body = System.Text.Json.JsonSerializer.Serialize(parsed, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+            }
+            catch
+            {
+                // Not valid JSON, show raw
+            }
+        }
+
+        return body;
+    }
+
+    private void ToggleFormatted()
+    {
+        _showFormatted = !_showFormatted;
+    }
+
+    private IEnumerable<HeaderItem> GetFilteredHeaders()
+    {
+        if (Response == null) return Enumerable.Empty<HeaderItem>();
+
+        var headers = Response.Headers.AsEnumerable();
+
+        if (!string.IsNullOrWhiteSpace(_headerSearch))
+        {
+            headers = headers.Where(h =>
+                h.Key.Contains(_headerSearch, StringComparison.OrdinalIgnoreCase) ||
+                h.Value.Contains(_headerSearch, StringComparison.OrdinalIgnoreCase));
+        }
+
+        headers = _headerSortField switch
+        {
+            "key" => _headerSortAsc ? headers.OrderBy(h => h.Key) : headers.OrderByDescending(h => h.Key),
+            "value" => _headerSortAsc ? headers.OrderBy(h => h.Value) : headers.OrderByDescending(h => h.Value),
+            _ => headers
+        };
+
+        return headers;
+    }
+
+    private void SortHeaders(string field)
+    {
+        if (_headerSortField == field)
+            _headerSortAsc = !_headerSortAsc;
+        else
+        {
+            _headerSortField = field;
+            _headerSortAsc = true;
+        }
+    }
+
+    private async Task CopyBody()
+    {
+        if (Response != null)
+        {
+            await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", GetDisplayBody());
+        }
+    }
+
+    private async Task CopyHeaders()
+    {
+        if (Response != null)
+        {
+            var dict = Response.Headers.ToDictionary(h => h.Key, h => h.Value);
+            var json = System.Text.Json.JsonSerializer.Serialize(dict, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+            await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", json);
+        }
+    }
+}

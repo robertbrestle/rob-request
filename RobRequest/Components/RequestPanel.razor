@@ -1,0 +1,406 @@
+@inject ApiService ApiService
+@inject HistoryService HistoryService
+@inject EnvironmentService EnvironmentService
+
+<MudPaper Elevation="1" Class="pa-4 mb-4">
+    <!-- Request URL Bar -->
+    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mb-3">
+        <MethodSelector @bind-Value="_request.Method" />
+        <MudTextField T="string"
+                      @bind-Value="_request.Url"
+                      Placeholder="Enter request URL (e.g. https://api.example.com/endpoint)"
+                      Variant="Variant.Outlined"
+                      Margin="Margin.Dense"
+                      Style="flex: 1;"
+                      Adornment="Adornment.End"
+                      AdornmentIcon="@Icons.Material.Filled.ContentPaste"
+                      OnAdornmentClick="PasteUrl"
+                      Immediate="true"
+                      DebounceInterval="300"
+                      OnDebounceIntervalElapsed="OnUrlChanged" />
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Send"
+                   OnClick="SendRequest"
+                   Disabled="_isSending"
+                   Size="Size.Large">
+            @if (_isSending)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                <span>Sending...</span>
+            }
+            else
+            {
+                <span>Send</span>
+            }
+        </MudButton>
+        @if (_isSending)
+        {
+            <MudIconButton Icon="@Icons.Material.Filled.Cancel"
+                           Color="Color.Error"
+                           OnClick="CancelRequest"
+                           Size="Size.Medium" />
+        }
+    </MudStack>
+
+    <!-- Request Tabs -->
+    <MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-3">
+        <!-- Params Tab -->
+        <MudTabPanel Text="Params" BadgeData="@GetParamsBadge()" BadgeColor="Color.Primary">
+            <KeyValueEditor TItem="QueryParamItem"
+                            Items="_request.QueryParams"
+                            ItemsChanged="OnQueryParamsChanged"
+                            KeyLabel="Parameter"
+                            ValueLabel="Value"
+                            GetKey="@(i => i.Key)"
+                            GetValue="@(i => i.Value)"
+                            GetEnabled="@(i => i.Enabled)"
+                            SetKey="@((i, v) => i.Key = v)"
+                            SetValue="@((i, v) => i.Value = v)"
+                            SetEnabled="@((i, v) => i.Enabled = v)" />
+        </MudTabPanel>
+
+        <!-- Headers Tab -->
+        <MudTabPanel Text="Headers" BadgeData="@GetHeadersBadge()" BadgeColor="Color.Primary">
+            <MudStack Spacing="2">
+                <MudStack Row="true" Spacing="1">
+                    <MudButton Size="Size.Small" Variant="Variant.Outlined" OnClick="@(() => AddCommonHeader("Content-Type", "application/json"))">
+                        Content-Type: JSON
+                    </MudButton>
+                    <MudButton Size="Size.Small" Variant="Variant.Outlined" OnClick="@(() => AddCommonHeader("Accept", "application/json"))">
+                        Accept: JSON
+                    </MudButton>
+                    <MudButton Size="Size.Small" Variant="Variant.Outlined" OnClick="@(() => AddCommonHeader("Authorization", "Bearer "))">
+                        Authorization
+                    </MudButton>
+                </MudStack>
+                <KeyValueEditor TItem="HeaderItem"
+                                Items="_request.Headers"
+                                ItemsChanged="OnHeadersChanged"
+                                KeyLabel="Header Name"
+                                ValueLabel="Header Value"
+                                GetKey="@(i => i.Key)"
+                                GetValue="@(i => i.Value)"
+                                GetEnabled="@(i => i.Enabled)"
+                                SetKey="@((i, v) => i.Key = v)"
+                                SetValue="@((i, v) => i.Value = v)"
+                                SetEnabled="@((i, v) => i.Enabled = v)" />
+            </MudStack>
+        </MudTabPanel>
+
+        <!-- Body Tab -->
+        <MudTabPanel Text="Body">
+            <MudStack Spacing="2">
+                <MudRadioGroup T="string" @bind-Value="_request.BodyType">
+                    <MudRadio Value="@("none")" Color="Color.Primary" Dense="true">None</MudRadio>
+                    <MudRadio Value="@("json")" Color="Color.Primary" Dense="true">JSON</MudRadio>
+                    <MudRadio Value="@("form-data")" Color="Color.Primary" Dense="true">Form Data</MudRadio>
+                    <MudRadio Value="@("text")" Color="Color.Primary" Dense="true">Raw Text</MudRadio>
+                    <MudRadio Value="@("xml")" Color="Color.Primary" Dense="true">XML</MudRadio>
+                </MudRadioGroup>
+
+                @if (_request.BodyType != "none")
+                {
+                    @if (_request.BodyType == "json")
+                    {
+                        <MudStack Row="true" Spacing="1" Class="mb-1">
+                            <MudButton Size="Size.Small"
+                                       Variant="Variant.Outlined"
+                                       StartIcon="@Icons.Material.Filled.FormatAlignLeft"
+                                       OnClick="FormatJson">
+                                Format JSON
+                            </MudButton>
+                        </MudStack>
+                        <MudTextField T="string"
+                                      @bind-Value="_request.Body"
+                                      Placeholder="@GetBodyPlaceholder()"
+                                      Variant="Variant.Outlined"
+                                      Lines="12"
+                                      Style="font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace; font-size: 0.875rem;" />
+                    }
+                    else if (_request.BodyType == "form-data")
+                    {
+                        <KeyValueEditor TItem="FormDataItem"
+                                        Items="_request.FormData"
+                                        ItemsChanged="OnFormDataChanged"
+                                        KeyLabel="Field Name"
+                                        ValueLabel="Field Value"
+                                        GetKey="@(i => i.Key)"
+                                        GetValue="@(i => i.Value)"
+                                        GetEnabled="@(i => i.Enabled)"
+                                        SetKey="@((i, v) => i.Key = v)"
+                                        SetValue="@((i, v) => i.Value = v)"
+                                        SetEnabled="@((i, v) => i.Enabled = v)" />
+                    }
+                    else
+                    {
+                        <MudTextField T="string"
+                                      @bind-Value="_request.Body"
+                                      Placeholder="@GetBodyPlaceholder()"
+                                      Variant="Variant.Outlined"
+                                      Lines="12"
+                                      Style="font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace; font-size: 0.875rem;" />
+                    }
+                }
+            </MudStack>
+        </MudTabPanel>
+
+        <!-- Auth Tab -->
+        <MudTabPanel Text="Auth">
+            <MudStack Spacing="3">
+                <MudSelect T="AuthType" @bind-Value="_request.AuthType" Label="Auth Type" Variant="Variant.Outlined" Margin="Margin.Dense">
+                    <MudSelectItem Value="AuthType.None">No Auth</MudSelectItem>
+                    <MudSelectItem Value="AuthType.Bearer">Bearer Token</MudSelectItem>
+                    <MudSelectItem Value="AuthType.Basic">Basic Auth</MudSelectItem>
+                    <MudSelectItem Value="AuthType.ApiKey">API Key</MudSelectItem>
+                </MudSelect>
+
+                @switch (_request.AuthType)
+                {
+                    case AuthType.Bearer:
+                        <MudTextField T="string"
+                                      @bind-Value="_request.AuthToken"
+                                      Label="Token"
+                                      Placeholder="Enter bearer token"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"
+                                      InputType="InputType.Password" />
+                        break;
+
+                    case AuthType.Basic:
+                        <MudTextField T="string"
+                                      @bind-Value="_request.AuthUsername"
+                                      Label="Username"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense" />
+                        <MudTextField T="string"
+                                      @bind-Value="_request.AuthPassword"
+                                      Label="Password"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"
+                                      InputType="InputType.Password" />
+                        break;
+
+                    case AuthType.ApiKey:
+                        <MudTextField T="string"
+                                      @bind-Value="_request.ApiKeyName"
+                                      Label="Key Name"
+                                      Placeholder="e.g. X-API-Key"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense" />
+                        <MudTextField T="string"
+                                      @bind-Value="_request.ApiKeyValue"
+                                      Label="Key Value"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"
+                                      InputType="InputType.Password" />
+                        <MudSelect T="ApiKeyLocation" @bind-Value="_request.ApiKeyLocation" Label="Add to" Variant="Variant.Outlined" Margin="Margin.Dense">
+                            <MudSelectItem Value="ApiKeyLocation.Header">Header</MudSelectItem>
+                            <MudSelectItem Value="ApiKeyLocation.QueryParam">Query Param</MudSelectItem>
+                        </MudSelect>
+                        break;
+                }
+            </MudStack>
+        </MudTabPanel>
+    </MudTabs>
+</MudPaper>
+
+@code {
+    [Parameter] public EventCallback<HttpResponseModel> OnResponseReceived { get; set; }
+    [Parameter] public EventCallback<bool> OnSendingChanged { get; set; }
+
+    private HttpRequestModel _request = new();
+    private bool _isSending;
+    private CancellationTokenSource? _cts;
+
+    public void LoadRequest(HttpRequestModel request)
+    {
+        _request = new HttpRequestModel
+        {
+            Method = request.Method,
+            Url = request.Url,
+            Headers = request.Headers.Select(h => new HeaderItem { Key = h.Key, Value = h.Value, Enabled = h.Enabled }).ToList(),
+            QueryParams = request.QueryParams.Select(p => new QueryParamItem { Key = p.Key, Value = p.Value, Enabled = p.Enabled }).ToList(),
+            FormData = request.FormData.Select(f => new FormDataItem { Key = f.Key, Value = f.Value, Enabled = f.Enabled, IsFile = f.IsFile, FileName = f.FileName, ContentType = f.ContentType }).ToList(),
+            BodyType = request.BodyType,
+            Body = request.Body,
+            ContentType = request.ContentType,
+            AuthType = request.AuthType,
+            AuthToken = request.AuthToken,
+            AuthUsername = request.AuthUsername,
+            AuthPassword = request.AuthPassword,
+            ApiKeyName = request.ApiKeyName,
+            ApiKeyValue = request.ApiKeyValue,
+            ApiKeyLocation = request.ApiKeyLocation,
+            TimeoutSeconds = request.TimeoutSeconds
+        };
+        StateHasChanged();
+    }
+
+    private async Task SendRequest()
+    {
+        if (string.IsNullOrWhiteSpace(_request.Url))
+            return;
+
+        _isSending = true;
+        await OnSendingChanged.InvokeAsync(true);
+        _cts = new CancellationTokenSource();
+
+        try
+        {
+            // Process form data substitution separately
+            var substitutedFormData = new List<FormDataItem>();
+            foreach (var f in _request.FormData)
+            {
+                substitutedFormData.Add(new FormDataItem
+                {
+                    Key = f.Key,
+                    Value = await EnvironmentService.SubstituteVariablesAsync(f.Value),
+                    Enabled = f.Enabled,
+                    IsFile = f.IsFile,
+                    FileName = f.FileName,
+                    ContentType = f.ContentType
+                });
+            }
+
+            // Substitute environment variables
+            var substitutedRequest = new HttpRequestModel
+            {
+                Method = _request.Method,
+                Url = await EnvironmentService.SubstituteVariablesAsync(_request.Url),
+                Headers = _request.Headers,
+                QueryParams = _request.QueryParams,
+                FormData = substitutedFormData,
+                BodyType = _request.BodyType,
+                Body = await EnvironmentService.SubstituteVariablesAsync(_request.Body),
+                ContentType = _request.ContentType,
+                AuthType = _request.AuthType,
+                AuthToken = await EnvironmentService.SubstituteVariablesAsync(_request.AuthToken),
+                AuthUsername = _request.AuthUsername,
+                AuthPassword = _request.AuthPassword,
+                ApiKeyName = _request.ApiKeyName,
+                ApiKeyValue = await EnvironmentService.SubstituteVariablesAsync(_request.ApiKeyValue),
+                ApiKeyLocation = _request.ApiKeyLocation,
+                TimeoutSeconds = _request.TimeoutSeconds
+            };
+
+            // Set content type based on body type
+            substitutedRequest.ContentType = _request.BodyType switch
+            {
+                "json" => "application/json",
+                "xml" => "application/xml",
+                "text" => "text/plain",
+                "form-data" => "multipart/form-data",
+                _ => _request.ContentType
+            };
+
+            var response = await ApiService.SendRequestAsync(substitutedRequest, _cts.Token);
+
+            // Add to history
+            await HistoryService.AddToHistoryAsync(_request, response);
+
+            await OnResponseReceived.InvokeAsync(response);
+        }
+        finally
+        {
+            _isSending = false;
+            await OnSendingChanged.InvokeAsync(false);
+            _cts?.Dispose();
+            _cts = null;
+        }
+    }
+
+    private void CancelRequest()
+    {
+        _cts?.Cancel();
+    }
+
+    private async Task PasteUrl()
+    {
+        // JS interop for clipboard would go here; for now it's a no-op placeholder
+    }
+
+    private void OnUrlChanged(string url)
+    {
+        // Parse query params from URL
+        if (string.IsNullOrWhiteSpace(url)) return;
+
+        var questionMarkIndex = url.IndexOf('?');
+        if (questionMarkIndex < 0) return;
+
+        var queryString = url[(questionMarkIndex + 1)..];
+        var baseUrl = url[..questionMarkIndex];
+
+        _request.Url = baseUrl;
+        _request.QueryParams.Clear();
+
+        foreach (var pair in queryString.Split('&', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var parts = pair.Split('=', 2);
+            _request.QueryParams.Add(new QueryParamItem
+            {
+                Key = Uri.UnescapeDataString(parts[0]),
+                Value = parts.Length > 1 ? Uri.UnescapeDataString(parts[1]) : string.Empty,
+                Enabled = true
+            });
+        }
+    }
+
+    private Task OnQueryParamsChanged(List<QueryParamItem> items)
+    {
+        _request.QueryParams = items;
+        return Task.CompletedTask;
+    }
+
+    private Task OnHeadersChanged(List<HeaderItem> items)
+    {
+        _request.Headers = items;
+        return Task.CompletedTask;
+    }
+
+    private Task OnFormDataChanged(List<FormDataItem> items)
+    {
+        _request.FormData = items;
+        return Task.CompletedTask;
+    }
+
+    private void AddCommonHeader(string key, string value)
+    {
+        if (!_request.Headers.Any(h => h.Key.Equals(key, StringComparison.OrdinalIgnoreCase)))
+        {
+            _request.Headers.Add(new HeaderItem { Key = key, Value = value, Enabled = true });
+        }
+    }
+
+    private void FormatJson()
+    {
+        if (string.IsNullOrWhiteSpace(_request.Body)) return;
+        try
+        {
+            var parsed = System.Text.Json.JsonDocument.Parse(_request.Body);
+            _request.Body = System.Text.Json.JsonSerializer.Serialize(parsed, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+        }
+        catch
+        {
+            // Invalid JSON, leave as-is
+        }
+    }
+
+    private string? GetParamsBadge() =>
+        _request.QueryParams.Count(p => p.Enabled && !string.IsNullOrWhiteSpace(p.Key)) is > 0 and var count
+            ? count.ToString()
+            : null;
+
+    private string? GetHeadersBadge() =>
+        _request.Headers.Count(h => h.Enabled && !string.IsNullOrWhiteSpace(h.Key)) is > 0 and var count
+            ? count.ToString()
+            : null;
+
+    private string GetBodyPlaceholder() => _request.BodyType switch
+    {
+        "json" => "{\n  \"key\": \"value\"\n}",
+        "xml" => "<root>\n  <element>value</element>\n</root>",
+        "text" => "Enter raw text...",
+        _ => ""
+    };
+}

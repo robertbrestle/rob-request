@@ -1,0 +1,38 @@
+html, body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    height: 100%;
+}
+
+h1:focus {
+    outline: none;
+}
+
+.response-body pre {
+    tab-size: 2;
+}
+
+.method-selector .mud-input-slot {
+    font-weight: 700;
+}
+
+.history-item {
+    border-bottom: 1px solid rgba(128, 128, 128, 0.15);
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.history-item:hover {
+    background-color: rgba(128, 128, 128, 0.1);
+}
+
+.blazor-error-boundary {
+    background: #b32121;
+    padding: 1rem;
+    color: white;
+}
+
+.blazor-error-boundary::after {
+    content: "An error has occurred.";
+}

@@ -1,0 +1,12 @@
+<Router AppAssembly="typeof(Program).Assembly"
+        AdditionalAssemblies="new[] { typeof(RobRequest.Client._Imports).Assembly }">
+    <Found Context="routeData">
+        <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)"/>
+        <FocusOnNavigate RouteData="routeData" Selector="h1"/>
+    </Found>
+    <NotFound>
+        <LayoutView Layout="typeof(Layout.MainLayout)">
+            <MudText Typo="Typo.h4" Align="Align.Center" Class="mt-8">Page Not Found</MudText>
+        </LayoutView>
+    </NotFound>
+</Router>

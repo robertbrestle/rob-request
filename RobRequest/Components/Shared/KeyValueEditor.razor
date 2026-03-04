@@ -1,0 +1,82 @@
+@typeparam TItem where TItem : class, new()
+
+@code {
+    [Parameter] public List<TItem> Items { get; set; } = new();
+    [Parameter] public EventCallback<List<TItem>> ItemsChanged { get; set; }
+    [Parameter] public string KeyLabel { get; set; } = "Key";
+    [Parameter] public string ValueLabel { get; set; } = "Value";
+    [Parameter] public Func<TItem, string> GetKey { get; set; } = _ => string.Empty;
+    [Parameter] public Func<TItem, string> GetValue { get; set; } = _ => string.Empty;
+    [Parameter] public Func<TItem, bool> GetEnabled { get; set; } = _ => true;
+    [Parameter] public Action<TItem, string> SetKey { get; set; } = (_, _) => { };
+    [Parameter] public Action<TItem, string> SetValue { get; set; } = (_, _) => { };
+    [Parameter] public Action<TItem, bool> SetEnabled { get; set; } = (_, _) => { };
+
+    private async Task AddItem()
+    {
+        Items.Add(new TItem());
+        await ItemsChanged.InvokeAsync(Items);
+    }
+
+    private async Task RemoveItem(TItem item)
+    {
+        Items.Remove(item);
+        await ItemsChanged.InvokeAsync(Items);
+    }
+
+    private async Task OnKeyChanged(TItem item, string value)
+    {
+        SetKey(item, value);
+        await ItemsChanged.InvokeAsync(Items);
+    }
+
+    private async Task OnValueChanged(TItem item, string value)
+    {
+        SetValue(item, value);
+        await ItemsChanged.InvokeAsync(Items);
+    }
+
+    private async Task OnEnabledChanged(TItem item, bool value)
+    {
+        SetEnabled(item, value);
+        await ItemsChanged.InvokeAsync(Items);
+    }
+}
+
+<MudStack Spacing="1">
+    @foreach (var item in Items)
+    {
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+            <MudCheckBox T="bool"
+                         Value="@GetEnabled(item)"
+                         ValueChanged="@(v => OnEnabledChanged(item, v))"
+                         Size="Size.Small"
+                         Dense="true" />
+            <MudTextField T="string"
+                          Value="@GetKey(item)"
+                          ValueChanged="@(v => OnKeyChanged(item, v))"
+                          Placeholder="@KeyLabel"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          Style="flex: 1;" />
+            <MudTextField T="string"
+                          Value="@GetValue(item)"
+                          ValueChanged="@(v => OnValueChanged(item, v))"
+                          Placeholder="@ValueLabel"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          Style="flex: 1;" />
+            <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                           Size="Size.Small"
+                           Color="Color.Error"
+                           OnClick="@(() => RemoveItem(item))" />
+        </MudStack>
+    }
+    <MudButton StartIcon="@Icons.Material.Filled.Add"
+               Size="Size.Small"
+               Variant="Variant.Text"
+               Color="Color.Primary"
+               OnClick="AddItem">
+        Add
+    </MudButton>
+</MudStack>

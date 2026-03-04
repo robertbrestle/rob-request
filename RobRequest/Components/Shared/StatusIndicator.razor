@@ -1,0 +1,41 @@
+@code {
+    [Parameter] public HttpResponseModel? Response { get; set; }
+}
+
+@if (Response != null)
+{
+    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+        @if (!string.IsNullOrEmpty(Response.ErrorMessage))
+        {
+            <MudChip T="string" Color="Color.Error" Size="Size.Small" Variant="Variant.Filled">
+                Error
+            </MudChip>
+            <MudText Typo="Typo.body2" Color="Color.Error">@Response.ErrorMessage</MudText>
+        }
+        else
+        {
+            <MudChip T="string" Color="@GetStatusColor()" Size="Size.Small" Variant="Variant.Filled">
+                @Response.StatusCode @Response.StatusText
+            </MudChip>
+            <MudChip T="string" Color="Color.Default" Size="Size.Small" Variant="Variant.Outlined">
+                <MudIcon Icon="@Icons.Material.Filled.Timer" Size="Size.Small" Class="mr-1" />
+                @(Response.ResponseTimeMs) ms
+            </MudChip>
+            <MudChip T="string" Color="Color.Default" Size="Size.Small" Variant="Variant.Outlined">
+                <MudIcon Icon="@Icons.Material.Filled.Storage" Size="Size.Small" Class="mr-1" />
+                @Response.FormattedSize
+            </MudChip>
+        }
+    </MudStack>
+}
+
+@code {
+    private Color GetStatusColor() => Response?.StatusCode switch
+    {
+        >= 200 and < 300 => Color.Success,
+        >= 300 and < 400 => Color.Info,
+        >= 400 and < 500 => Color.Warning,
+        >= 500 => Color.Error,
+        _ => Color.Default
+    };
+}
