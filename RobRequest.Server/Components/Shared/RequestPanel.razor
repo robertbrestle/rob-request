@@ -7,14 +7,15 @@
     <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mb-3">
         <MethodSelector @bind-Value="_request.Method" />
         <MudTextField T="string"
+                      @ref="_urlField"
                       @bind-Value="_request.Url"
                       Placeholder="Enter request URL (e.g. https://api.example.com/endpoint)"
                       Variant="Variant.Outlined"
                       Margin="Margin.Dense"
                       Style="flex: 1;"
                       Adornment="Adornment.End"
-                      AdornmentIcon="@Icons.Material.Filled.ContentPaste"
-                      OnAdornmentClick="PasteUrl"
+                      AdornmentIcon="@Icons.Material.Filled.Air"
+                      OnAdornmentClick="CleanUrl"
                       Immediate="true"
                       DebounceInterval="300"
                       OnDebounceIntervalElapsed="OnUrlChanged" />
@@ -214,6 +215,7 @@
     private HttpRequestModel _request = new();
     private bool _isSending;
     private CancellationTokenSource? _cts;
+    private MudTextField<string>? _urlField;
 
     public void LoadRequest(HttpRequestModel request)
     {
@@ -317,12 +319,15 @@
         _cts?.Cancel();
     }
 
-    private async Task PasteUrl()
+    private async Task CleanUrl()
     {
-        // JS interop for clipboard would go here; for now it's a no-op placeholder
+        if (_urlField is not null)
+        {
+            await _urlField.SetText($"{_request.Url}");
+        }
     }
 
-    private void OnUrlChanged(string url)
+    private async Task OnUrlChanged(string url)
     {
         // Parse query params from URL
         if (string.IsNullOrWhiteSpace(url)) return;
@@ -335,6 +340,8 @@
 
         _request.Url = baseUrl;
         _request.QueryParams.Clear();
+
+        await CleanUrl();
 
         foreach (var pair in queryString.Split('&', StringSplitOptions.RemoveEmptyEntries))
         {
