@@ -6,10 +6,16 @@
 
 <PageTitle>RobRequest - API Client</PageTitle>
 
-<RequestPanel @ref="_requestPanel"
-              OnResponseReceived="OnResponseReceived"
-              OnSendingChanged="OnSendingChanged"/>
-<ResponsePanel Response="_response" IsSending="_isSending"/>
+<MudGrid Spacing="2">
+    <MudItem lg="6" md="12">
+        <RequestPanel @ref="_requestPanel"
+                      OnResponseReceived="OnResponseReceived"
+                      OnSendingChanged="OnSendingChanged"/>
+    </MudItem>
+    <MudItem lg="6" md="12">
+        <ResponsePanel Response="_response" IsSending="_isSending"/>
+    </MudItem>
+</MudGrid>
 
 <SectionContent SectionName="Drawer">
     <HistorySidebar OnRequestSelected="OnHistoryItemSelected"/>

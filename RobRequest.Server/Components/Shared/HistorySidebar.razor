@@ -51,12 +51,7 @@
                             </MudChip>
                             @if (item.StatusCode > 0)
                             {
-                                <MudChip T="string"
-                                         Color="@GetStatusColor(item.StatusCode)"
-                                         Size="Size.Small"
-                                         Variant="Variant.Outlined">
-                                    @item.StatusCode
-                                </MudChip>
+                                <HttpStatusChip StatusCode="@item.StatusCode" Variant="Variant.Outlined"/>
                             }
                             <MudSpacer />
                             <MudText Typo="Typo.caption" Color="Color.Default">

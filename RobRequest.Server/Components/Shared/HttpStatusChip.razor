@@ -1,0 +1,43 @@
+<MudChip T="string" Color="@GetStatusColor()" Size="@Size" Variant="@Variant">
+    <MudText Typo="Typo.caption" Color="@GetTextColor()">
+        <b>
+            @StatusCode
+            @if (ShowStatusText && !string.IsNullOrEmpty(StatusText))
+            {
+                <span>&nbsp;@StatusText</span>
+            }
+        </b>
+    </MudText>
+</MudChip>
+
+@code {
+    [Parameter] public int StatusCode { get; set; }
+    [Parameter] public string? StatusText { get; set; }
+    [Parameter] public bool ShowStatusText { get; set; } = true;
+    [Parameter] public MudBlazor.Size Size { get; set; } = Size.Small;
+    [Parameter] public MudBlazor.Variant Variant { get; set; } = Variant.Filled;
+
+    private Color GetStatusColor() => StatusCode switch
+    {
+        >= 200 and < 300 => Color.Success,
+        >= 300 and < 400 => Color.Info,
+        >= 400 and < 500 => Color.Warning,
+        >= 500 => Color.Error,
+        _ => Color.Default
+    };
+
+    private Color GetTextColor()
+    {
+        if (Variant != Variant.Filled)
+            return GetStatusColor();
+        return StatusCode switch
+        {
+            >= 200 and < 300 => Color.Default,
+            >= 300 and < 400 => Color.Default,
+            >= 400 and < 500 => Color.Dark,
+            >= 500 => Color.Dark,
+            _ => Color.Default
+        };
+    }
+
+}

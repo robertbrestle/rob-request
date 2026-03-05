@@ -15,10 +15,10 @@
                       Style="flex: 1;"
                       Adornment="Adornment.End"
                       AdornmentIcon="@Icons.Material.Filled.Air"
-                      OnAdornmentClick="CleanUrl"
-                      Immediate="true"
-                      DebounceInterval="300"
-                      OnDebounceIntervalElapsed="OnUrlChanged" />
+                      AdornmentAriaLabel="clean query parameters"
+                      OnAdornmentClick="OnUrlChanged"
+                      Immediate="true" 
+                      OnKeyDown="OnSendRequest"/>
         <MudButton Variant="Variant.Filled"
                    Color="Color.Primary"
                    StartIcon="@Icons.Material.Filled.Send"
@@ -241,6 +241,13 @@
         StateHasChanged();
     }
 
+    private async Task OnSendRequest(KeyboardEventArgs args)
+    {
+        if (args.Key != "Enter")
+            return;
+        await SendRequest();
+    }
+
     private async Task SendRequest()
     {
         if (string.IsNullOrWhiteSpace(_request.Url))
@@ -319,29 +326,22 @@
         _cts?.Cancel();
     }
 
-    private async Task CleanUrl()
+    private async Task OnUrlChanged()
     {
+        // Parse query params from URL
+        if (string.IsNullOrWhiteSpace(_request.Url)) return;
+
+        var questionMarkIndex = _request.Url.IndexOf('?');
+        if (questionMarkIndex < 0) return;
+
+        var queryString = _request.Url[(questionMarkIndex + 1)..];
+        _request.Url = _request.Url[..questionMarkIndex];
+        _request.QueryParams.Clear();
+
         if (_urlField is not null)
         {
             await _urlField.SetText($"{_request.Url}");
         }
-    }
-
-    private async Task OnUrlChanged(string url)
-    {
-        // Parse query params from URL
-        if (string.IsNullOrWhiteSpace(url)) return;
-
-        var questionMarkIndex = url.IndexOf('?');
-        if (questionMarkIndex < 0) return;
-
-        var queryString = url[(questionMarkIndex + 1)..];
-        var baseUrl = url[..questionMarkIndex];
-
-        _request.Url = baseUrl;
-        _request.QueryParams.Clear();
-
-        await CleanUrl();
 
         foreach (var pair in queryString.Split('&', StringSplitOptions.RemoveEmptyEntries))
         {
