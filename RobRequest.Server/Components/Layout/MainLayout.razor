@@ -66,6 +66,8 @@
         await InvokeAsync(StateHasChanged);
     }
 
+    public bool IsDarkMode() => _isDarkMode;
+
     private async Task ToggleDarkMode()
     {
         var settings = await SettingsService.GetSettingsAsync();

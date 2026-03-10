@@ -9,8 +9,10 @@ h1:focus {
     outline: none;
 }
 
-.response-body pre {
-    tab-size: 2;
+#response-body-editor,
+.response-body-editor {
+    height: calc(100vh - 274px);
+    min-height: 200px;
 }
 
 .method-selector .mud-input-slot {
