@@ -1,4 +1,4 @@
-@inject IJSRuntime JSRuntime
+@inject IJSRuntime JsRuntime
 
 <MudPaper Elevation="1" Class="pa-4">
     @if (Response == null && !IsSending)
@@ -231,7 +231,7 @@
     {
         if (Response != null)
         {
-            await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", GetDisplayBody());
+            await JsRuntime.InvokeVoidAsync("navigator.clipboard.writeText", GetDisplayBody());
         }
     }
 
@@ -241,7 +241,7 @@
         {
             var dict = Response.Headers.ToDictionary(h => h.Key, h => h.Value);
             var json = System.Text.Json.JsonSerializer.Serialize(dict, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
-            await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", json);
+            await JsRuntime.InvokeVoidAsync("navigator.clipboard.writeText", json);
         }
     }
 
