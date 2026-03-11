@@ -1,10 +1,17 @@
 <MudChip T="string" Color="@GetStatusColor()" Size="@Size" Variant="@Variant">
     <MudText Typo="Typo.caption" Color="@GetTextColor()">
         <b>
-            @StatusCode
-            @if (ShowStatusText && !string.IsNullOrEmpty(StatusText))
+            @if (StatusCode <= 0)
             {
-                <span>&nbsp;@StatusText</span>
+                <span>ERROR</span>
+            }
+            else
+            {
+                @StatusCode
+                @if (ShowStatusText && !string.IsNullOrEmpty(StatusText))
+                {
+                    <span>&nbsp;@StatusText</span>
+                }
             }
         </b>
     </MudText>
@@ -22,7 +29,7 @@
         >= 200 and < 300 => Color.Success,
         >= 300 and < 400 => Color.Info,
         >= 400 and < 500 => Color.Warning,
-        >= 500 => Color.Error,
+        >= 500 or 0 => Color.Error,
         _ => Color.Default
     };
 

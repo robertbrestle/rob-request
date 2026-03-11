@@ -40,6 +40,6 @@ h1:focus {
 }
 
 .method-selector-dropdown {
-    width: 140px;
+    width: 120px;
     flex-grow: unset;
 }

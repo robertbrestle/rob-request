@@ -43,7 +43,7 @@ public class ApiService(HttpClient httpClient)
             response.StatusCode = (int)httpResponse.StatusCode;
             response.StatusText = httpResponse.ReasonPhrase ?? httpResponse.StatusCode.ToString();
             response.ResponseTimeMs = stopwatch.ElapsedMilliseconds;
-            response.ReceivedAt = DateTime.UtcNow;
+            response.ReceivedAt = DateTime.Now;
 
             // Read response headers
             foreach (var header in httpResponse.Headers)

@@ -4,40 +4,41 @@
 @implements IDisposable
 
 <MudThemeProvider @bind-IsDarkMode="_isDarkMode"/>
-<MudPopoverProvider />
-<MudDialogProvider />
-<MudSnackbarProvider />
+<MudPopoverProvider/>
+<MudDialogProvider/>
+<MudSnackbarProvider/>
 
-<MudLayout>
-    <MudAppBar Elevation="1" Dense="true">
-        <MudIconButton Icon="@Icons.Material.Filled.Menu"
-                       Color="Color.Inherit"
-                       Edge="Edge.Start"
-                       OnClick="DrawerToggle"/>
-        <MudIcon Icon="@Icons.Material.Filled.Api" Class="mr-2"/>
-        <MudText Typo="Typo.h6" Class="mr-4">RobRequest</MudText>
-        <MudSpacer/>
-        <SectionOutlet SectionName="EnvironmentSelector"/>
-        <MudIconButton Icon="@(_isDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
-                       Color="Color.Inherit"
-                       OnClick="ToggleDarkMode"
-                       Class="ml-2"/>
-        <MudIconButton Icon="@Icons.Material.Filled.Settings"
-                       Color="Color.Inherit"
-                       Href="/settings"
-                       Class="ml-1"/>
-    </MudAppBar>
+<CascadingValue Value="this">
+    <MudLayout>
+        <MudAppBar Elevation="1" Dense="true">
+            <MudIconButton Icon="@Icons.Material.Filled.Menu"
+                           Color="Color.Inherit"
+                           Edge="Edge.Start"
+                           OnClick="DrawerToggle"/>
+            <MudIcon Icon="@Icons.Material.Filled.Api" Class="mr-2"/>
+            <MudText Typo="Typo.h6" Class="mr-4">RobRequest</MudText>
+            <MudSpacer/>
+            <SectionOutlet SectionName="EnvironmentSelector"/>
+            <MudIconButton Icon="@(_isDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
+                           Color="Color.Inherit"
+                           OnClick="ToggleDarkMode"
+                           Class="ml-2"/>
+            <MudIconButton Icon="@Icons.Material.Filled.Settings"
+                           Color="Color.Inherit"
+                           Href="/settings"
+                           Class="ml-1"/>
+        </MudAppBar>
 
-    
-    <MudDrawer @bind-Open="_drawerOpen" Elevation="2" ClipMode="DrawerClipMode.Always" Width="320px">
-        <SectionOutlet SectionName="Drawer"/>
-    </MudDrawer>
 
-    <MudMainContent>
-        @Body
-    </MudMainContent>
-</MudLayout>
+        <MudDrawer @bind-Open="_drawerOpen" Elevation="2" ClipMode="DrawerClipMode.Always" Width="320px">
+            <SectionOutlet SectionName="Drawer"/>
+        </MudDrawer>
 
+        <MudMainContent>
+            @Body
+        </MudMainContent>
+    </MudLayout>
+</CascadingValue>
 
 
 @code {
@@ -79,4 +80,5 @@
     {
         SettingsService.OnSettingsChanged -= OnSettingsChanged;
     }
+
 }

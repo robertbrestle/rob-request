@@ -61,7 +61,7 @@ public partial class EnvironmentService
         var index = _environments.FindIndex(e => e.Id == environment.Id);
         if (index >= 0)
         {
-            environment.UpdatedAt = DateTime.UtcNow;
+            environment.UpdatedAt = DateTime.Now;
             _environments[index] = environment;
             OnEnvironmentChanged?.Invoke();
         }
@@ -92,7 +92,7 @@ public partial class EnvironmentService
             env.Variables.Add(new EnvironmentVariable { Key = key, Value = value });
         }
 
-        env.UpdatedAt = DateTime.UtcNow;
+        env.UpdatedAt = DateTime.Now;
         OnEnvironmentChanged?.Invoke();
         return Task.CompletedTask;
     }

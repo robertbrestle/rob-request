@@ -5,12 +5,12 @@ namespace RobRequest.Shared.Models;
 public class HistoryItem
 {
     [Key]
-    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public string Id { get; set; } = Guid.CreateVersion7().ToString();
     public string Method { get; set; } = string.Empty;
     public string Url { get; set; } = string.Empty;
     public int StatusCode { get; set; }
     public long ResponseTimeMs { get; set; }
-    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+    public DateTime Timestamp { get; set; } = DateTime.Now;
     public HttpRequestModel? Request { get; set; }
     public HttpResponseModel? Response { get; set; }
 

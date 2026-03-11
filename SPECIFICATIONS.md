@@ -515,7 +515,7 @@ public class EnvironmentService
 - [X] `RobRequest.Tests` xUnit project setup with bUnit, FluentAssertions, and Moq; references to `RobRequest.Server` and `RobRequest.Shared`
 - [X] MudBlazor integration and theme configuration
 - [X] Basic project structure and folder organization (models and services in `RobRequest.Shared`)
-- [ ] SQLite + EF Core setup with `AppDbContext` in `RobRequest.Shared`; auto-migrate on startup
+- [X] SQLite + EF Core setup with `AppDbContext` in `RobRequest.Shared`; auto-migrate on startup
 - [X] Basic HTTP client wrapper service in `RobRequest.Shared` using `IHttpClientFactory`
 
 #### Sprint 1.2: Basic Request/Response

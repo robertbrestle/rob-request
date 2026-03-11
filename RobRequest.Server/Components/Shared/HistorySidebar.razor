@@ -49,10 +49,7 @@
                                      Style="min-width: 55px; text-align: center;">
                                 @item.Method
                             </MudChip>
-                            @if (item.StatusCode > 0)
-                            {
-                                <HttpStatusChip StatusCode="@item.StatusCode" Variant="Variant.Outlined"/>
-                            }
+                            <HttpStatusChip StatusCode="@item.StatusCode" Variant="Variant.Outlined"/>
                             <MudSpacer />
                             <MudText Typo="Typo.caption" Color="Color.Default">
                                 @item.ResponseTimeMs ms
@@ -62,7 +59,7 @@
                             @TruncateUrl(item.Url)
                         </MudText>
                         <MudText Typo="Typo.caption" Color="Color.Default">
-                            @item.Timestamp.ToLocalTime().ToString("HH:mm:ss")
+                            @item.Timestamp.ToString("HH:mm:ss")
                         </MudText>
                     </MudStack>
                 </MudListItem>

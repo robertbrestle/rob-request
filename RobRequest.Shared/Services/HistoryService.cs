@@ -75,7 +75,7 @@ public class HistoryService
             Url = request.GetFullUrl(),
             StatusCode = response.StatusCode,
             ResponseTimeMs = response.ResponseTimeMs,
-            Timestamp = DateTime.UtcNow,
+            Timestamp = DateTime.Now,
             Request = requestSnapshot,
             Response = responseSnapshot
         };

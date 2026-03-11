@@ -19,7 +19,7 @@ public class HttpRequestModel
     public string ApiKeyValue { get; set; } = string.Empty;
     public ApiKeyLocation ApiKeyLocation { get; set; } = ApiKeyLocation.Header;
     public int TimeoutSeconds { get; set; } = 30;
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
 
     public string GetFullUrl()
     {

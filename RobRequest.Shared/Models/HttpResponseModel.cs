@@ -9,7 +9,7 @@ public class HttpResponseModel
     public string ContentType { get; set; } = string.Empty;
     public long ResponseTimeMs { get; set; }
     public long ResponseSizeBytes { get; set; }
-    public DateTime ReceivedAt { get; set; } = DateTime.UtcNow;
+    public DateTime ReceivedAt { get; set; } = DateTime.Now;
     public string? ErrorMessage { get; set; }
     public bool IsSuccess => StatusCode >= 200 && StatusCode < 300;
 

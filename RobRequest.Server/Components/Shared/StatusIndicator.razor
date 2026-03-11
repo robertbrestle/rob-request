@@ -4,25 +4,30 @@
 
 @if (Response != null)
 {
-    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
-        @if (!string.IsNullOrEmpty(Response.ErrorMessage))
-        {
-            <MudChip T="string" Color="Color.Error" Size="Size.Small" Variant="Variant.Filled">
-                Error
-            </MudChip>
-            <MudText Typo="Typo.body2" Color="Color.Error">@Response.ErrorMessage</MudText>
-        }
-        else
-        {
-            <HttpStatusChip StatusCode="@Response.StatusCode" StatusText="@Response.StatusText"/>
-            <MudChip T="string" Color="Color.Default" Size="Size.Small" Variant="Variant.Outlined">
-                <MudIcon Icon="@Icons.Material.Filled.Timer" Size="Size.Small" Class="mr-1" />
-                @(Response.ResponseTimeMs) ms
-            </MudChip>
-            <MudChip T="string" Color="Color.Default" Size="Size.Small" Variant="Variant.Outlined">
-                <MudIcon Icon="@Icons.Material.Filled.Storage" Size="Size.Small" Class="mr-1" />
-                @Response.FormattedSize
-            </MudChip>
-        }
+    <MudStack Row="true" Justify="Justify.SpaceBetween">
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+            @if (!string.IsNullOrEmpty(Response.ErrorMessage))
+            {
+                <MudChip T="string" Color="Color.Error" Size="Size.Small" Variant="Variant.Filled">
+                    Error
+                </MudChip>
+                <MudText Typo="Typo.body2" Color="Color.Error">@Response.ErrorMessage</MudText>
+            }
+            else
+            {
+                <HttpStatusChip StatusCode="@Response.StatusCode" StatusText="@Response.StatusText"/>
+                <MudChip T="string" Color="Color.Default" Size="Size.Small" Variant="Variant.Outlined">
+                    <MudIcon Icon="@Icons.Material.Filled.Timer" Size="Size.Small" Class="mr-1"/>
+                    @(Response.ResponseTimeMs) ms
+                </MudChip>
+                <MudChip T="string" Color="Color.Default" Size="Size.Small" Variant="Variant.Outlined">
+                    <MudIcon Icon="@Icons.Material.Filled.Storage" Size="Size.Small" Class="mr-1"/>
+                    @Response.FormattedSize
+                </MudChip>
+            }
+        </MudStack>
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+            <MudText Typo="Typo.body2">@Response.ReceivedAt</MudText>
+        </MudStack>
     </MudStack>
 }
