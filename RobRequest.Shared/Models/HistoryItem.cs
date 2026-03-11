@@ -1,7 +1,10 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace RobRequest.Shared.Models;
 
 public class HistoryItem
 {
+    [Key]
     public string Id { get; set; } = Guid.NewGuid().ToString();
     public string Method { get; set; } = string.Empty;
     public string Url { get; set; } = string.Empty;

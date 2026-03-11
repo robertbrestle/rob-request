@@ -304,8 +304,8 @@ The solution uses a **three-project layout**. Because InteractiveServer runs all
 ┌─────────────────────────────────────────────────────────────────┐
 │  Browser                                                        │
 │  ┌───────────────────────────────────────────────────────────┐  │
-│  │  Rendered HTML + SignalR Connection (blazor.web.js)        │  │
-│  │  UI diffs pushed from server; user events sent to server   │  │
+│  │  Rendered HTML + SignalR Connection (blazor.web.js)       │  │
+│  │  UI diffs pushed from server; user events sent to server  │  │
 │  └───────────────────────────────────────────────────────────┘  │
 └──────────────────────────┬──────────────────────────────────────┘
                            │ SignalR (WebSocket)
@@ -317,25 +317,25 @@ The solution uses a **three-project layout**. Because InteractiveServer runs all
 │  │  │RequestPanel│ResponsePanel │ Sidebar  │ Settings     │  │  │
 │  │  └────────────┴──────────────┴──────────┴──────────────┘  │  │
 │  ├───────────────────────────────────────────────────────────┤  │
-│  │  Program.cs / Middleware / Static Assets (wwwroot/)        │  │
+│  │  Program.cs / Middleware / Static Assets (wwwroot/)       │  │
 │  └───────────────────────────────────────────────────────────┘  │
 ├─────────────────────────────────────────────────────────────────┤
 │  RobRequest.Shared (Class Library)                              │
 │  ┌───────────────────────────────────────────────────────────┐  │
 │  │  Service Layer (Scoped — one instance per circuit)        │  │
-│  │  ┌──────────┬─────────────┬─────────────┬─────────────┐  │  │
-│  │  │ApiService│HistorySvc   │CollectionSvc│ EnvironSvc  │  │  │
-│  │  └──────────┴─────────────┴─────────────┴─────────────┘  │  │
+│  │  ┌──────────┬─────────────┬──────────────┬─────────────┐  │  │
+│  │  │ApiService│HistorySvc   │CollectionSvc │ EnvironSvc  │  │  │
+│  │  └──────────┴─────────────┴──────────────┴─────────────┘  │  │
 │  ├───────────────────────────────────────────────────────────┤  │
 │  │  Data Access (EF Core)                                    │  │
-│  │  ┌──────────────┬─────────────────────────────────────┐  │  │
-│  │  │ AppDbContext  │  SQLite (robrequest.db)             │  │  │
-│  │  └──────────────┴─────────────────────────────────────┘  │  │
+│  │  ┌──────────────┬──────────────────────────────────────┐  │  │
+│  │  │ AppDbContext │  SQLite (robrequest.db)              │  │  │
+│  │  └──────────────┴──────────────────────────────────────┘  │  │
 │  ├───────────────────────────────────────────────────────────┤  │
 │  │  Models (shared data types)                               │  │
-│  │  ┌──────────────┬────────────────┬────────────────────┐  │  │
-│  │  │HttpRequestModel│HttpResponseModel│HistoryItem etc │  │  │
-│  │  └──────────────┴────────────────┴────────────────────┘  │  │
+│  │  ┌────────────────┬──────────────────┬─────────────────┐  │  │
+│  │  │HttpRequestModel│HttpResponseModel │HistoryItem etc  │  │  │
+│  │  └────────────────┴──────────────────┴─────────────────┘  │  │
 │  └───────────────────────────────────────────────────────────┘  │
 ├─────────────────────────────────────────────────────────────────┤
 │  External APIs                                                  │
@@ -348,9 +348,9 @@ The solution uses a **three-project layout**. Because InteractiveServer runs all
 │  RobRequest.Tests (xUnit Test Project)                          │
 │  References: RobRequest.Server, RobRequest.Shared               │
 │  ┌───────────────────────────────────────────────────────────┐  │
-│  │  Unit Tests        │ Service logic, models, utilities      │  │
-│  │  Integration Tests │ EF Core (SQLite), HttpClient          │  │
-│  │  Component Tests   │ bUnit (RequestPanel, ResponsePanel…)  │  │
+│  │  Unit Tests        │ Service logic, models, utilities     │  │
+│  │  Integration Tests │ EF Core (SQLite), HttpClient         │  │
+│  │  Component Tests   │ bUnit (RequestPanel, ResponsePanel…) │  │
 │  └───────────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -408,22 +408,22 @@ public class EnvironmentService
 ### Layout Structure
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    Header Bar                                │
+│                    Header Bar                               │
 │  [Logo] [Environment Selector]        [Theme] [Settings]    │
 ├─────────────────────────────────────────────────────────────┤
-│ Sidebar │                Main Content Area                   │
-│ ┌───────┬┤ ┌───────────────────────────────────────────────┐ │
-│ │History││ │              Request Builder                   │ │
-│ │       ││ │ [GET ▼] [https://api.example.com/endpoint] [Send]│ │
-│ │       ││ ├───────────────────────────────────────────────┤ │
-│ │Coll.  ││ │ Params | Headers | Body | Auth | Tests        │ │
+│ Sidebar │                Main Content Area                  │
+│ ┌───────┬┤ ┌──────────────────────────────────────────────┐ │
+│ │History││ │              Request Builder                 │ │
+│ │       ││ │ [GET ▼][https://api.example.com/endpoint][Send]│
+│ │       ││ ├──────────────────────────────────────────────┤ │
+│ │Coll.  ││ │ Params | Headers | Body | Auth | Tests       │ │
 │ │       ││ │ [Tab Content Area]                           │ │
-│ │       ││ ├───────────────────────────────────────────────┤ │
-│ │Env.   ││ │              Response Viewer                  │ │
-│ │       ││ │ Status: 200 OK | Time: 245ms | Size: 1.2KB     │ │
-│ │       ││ │ Body | Headers | Cookies | Test Results       │ │
+│ │       ││ ├──────────────────────────────────────────────┤ │
+│ │Env.   ││ │              Response Viewer                 │ │
+│ │       ││ │ Status: 200 OK | Time: 245ms | Size: 1.2KB   │ │
+│ │       ││ │ Body | Headers | Cookies | Test Results      │ │
 │ │       ││ │ [Response Content Area]                      │ │
-│ └───────┴┤ └───────────────────────────────────────────────┘ │
+│ └───────┴┤ └──────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -511,18 +511,18 @@ public class EnvironmentService
 **Goal**: Basic working API client
 
 #### Sprint 1.1: Core Infrastructure
-- [ ] Project setup with .NET 10 Blazor Web App template using InteractiveServer render mode (three-project layout: `RobRequest.Server`, `RobRequest.Shared`, `RobRequest.Tests`)
-- [ ] `RobRequest.Tests` xUnit project setup with bUnit, FluentAssertions, and Moq; references to `RobRequest.Server` and `RobRequest.Shared`
-- [ ] MudBlazor integration and theme configuration
-- [ ] Basic project structure and folder organization (models and services in `RobRequest.Shared`)
+- [X] Project setup with .NET 10 Blazor Web App template using InteractiveServer render mode (three-project layout: `RobRequest.Server`, `RobRequest.Shared`, `RobRequest.Tests`)
+- [X] `RobRequest.Tests` xUnit project setup with bUnit, FluentAssertions, and Moq; references to `RobRequest.Server` and `RobRequest.Shared`
+- [X] MudBlazor integration and theme configuration
+- [X] Basic project structure and folder organization (models and services in `RobRequest.Shared`)
 - [ ] SQLite + EF Core setup with `AppDbContext` in `RobRequest.Shared`; auto-migrate on startup
-- [ ] Basic HTTP client wrapper service in `RobRequest.Shared` using `IHttpClientFactory`
+- [X] Basic HTTP client wrapper service in `RobRequest.Shared` using `IHttpClientFactory`
 
 #### Sprint 1.2: Basic Request/Response
-- [ ] Request builder UI (method, URL, send button)
-- [ ] Basic response viewer (status, body, headers)
-- [ ] GET and POST request support
-- [ ] JSON response formatting
+- [X] Request builder UI (method, URL, send button)
+- [X] Basic response viewer (status, body, headers)
+- [X] GET and POST request support
+- [X] JSON response formatting
 - [ ] Error handling and user feedback
 
 **Acceptance Criteria**:

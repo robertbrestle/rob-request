@@ -1,7 +1,11 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace RobRequest.Shared.Models;
 
 public class UserSettings
 {
+    [Key]
+    public string Id { get; set; } = "default";
     public bool DarkMode { get; set; } = true;
     public int DefaultTimeoutSeconds { get; set; } = 30;
     public int MaxHistoryItems { get; set; } = 1000;

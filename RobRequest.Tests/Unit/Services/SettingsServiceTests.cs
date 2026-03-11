@@ -1,8 +1,26 @@
 namespace RobRequest.Tests.Unit.Services;
 
-public class SettingsServiceTests
+public class SettingsServiceTests : IDisposable
 {
-    private readonly SettingsService _sut = new();
+    private readonly AppDbContext _db;
+    private readonly SettingsService _sut;
+
+    public SettingsServiceTests()
+    {
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite("DataSource=:memory:")
+            .Options;
+        _db = new AppDbContext(options);
+        _db.Database.OpenConnection();
+        _db.Database.EnsureCreated();
+        _sut = new SettingsService(_db);
+    }
+
+    public void Dispose()
+    {
+        _db.Database.CloseConnection();
+        _db.Dispose();
+    }
 
     [Fact]
     public async Task GetSettingsAsync_ReturnsDefaults()
@@ -42,12 +60,12 @@ public class SettingsServiceTests
     }
 
     [Fact]
-    public void OnSettingsChanged_FiresOnUpdate()
+    public async Task OnSettingsChanged_FiresOnUpdate()
     {
         var fired = false;
         _sut.OnSettingsChanged += () => fired = true;
 
-        _sut.UpdateSettingsAsync(new UserSettings { DarkMode = false });
+        await _sut.UpdateSettingsAsync(new UserSettings { DarkMode = false });
 
         fired.Should().BeTrue();
     }

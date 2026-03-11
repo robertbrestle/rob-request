@@ -1,8 +1,26 @@
 namespace RobRequest.Tests.Unit.Services;
 
-public class HistoryServiceTests
+public class HistoryServiceTests : IDisposable
 {
-    private readonly HistoryService _sut = new();
+    private readonly AppDbContext _db;
+    private readonly HistoryService _sut;
+
+    public HistoryServiceTests()
+    {
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite("DataSource=:memory:")
+            .Options;
+        _db = new AppDbContext(options);
+        _db.Database.OpenConnection();
+        _db.Database.EnsureCreated();
+        _sut = new HistoryService(_db);
+    }
+
+    public void Dispose()
+    {
+        _db.Database.CloseConnection();
+        _db.Dispose();
+    }
 
     [Fact]
     public async Task GetHistoryAsync_ReturnsEmptyByDefault()
@@ -35,6 +53,7 @@ public class HistoryServiceTests
         var response = new HttpResponseModel { StatusCode = 200 };
 
         await _sut.AddToHistoryAsync(request1, response);
+        await Task.Delay(10);
         await _sut.AddToHistoryAsync(request2, response);
 
         var history = await _sut.GetHistoryAsync();
@@ -87,12 +106,12 @@ public class HistoryServiceTests
     }
 
     [Fact]
-    public void OnHistoryChanged_FiresWhenItemAdded()
+    public async Task OnHistoryChanged_FiresWhenItemAdded()
     {
         var fired = false;
         _sut.OnHistoryChanged += () => fired = true;
 
-        _sut.AddToHistoryAsync(
+        await _sut.AddToHistoryAsync(
             new HttpRequestModel { Url = "https://example.com" },
             new HttpResponseModel { StatusCode = 200 });
 
