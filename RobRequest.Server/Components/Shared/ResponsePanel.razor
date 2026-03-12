@@ -1,5 +1,3 @@
-@inject IJSRuntime JsRuntime
-
 <MudPaper Elevation="1" Class="pa-4">
     @if (Response == null && !IsSending)
     {
@@ -131,11 +129,12 @@
                             </div>
                         </MudStack>
                         
-                        <StandaloneCodeEditor @ref="_editor"
-                                              Id="response-body-editor"
-                                              ConstructionOptions="EditorConstructionOptions"
-                                              OnDidInit="OnEditorInit"
-                                              CssClass="response-body-editor" />
+                        <MonacoEditor Id="response-body-editor"
+                                    Value="@GetDisplayBody()"
+                                    Language="@(Response?.ContentType ?? string.Empty)"
+                                    ReadOnly="true"
+                                    IsDarkMode="IsDarkMode"
+                                    CssClass="response-body-editor" />
                     }
                     else
                     {
@@ -159,11 +158,6 @@
     private string _headerSearch = string.Empty;
     private string _headerSortField = "key";
     private bool _headerSortAsc = true;
-    private StandaloneCodeEditor? _editor;
-    private HttpResponseModel? _previousResponse;
-    private bool _editorReady;
-    private bool _pendingUpdate;
-
     private bool IsJsonResponse()
     {
         if (Response == null) return false;
@@ -193,106 +187,9 @@
         return body;
     }
 
-    private async Task ToggleFormatted()
+    private void ToggleFormatted()
     {
         _showFormatted = !_showFormatted;
-        await UpdateEditorContent();
-    }
-
-    protected override void OnParametersSet()
-    {
-        if (Response != _previousResponse)
-        {
-            _previousResponse = Response;
-            _pendingUpdate = true;
-        }
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (_pendingUpdate && _editorReady && _editor != null && Response != null)
-        {
-            _pendingUpdate = false;
-            await UpdateEditorContent();
-        }
-    }
-
-    private async Task OnEditorInit()
-    {
-        _editorReady = true;
-        if (Response != null)
-        {
-            await UpdateEditorContent();
-        }
-    }
-
-    private async Task UpdateEditorContent()
-    {
-        if (_editor == null || Response == null) return;
-
-        var body = GetDisplayBody();
-        var model = await _editor.GetModel();
-        if (model != null)
-        {
-            await model.SetValue(body);
-            var language = GetMonacoLanguage();
-            await BlazorMonaco.Editor.Global.SetModelLanguage(JsRuntime, model, language);
-        }
-    }
-
-    private StandaloneEditorConstructionOptions EditorConstructionOptions(StandaloneCodeEditor editor)
-    {
-        return new StandaloneEditorConstructionOptions
-        {
-            AutomaticLayout = true,
-            Language = GetMonacoLanguage(),
-            Value = GetDisplayBody(),
-            ReadOnly = true,
-            Minimap = new EditorMinimapOptions { Enabled = true },
-            ScrollBeyondLastLine = false,
-            //FontFamily = "'Cascadia Code', 'Fira Code', 'Consolas', monospace",
-            FontFamily = "monospace",
-            FontSize = 13,
-            LineNumbers = "off",
-            RenderLineHighlight = "none",
-            OverviewRulerLanes = 0,
-            Folding = true,
-            WordWrap = "on",
-            Theme = IsDarkMode ? "vs-dark" : "vs-light"
-        };
-    }
-
-    private string GetMonacoLanguage()
-    {
-        if (Response == null) return "plaintext";
-
-        var contentType = Response.ContentType ?? string.Empty;
-
-        if (contentType.Contains("json", StringComparison.OrdinalIgnoreCase))
-            return "json";
-        if (contentType.Contains("xml", StringComparison.OrdinalIgnoreCase))
-            return "xml";
-        if (contentType.Contains("html", StringComparison.OrdinalIgnoreCase))
-            return "html";
-        if (contentType.Contains("javascript", StringComparison.OrdinalIgnoreCase))
-            return "javascript";
-        if (contentType.Contains("css", StringComparison.OrdinalIgnoreCase))
-            return "css";
-        if (contentType.Contains("yaml", StringComparison.OrdinalIgnoreCase) ||
-            contentType.Contains("yml", StringComparison.OrdinalIgnoreCase))
-            return "yaml";
-
-        // Fallback: try to detect from body content
-        if (!string.IsNullOrEmpty(Response.Body))
-        {
-            var trimmed = Response.Body.TrimStart();
-            if (trimmed.StartsWith('{') || trimmed.StartsWith('['))
-                return "json";
-            if (trimmed.StartsWith("<"))
-                return "xml";
-        }
-
-        return "plaintext";
     }
 
     private IEnumerable<HeaderItem> GetFilteredHeaders()
@@ -328,6 +225,8 @@
             _headerSortAsc = true;
         }
     }
+
+    [Inject] private IJSRuntime JsRuntime { get; set; } = default!;
 
     private async Task CopyBody()
     {

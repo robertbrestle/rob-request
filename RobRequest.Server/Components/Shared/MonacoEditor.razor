@@ -1,0 +1,244 @@
+@inject IJSRuntime JsRuntime
+
+<StandaloneCodeEditor @ref="_editor"
+                      Id="@Id"
+                      ConstructionOptions="EditorConstructionOptions"
+                      OnDidInit="OnEditorInit"
+                      OnDidChangeModelContent="OnContentChanged"
+                      CssClass="@CssClass" />
+
+@code {
+    /// <summary>
+    /// Unique HTML id for the editor instance.
+    /// </summary>
+    [Parameter] public string Id { get; set; } = $"code-editor-{Guid.NewGuid():N}";
+
+    /// <summary>
+    /// The text content displayed in the editor.
+    /// </summary>
+    [Parameter] public string Value { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Callback fired when the editor content changes (only relevant when ReadOnly is false).
+    /// </summary>
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+
+    /// <summary>
+    /// Monaco language identifier (e.g. "json", "xml", "html", "plaintext").
+    /// </summary>
+    [Parameter] public string Language { get; set; } = "plaintext";
+
+    /// <summary>
+    /// Whether the editor is read-only.
+    /// </summary>
+    [Parameter] public bool ReadOnly { get; set; } = true;
+
+    /// <summary>
+    /// When true, uses the "vs-dark" theme; otherwise "vs-light".
+    /// </summary>
+    [Parameter] public bool IsDarkMode { get; set; }
+
+    /// <summary>
+    /// CSS class applied to the editor wrapper.
+    /// </summary>
+    [Parameter] public string? CssClass { get; set; }
+
+    /// <summary>
+    /// Whether to show the minimap gutter.
+    /// </summary>
+    [Parameter] public bool ShowMinimap { get; set; } = true;
+
+    /// <summary>
+    /// Whether to show line numbers. Defaults to false.
+    /// </summary>
+    [Parameter] public bool ShowLineNumbers { get; set; } = false;
+
+    /// <summary>
+    /// Whether to enable code folding. Defaults to true.
+    /// </summary>
+    [Parameter] public bool Folding { get; set; } = true;
+
+    /// <summary>
+    /// Word wrap mode. Defaults to "on".
+    /// </summary>
+    [Parameter] public string WordWrap { get; set; } = "on";
+
+    /// <summary>
+    /// Font size in pixels. Defaults to 13.
+    /// </summary>
+    [Parameter] public int FontSize { get; set; } = 13;
+
+    private StandaloneCodeEditor? _editor;
+    private bool _editorReady;
+    private bool _pendingUpdate;
+    private string? _previousValue;
+    private string? _previousLanguage;
+    private string? _previousId;
+    private bool _suppressContentChanged;
+
+    /// <summary>
+    /// Resolves the Language parameter into a valid Monaco language identifier.
+    /// Accepts Monaco language IDs ("json", "xml"), content-type strings
+    /// ("application/json", "text/html"), or body-type shorthand ("text").
+    /// Falls back to content sniffing from Value when the language is ambiguous.
+    /// </summary>
+    private string ResolveLanguage()
+    {
+        var lang = (Language ?? string.Empty).Trim();
+
+        if (string.IsNullOrEmpty(lang) || lang == "none")
+            return DetectFromContent();
+
+        // Already a known Monaco language identifier
+        switch (lang.ToLowerInvariant())
+        {
+            case "json":
+            case "xml":
+            case "html":
+            case "javascript":
+            case "css":
+            case "yaml":
+            case "plaintext":
+                return lang.ToLowerInvariant();
+        }
+
+        // Body-type shorthand (from RequestPanel)
+        if (lang.Equals("text", StringComparison.OrdinalIgnoreCase))
+            return "plaintext";
+        if (lang.Equals("form-data", StringComparison.OrdinalIgnoreCase))
+            return "plaintext";
+
+        // Content-type string parsing (from ResponsePanel)
+        if (lang.Contains("json", StringComparison.OrdinalIgnoreCase))
+            return "json";
+        if (lang.Contains("xml", StringComparison.OrdinalIgnoreCase))
+            return "xml";
+        if (lang.Contains("html", StringComparison.OrdinalIgnoreCase))
+            return "html";
+        if (lang.Contains("javascript", StringComparison.OrdinalIgnoreCase))
+            return "javascript";
+        if (lang.Contains("css", StringComparison.OrdinalIgnoreCase))
+            return "css";
+        if (lang.Contains("yaml", StringComparison.OrdinalIgnoreCase) ||
+            lang.Contains("yml", StringComparison.OrdinalIgnoreCase))
+            return "yaml";
+
+        // Fallback: try to detect from body content
+        return DetectFromContent();
+    }
+
+    /// <summary>
+    /// Attempts to detect the language from the editor's current Value content.
+    /// </summary>
+    private string DetectFromContent()
+    {
+        if (!string.IsNullOrEmpty(Value))
+        {
+            var trimmed = Value.TrimStart();
+            if (trimmed.StartsWith('{') || trimmed.StartsWith('['))
+                return "json";
+            if (trimmed.StartsWith('<'))
+                return "xml";
+        }
+
+        return "plaintext";
+    }
+
+    protected override void OnParametersSet()
+    {
+        // If the Id changed, a new editor will be created in the DOM;
+        // reset ready state so we wait for OnEditorInit before updating.
+        if (Id != _previousId)
+        {
+            _previousId = Id;
+            _editorReady = false;
+            _pendingUpdate = false;
+        }
+
+        if (Value != _previousValue || Language != _previousLanguage)
+        {
+            _previousValue = Value;
+            _previousLanguage = Language;
+            _pendingUpdate = true;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_pendingUpdate && _editorReady && _editor != null)
+        {
+            _pendingUpdate = false;
+            await UpdateEditorContent();
+        }
+    }
+
+    private async Task OnEditorInit()
+    {
+        _editorReady = true;
+        if (!string.IsNullOrEmpty(Value))
+        {
+            await UpdateEditorContent();
+        }
+    }
+
+    private async Task UpdateEditorContent()
+    {
+        if (_editor == null || !_editorReady) return;
+
+        _suppressContentChanged = true;
+        try
+        {
+            var model = await _editor.GetModel();
+            if (model != null)
+            {
+                await model.SetValue(Value ?? string.Empty);
+                await BlazorMonaco.Editor.Global.SetModelLanguage(JsRuntime, model, ResolveLanguage());
+            }
+        }
+        catch (Microsoft.JSInterop.JSException)
+        {
+            // Editor not yet registered in JS — will retry on next render cycle
+            _pendingUpdate = true;
+        }
+        finally
+        {
+            _suppressContentChanged = false;
+        }
+    }
+
+    private async Task OnContentChanged(ModelContentChangedEvent e)
+    {
+        if (_suppressContentChanged || ReadOnly || _editor == null) return;
+
+        var currentValue = await _editor.GetValue();
+        if (currentValue != Value)
+        {
+            // Update tracked value so the parent's round-trip of the same value
+            // via parameter binding doesn't trigger UpdateEditorContent (which
+            // would call SetValue and reset the cursor position).
+            _previousValue = currentValue;
+            await ValueChanged.InvokeAsync(currentValue);
+        }
+    }
+
+    private StandaloneEditorConstructionOptions EditorConstructionOptions(StandaloneCodeEditor editor)
+    {
+        return new StandaloneEditorConstructionOptions
+        {
+            AutomaticLayout = true,
+            Language = ResolveLanguage(),
+            Value = Value ?? string.Empty,
+            ReadOnly = ReadOnly,
+            Minimap = new EditorMinimapOptions { Enabled = ShowMinimap },
+            ScrollBeyondLastLine = false,
+            FontFamily = "monospace",
+            FontSize = FontSize,
+            LineNumbers = ShowLineNumbers ? "on" : "off",
+            RenderLineHighlight = ReadOnly ? "none" : "line",
+            OverviewRulerLanes = 0,
+            Folding = Folding,
+            WordWrap = WordWrap,
+            Theme = IsDarkMode ? "vs-dark" : "vs-light"
+        };
+    }
+}

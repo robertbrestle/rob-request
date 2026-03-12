@@ -9,7 +9,9 @@
             @if (!string.IsNullOrEmpty(Response.ErrorMessage))
             {
                 <MudChip T="string" Color="Color.Error" Size="Size.Small" Variant="Variant.Filled">
-                    Error
+                    <MudText Typo="Typo.caption" Color="Color.Dark">
+                        <b>Error</b>
+                    </MudText>
                 </MudChip>
                 <MudText Typo="Typo.body2" Color="Color.Error">@Response.ErrorMessage</MudText>
             }

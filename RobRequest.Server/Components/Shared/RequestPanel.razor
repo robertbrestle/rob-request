@@ -5,7 +5,7 @@
 <MudPaper Elevation="1" Class="pa-4 mb-4">
     <!-- Request URL Bar -->
     <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mb-3">
-        <MethodSelector @bind-Value="_request.Method" />
+        <MethodSelector @bind-Value="_request.Method" IsDarkMode="IsDarkMode"/>
         <MudTextField T="string"
                       @ref="_urlField"
                       @bind-Value="_request.Url"
@@ -114,12 +114,14 @@
                                 Format JSON
                             </MudButton>
                         </MudStack>
-                        <MudTextField T="string"
-                                      @bind-Value="_request.Body"
-                                      Placeholder="@GetBodyPlaceholder()"
-                                      Variant="Variant.Outlined"
-                                      Lines="12"
-                                      Style="font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace; font-size: 0.875rem;" />
+                        <MonacoEditor Id="request-body-editor-json"
+                                    Value="@_request.Body"
+                                    ValueChanged="OnBodyChanged"
+                                    Language="json"
+                                    ReadOnly="false"
+                                    IsDarkMode="IsDarkMode"
+                                    ShowMinimap="false"
+                                    CssClass="request-body-editor" />
                     }
                     else if (_request.BodyType == "form-data")
                     {
@@ -137,12 +139,14 @@
                     }
                     else
                     {
-                        <MudTextField T="string"
-                                      @bind-Value="_request.Body"
-                                      Placeholder="@GetBodyPlaceholder()"
-                                      Variant="Variant.Outlined"
-                                      Lines="12"
-                                      Style="font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace; font-size: 0.875rem;" />
+                        <MonacoEditor Id="@($"request-body-editor-{_request.BodyType}")"
+                                    Value="@_request.Body"
+                                    ValueChanged="OnBodyChanged"
+                                    Language="@_request.BodyType"
+                                    ReadOnly="false"
+                                    IsDarkMode="IsDarkMode"
+                                    ShowMinimap="false"
+                                    CssClass="request-body-editor" />
                     }
                 }
             </MudStack>
@@ -211,6 +215,7 @@
 @code {
     [Parameter] public EventCallback<HttpResponseModel> OnResponseReceived { get; set; }
     [Parameter] public EventCallback<bool> OnSendingChanged { get; set; }
+    [Parameter] public bool IsDarkMode { get; set; }
 
     private HttpRequestModel _request = new();
     private bool _isSending;
@@ -405,11 +410,9 @@
             ? count.ToString()
             : null;
 
-    private string GetBodyPlaceholder() => _request.BodyType switch
+    private void OnBodyChanged(string value)
     {
-        "json" => "{\n  \"key\": \"value\"\n}",
-        "xml" => "<root>\n  <element>value</element>\n</root>",
-        "text" => "Enter raw text...",
-        _ => ""
-    };
+        _request.Body = value;
+    }
+
 }

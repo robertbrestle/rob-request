@@ -19,6 +19,7 @@
 @code {
     [Parameter] public string Value { get; set; } = "GET";
     [Parameter] public EventCallback<string> ValueChanged { get; set; }
+    [Parameter] public bool IsDarkMode { get; set; }
 
     private static readonly string[] StandardMethods = { "GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS" };
 
@@ -29,8 +30,8 @@
         "PUT" => Color.Info,
         "PATCH" => Color.Secondary,
         "DELETE" => Color.Error,
-        "HEAD" => Color.Dark,
-        "OPTIONS" => Color.Dark,
+        "HEAD" => IsDarkMode ? Color.Default : Color.Dark,
+        "OPTIONS" => IsDarkMode ? Color.Default : Color.Dark,
         _ => Color.Default
     };
 

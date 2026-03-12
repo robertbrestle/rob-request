@@ -523,7 +523,7 @@ public class EnvironmentService
 - [X] Basic response viewer (status, body, headers)
 - [X] GET and POST request support
 - [X] JSON response formatting
-- [ ] Error handling and user feedback
+- [X] Error handling and user feedback
 
 **Acceptance Criteria**:
 - Can send GET requests and view responses
@@ -535,8 +535,8 @@ public class EnvironmentService
 **Goal**: Complete request building capabilities
 
 #### Sprint 2.1: Request Enhancement
-- [ ] All HTTP methods (PUT, PATCH, DELETE, HEAD, OPTIONS)
-- [ ] Query parameters management
+- [X] All HTTP methods (PUT, PATCH, DELETE, HEAD, OPTIONS)
+- [X] Query parameters management
 - [ ] Custom headers management
 - [ ] Form data support
 - [ ] Raw text body support

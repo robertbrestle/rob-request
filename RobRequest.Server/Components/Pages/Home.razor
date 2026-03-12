@@ -10,7 +10,8 @@
     <MudItem lg="6" md="12">
         <RequestPanel @ref="_requestPanel"
                       OnResponseReceived="OnResponseReceived"
-                      OnSendingChanged="OnSendingChanged"/>
+                      OnSendingChanged="OnSendingChanged"
+                      IsDarkMode="@Layout.IsDarkMode()"/>
     </MudItem>
     <MudItem lg="6" md="12">
         <ResponsePanel Response="_response" IsSending="_isSending"

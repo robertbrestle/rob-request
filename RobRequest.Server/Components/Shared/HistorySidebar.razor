@@ -42,15 +42,9 @@
                 <MudListItem T="string" OnClick="@(() => OnRequestSelected.InvokeAsync(item))" Class="history-item">
                     <MudStack Spacing="0">
                         <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                            <MudChip T="string"
-                                     Color="@GetMethodColor(item.Method)"
-                                     Size="Size.Small"
-                                     Variant="Variant.Filled"
-                                     Style="min-width: 55px; text-align: center;">
-                                @item.Method
-                            </MudChip>
+                            <HttpMethodChip Method="@item.Method" IsError="@(item.StatusCode == 0)"/>
                             <HttpStatusChip StatusCode="@item.StatusCode" Variant="Variant.Outlined"/>
-                            <MudSpacer />
+                            <MudSpacer/>
                             <MudText Typo="Typo.caption" Color="Color.Default">
                                 @item.ResponseTimeMs ms
                             </MudText>
@@ -119,25 +113,6 @@
             return url.Length > 50 ? url[..47] + "..." : url;
         }
     }
-
-    private Color GetMethodColor(string method) => method switch
-    {
-        "GET" => Color.Success,
-        "POST" => Color.Warning,
-        "PUT" => Color.Info,
-        "PATCH" => Color.Secondary,
-        "DELETE" => Color.Error,
-        _ => Color.Default
-    };
-
-    private Color GetStatusColor(int statusCode) => statusCode switch
-    {
-        >= 200 and < 300 => Color.Success,
-        >= 300 and < 400 => Color.Info,
-        >= 400 and < 500 => Color.Warning,
-        >= 500 => Color.Error,
-        _ => Color.Default
-    };
 
     public void Dispose()
     {
