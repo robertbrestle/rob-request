@@ -17,6 +17,7 @@
 </MudSelect>
 
 @code {
+
     [Parameter] public string Value { get; set; } = "GET";
     [Parameter] public EventCallback<string> ValueChanged { get; set; }
     [Parameter] public bool IsDarkMode { get; set; }
@@ -43,4 +44,5 @@
             await ValueChanged.InvokeAsync(method);
         }
     }
+
 }

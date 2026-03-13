@@ -1,7 +1,6 @@
 @page "/"
 @rendermode InteractiveServer
 @inject SettingsService SettingsService
-@using Microsoft.AspNetCore.Components.Sections
 @implements IDisposable
 
 <PageTitle>RobRequest - API Client</PageTitle>
@@ -10,12 +9,10 @@
     <MudItem lg="6" md="12">
         <RequestPanel @ref="_requestPanel"
                       OnResponseReceived="OnResponseReceived"
-                      OnSendingChanged="OnSendingChanged"
-                      IsDarkMode="@Layout.IsDarkMode()"/>
+                      OnSendingChanged="OnSendingChanged"/>
     </MudItem>
     <MudItem lg="6" md="12">
-        <ResponsePanel Response="_response" IsSending="_isSending"
-                       IsDarkMode="@Layout.IsDarkMode()"/>
+        <ResponsePanel Response="_response" IsSending="_isSending"/>
     </MudItem>
 </MudGrid>
 
@@ -34,7 +31,6 @@
     private RequestPanel? _requestPanel;
     private HttpResponseModel? _response;
     private bool _isSending;
-
 
     protected override async Task OnInitializedAsync()
     {

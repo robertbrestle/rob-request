@@ -106,9 +106,11 @@ public class HistoryService
 
     public async Task<IReadOnlyList<HistoryItem>> SearchHistoryAsync(string query)
     {
+        query = query.ToLower();
         return await _db.HistoryItems
-            .Where(h => h.Url.Contains(query) ||
-                        h.Method.Contains(query))
+            .Where(h => h.Url.ToLower().Contains(query) ||
+                        h.Method.ToLower().Contains(query) ||
+                        h.StatusCode.ToString().Contains(query))
             .OrderByDescending(h => h.Timestamp)
             .AsNoTracking()
             .ToListAsync();

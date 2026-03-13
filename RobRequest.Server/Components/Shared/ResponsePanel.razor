@@ -114,27 +114,14 @@
                                     </MudStack>
                                 }
                             </MudStack>
-                            <div>
-                                @* TODO: implement
-                                <MudTextField T="string"
-                                              @bind-Value="_searchText"
-                                              Placeholder="Search response..."
-                                              Variant="Variant.Outlined"
-                                              Margin="Margin.Dense"
-                                              Adornment="Adornment.Start"
-                                              AdornmentIcon="@Icons.Material.Filled.Search"
-                                              Style="max-width: 250px;"
-                                              Immediate="true"/>
-                                *@
-                            </div>
                         </MudStack>
                         
                         <MonacoEditor Id="response-body-editor"
                                     Value="@GetDisplayBody()"
                                     Language="@(Response?.ContentType ?? string.Empty)"
                                     ReadOnly="true"
-                                    IsDarkMode="IsDarkMode"
-                                    CssClass="response-body-editor" />
+                                    IsDarkMode="Layout.IsDarkMode()"
+                                    CssClass="response-body-editor"/>
                     }
                     else
                     {
@@ -149,12 +136,12 @@
 </MudPaper>
 
 @code {
+
     [Parameter] public HttpResponseModel? Response { get; set; }
     [Parameter] public bool IsSending { get; set; }
-    [Parameter] public bool IsDarkMode { get; set; }
+    [CascadingParameter] public MainLayout Layout { get; set; }
 
     private bool _showFormatted = true;
-    private string _searchText = string.Empty;
     private string _headerSearch = string.Empty;
     private string _headerSortField = "key";
     private bool _headerSortAsc = true;

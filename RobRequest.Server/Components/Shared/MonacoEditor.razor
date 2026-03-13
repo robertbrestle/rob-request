@@ -5,68 +5,81 @@
                       ConstructionOptions="EditorConstructionOptions"
                       OnDidInit="OnEditorInit"
                       OnDidChangeModelContent="OnContentChanged"
-                      CssClass="@CssClass" />
+                      CssClass="@CssClass"/>
 
 @code {
+
     /// <summary>
     /// Unique HTML id for the editor instance.
     /// </summary>
-    [Parameter] public string Id { get; set; } = $"code-editor-{Guid.NewGuid():N}";
+    [Parameter]
+    public string Id { get; set; } = $"code-editor-{Guid.NewGuid():N}";
 
     /// <summary>
     /// The text content displayed in the editor.
     /// </summary>
-    [Parameter] public string Value { get; set; } = string.Empty;
+    [Parameter]
+    public string Value { get; set; } = string.Empty;
 
     /// <summary>
     /// Callback fired when the editor content changes (only relevant when ReadOnly is false).
     /// </summary>
-    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+    [Parameter]
+    public EventCallback<string> ValueChanged { get; set; }
 
     /// <summary>
     /// Monaco language identifier (e.g. "json", "xml", "html", "plaintext").
     /// </summary>
-    [Parameter] public string Language { get; set; } = "plaintext";
+    [Parameter]
+    public string Language { get; set; } = "plaintext";
 
     /// <summary>
     /// Whether the editor is read-only.
     /// </summary>
-    [Parameter] public bool ReadOnly { get; set; } = true;
+    [Parameter]
+    public bool ReadOnly { get; set; } = true;
 
     /// <summary>
     /// When true, uses the "vs-dark" theme; otherwise "vs-light".
     /// </summary>
-    [Parameter] public bool IsDarkMode { get; set; }
+    [Parameter]
+    public bool IsDarkMode { get; set; }
 
     /// <summary>
     /// CSS class applied to the editor wrapper.
     /// </summary>
-    [Parameter] public string? CssClass { get; set; }
+    [Parameter]
+    public string? CssClass { get; set; }
 
     /// <summary>
     /// Whether to show the minimap gutter.
     /// </summary>
-    [Parameter] public bool ShowMinimap { get; set; } = true;
+    [Parameter]
+    public bool ShowMinimap { get; set; } = true;
 
     /// <summary>
     /// Whether to show line numbers. Defaults to false.
     /// </summary>
-    [Parameter] public bool ShowLineNumbers { get; set; } = false;
+    [Parameter]
+    public bool ShowLineNumbers { get; set; } = false;
 
     /// <summary>
     /// Whether to enable code folding. Defaults to true.
     /// </summary>
-    [Parameter] public bool Folding { get; set; } = true;
+    [Parameter]
+    public bool Folding { get; set; } = true;
 
     /// <summary>
     /// Word wrap mode. Defaults to "on".
     /// </summary>
-    [Parameter] public string WordWrap { get; set; } = "on";
+    [Parameter]
+    public string WordWrap { get; set; } = "on";
 
     /// <summary>
     /// Font size in pixels. Defaults to 13.
     /// </summary>
-    [Parameter] public int FontSize { get; set; } = 13;
+    [Parameter]
+    public int FontSize { get; set; } = 13;
 
     private StandaloneCodeEditor? _editor;
     private bool _editorReady;
@@ -241,4 +254,5 @@
             Theme = IsDarkMode ? "vs-dark" : "vs-light"
         };
     }
+
 }

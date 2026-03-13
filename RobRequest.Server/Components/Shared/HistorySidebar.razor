@@ -13,18 +13,18 @@
                   Clearable="true"
                   Immediate="true"
                   DebounceInterval="300"
-                  OnDebounceIntervalElapsed="SearchHistory" />
+                  OnDebounceIntervalElapsed="SearchHistory"/>
 
     <!-- History List -->
     <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-1">
         <MudText Typo="Typo.subtitle2"><b>History</b></MudText>
-        <MudSpacer />
+        <MudSpacer/>
         @if (_history.Count > 0)
         {
             <MudIconButton Icon="@Icons.Material.Filled.DeleteSweep"
                            Size="Size.Small"
                            Color="Color.Error"
-                           OnClick="ClearHistory" />
+                           OnClick="ClearHistory"/>
         }
     </MudStack>
 
@@ -36,7 +36,8 @@
     }
     else
     {
-        <MudList T="string" Dense="true" Class="history-list" Style="max-height: calc(100vh - 250px); overflow-y: auto;">
+        <MudList T="string" Dense="true" Class="history-list"
+                 Style="max-height: calc(100vh - 250px); overflow-y: auto;">
             @foreach (var item in _history)
             {
                 <MudListItem T="string" OnClick="@(() => OnRequestSelected.InvokeAsync(item))" Class="history-item">
@@ -49,7 +50,8 @@
                                 @item.ResponseTimeMs ms
                             </MudText>
                         </MudStack>
-                        <MudText Typo="Typo.caption" Style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 250px;">
+                        <MudText Typo="Typo.caption"
+                                 Style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 250px;">
                             @TruncateUrl(item.Url)
                         </MudText>
                         <MudText Typo="Typo.caption" Color="Color.Default">
@@ -63,6 +65,7 @@
 </MudStack>
 
 @code {
+
     [Parameter] public EventCallback<HistoryItem> OnRequestSelected { get; set; }
 
     private IReadOnlyList<HistoryItem> _history = Array.Empty<HistoryItem>();
@@ -118,4 +121,5 @@
     {
         HistoryService.OnHistoryChanged -= OnHistoryChanged;
     }
+
 }

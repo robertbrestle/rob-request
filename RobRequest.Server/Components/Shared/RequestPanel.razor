@@ -5,7 +5,7 @@
 <MudPaper Elevation="1" Class="pa-4 mb-4">
     <!-- Request URL Bar -->
     <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mb-3">
-        <MethodSelector @bind-Value="_request.Method" IsDarkMode="IsDarkMode"/>
+        <MethodSelector @bind-Value="_request.Method" IsDarkMode="Layout.IsDarkMode()"/>
         <MudTextField T="string"
                       @ref="_urlField"
                       @bind-Value="_request.Url"
@@ -119,7 +119,7 @@
                                     ValueChanged="OnBodyChanged"
                                     Language="json"
                                     ReadOnly="false"
-                                    IsDarkMode="IsDarkMode"
+                                    IsDarkMode="Layout.IsDarkMode()"
                                     ShowMinimap="false"
                                     CssClass="request-body-editor" />
                     }
@@ -144,7 +144,7 @@
                                     ValueChanged="OnBodyChanged"
                                     Language="@_request.BodyType"
                                     ReadOnly="false"
-                                    IsDarkMode="IsDarkMode"
+                                    IsDarkMode="Layout.IsDarkMode()"
                                     ShowMinimap="false"
                                     CssClass="request-body-editor" />
                     }
@@ -213,9 +213,10 @@
 </MudPaper>
 
 @code {
+
     [Parameter] public EventCallback<HttpResponseModel> OnResponseReceived { get; set; }
     [Parameter] public EventCallback<bool> OnSendingChanged { get; set; }
-    [Parameter] public bool IsDarkMode { get; set; }
+    [CascadingParameter] public MainLayout Layout { get; set; }
 
     private HttpRequestModel _request = new();
     private bool _isSending;
