@@ -1,0 +1,234 @@
+@inject CollectionService CollectionService
+@inject IDialogService DialogService
+@implements IDisposable
+
+<MudStack Spacing="2" Class="pa-2">
+    <!-- Search -->
+    <MudTextField T="string"
+                  @bind-Value="_searchQuery"
+                  Placeholder="Search collections..."
+                  Variant="Variant.Outlined"
+                  Margin="Margin.Dense"
+                  Adornment="Adornment.Start"
+                  AdornmentIcon="@Icons.Material.Filled.Search"
+                  Clearable="true"
+                  Immediate="true"
+                  DebounceInterval="300"
+                  OnDebounceIntervalElapsed="SearchCollections"/>
+
+    <!-- Header -->
+    <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-1">
+        <MudText Typo="Typo.subtitle2"><b>Collections</b></MudText>
+        <MudSpacer/>
+        <MudIconButton Icon="@Icons.Material.Filled.CreateNewFolder"
+                       Size="Size.Small"
+                       Color="Color.Primary"
+                       OnClick="CreateRootCollection"
+                       Title="New Collection"/>
+    </MudStack>
+
+    @if (_collections.Count == 0)
+    {
+        <MudText Typo="Typo.body2" Color="Color.Default" Align="Align.Center" Class="pa-4">
+            No collections yet
+        </MudText>
+    }
+    else
+    {
+        <MudStack Spacing="0" Style="max-height: calc(100vh - 250px); overflow-y: auto;">
+            @foreach (var collection in _collections)
+            {
+                @CollectionNode(collection, 0)
+            }
+        </MudStack>
+    }
+</MudStack>
+
+@code {
+
+    [Parameter] public EventCallback<CollectionRequestModel> OnRequestSelected { get; set; }
+
+    private List<CollectionModel> _collections = new();
+    private string _searchQuery = string.Empty;
+    private HashSet<string> _expandedCollections = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        CollectionService.OnCollectionsChanged += OnCollectionsChanged;
+        await LoadCollections();
+    }
+
+    private async void OnCollectionsChanged()
+    {
+        await LoadCollections();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task LoadCollections()
+    {
+        _collections = string.IsNullOrWhiteSpace(_searchQuery)
+            ? await CollectionService.GetCollectionTreeAsync()
+            : await CollectionService.SearchCollectionsAsync(_searchQuery);
+    }
+
+    private async Task SearchCollections(string query)
+    {
+        _searchQuery = query;
+        await LoadCollections();
+    }
+
+    private void ToggleExpanded(string collectionId)
+    {
+        if (!_expandedCollections.Remove(collectionId))
+        {
+            _expandedCollections.Add(collectionId);
+        }
+    }
+
+    private bool IsExpanded(string collectionId) => _expandedCollections.Contains(collectionId);
+
+    private async Task CreateRootCollection()
+    {
+        var name = await PromptForName("New Collection", "Collection name");
+        if (!string.IsNullOrWhiteSpace(name))
+        {
+            await CollectionService.CreateCollectionAsync(name);
+        }
+    }
+
+    private async Task CreateSubFolder(string parentId)
+    {
+        var name = await PromptForName("New Folder", "Folder name");
+        if (!string.IsNullOrWhiteSpace(name))
+        {
+            await CollectionService.CreateCollectionAsync(name, parentId);
+            _expandedCollections.Add(parentId);
+        }
+    }
+
+    private async Task RenameCollection(CollectionModel collection)
+    {
+        var name = await PromptForName("Rename", "New name", collection.Name);
+        if (!string.IsNullOrWhiteSpace(name))
+        {
+            collection.Name = name;
+            await CollectionService.UpdateCollectionAsync(collection);
+        }
+    }
+
+    private async Task DeleteCollection(CollectionModel collection)
+    {
+        var result = await DialogService.ShowMessageBox(
+            "Delete Collection",
+            $"Are you sure you want to delete \"{collection.Name}\" and all its contents?",
+            yesText: "Delete", cancelText: "Cancel");
+
+        if (result == true)
+        {
+            await CollectionService.DeleteCollectionAsync(collection.Id);
+        }
+    }
+
+    private async Task DeleteRequest(CollectionRequestModel request)
+    {
+        var result = await DialogService.ShowMessageBox(
+            "Delete Request",
+            $"Are you sure you want to delete \"{request.Name}\"?",
+            yesText: "Delete", cancelText: "Cancel");
+
+        if (result == true)
+        {
+            await CollectionService.DeleteCollectionRequestAsync(request.Id);
+        }
+    }
+
+    private async Task<string?> PromptForName(string title, string label, string? defaultValue = null)
+    {
+        var parameters = new DialogParameters<NameInputDialog>
+        {
+            { x => x.Label, label },
+            { x => x.Value, defaultValue ?? string.Empty }
+        };
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<NameInputDialog>(title, parameters, options);
+        var result = await dialog.Result;
+        return result?.Canceled == false ? result.Data as string : null;
+    }
+
+    private RenderFragment CollectionNode(CollectionModel collection, int depth) => __builder =>
+    {
+        var isExpanded = IsExpanded(collection.Id);
+        var hasChildren = collection.Children.Count > 0 || collection.Requests.Count > 0;
+
+        <MudStack Spacing="0" Style="@($"padding-left: {depth * 16}px")">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Class="collection-node pa-1"
+                      Style="cursor: pointer; border-radius: 4px;"
+                      @onclick="() => ToggleExpanded(collection.Id)">
+                @if (hasChildren)
+                {
+                    <MudIcon Icon="@(isExpanded ? Icons.Material.Filled.ExpandMore : Icons.Material.Filled.ChevronRight)"
+                             Size="Size.Small"/>
+                }
+                else
+                {
+                    <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Size="Size.Small"
+                             Style="visibility: hidden;"/>
+                }
+                <MudIcon Icon="@(isExpanded ? Icons.Material.Filled.FolderOpen : Icons.Material.Filled.Folder)"
+                         Size="Size.Small" Color="Color.Warning"/>
+                <MudText Typo="Typo.body2"
+                         Style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">
+                    @collection.Name
+                </MudText>
+                <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small" Dense="true"
+                         AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                    <MudMenuItem Icon="@Icons.Material.Filled.CreateNewFolder"
+                                 OnClick="() => CreateSubFolder(collection.Id)">
+                        New Folder
+                    </MudMenuItem>
+                    <MudMenuItem Icon="@Icons.Material.Filled.Edit"
+                                 OnClick="() => RenameCollection(collection)">
+                        Rename
+                    </MudMenuItem>
+                    <MudMenuItem Icon="@Icons.Material.Filled.Delete" IconColor="Color.Error"
+                                 OnClick="() => DeleteCollection(collection)">
+                        Delete
+                    </MudMenuItem>
+                </MudMenu>
+            </MudStack>
+
+            @if (isExpanded)
+            {
+                @foreach (var child in collection.Children)
+                {
+                    @CollectionNode(child, depth + 1)
+                }
+
+                @foreach (var request in collection.Requests)
+                {
+                    <MudStack Row="true" AlignItems="AlignItems.Center"
+                              Class="request-node pa-1"
+                              Style="@($"padding-left: {(depth + 1) * 16}px; cursor: pointer; border-radius: 4px;")"
+                              @onclick="() => OnRequestSelected.InvokeAsync(request)">
+                        <HttpMethodChip Method="@request.Request.Method"/>
+                        <MudText Typo="Typo.body2"
+                                 Style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">
+                            @request.Name
+                        </MudText>
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                       Size="Size.Small"
+                                       Color="Color.Error"
+                                       OnClick="() => DeleteRequest(request)"
+                                       OnClickStopPropagation="true"/>
+                    </MudStack>
+                }
+            }
+        </MudStack>
+    };
+
+    public void Dispose()
+    {
+        CollectionService.OnCollectionsChanged -= OnCollectionsChanged;
+    }
+
+}

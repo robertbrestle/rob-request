@@ -1,0 +1,147 @@
+@inject CollectionService CollectionService
+
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="3">
+            <MudTextField T="string"
+                          @bind-Value="_requestName"
+                          Label="Request Name"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          AutoFocus="true"
+                          Placeholder="e.g. Get Users"/>
+
+            <MudText Typo="Typo.subtitle2"><b>Save to:</b></MudText>
+
+            @if (_collections.Count == 0)
+            {
+                <MudText Typo="Typo.body2" Color="Color.Default">
+                    No collections yet. Create one first.
+                </MudText>
+            }
+            else
+            {
+                <MudStack Spacing="0" Style="max-height: 300px; overflow-y: auto; border: 1px solid var(--mud-palette-lines-default); border-radius: 4px; padding: 4px;">
+                    @foreach (var collection in _collections)
+                    {
+                        @CollectionOption(collection, 0)
+                    }
+                </MudStack>
+            }
+
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                <MudTextField T="string"
+                              @bind-Value="_newCollectionName"
+                              Placeholder="New collection name..."
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense"
+                              Style="flex: 1;"/>
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Primary"
+                           Size="Size.Small"
+                           OnClick="CreateNewCollection"
+                           Disabled="string.IsNullOrWhiteSpace(_newCollectionName)">
+                    Create
+                </MudButton>
+            </MudStack>
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary"
+                   Variant="Variant.Filled"
+                   OnClick="Submit"
+                   Disabled="string.IsNullOrWhiteSpace(_requestName) || string.IsNullOrWhiteSpace(_selectedCollectionId)">
+            Save
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter] public HttpRequestModel? Request { get; set; }
+
+    private List<CollectionModel> _collections = new();
+    private string _requestName = string.Empty;
+    private string? _selectedCollectionId;
+    private string _newCollectionName = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _collections = await CollectionService.GetCollectionTreeAsync();
+
+        if (Request != null && !string.IsNullOrWhiteSpace(Request.Url))
+        {
+            try
+            {
+                var uri = new Uri(Request.Url);
+                _requestName = $"{Request.Method} {uri.AbsolutePath}";
+            }
+            catch
+            {
+                _requestName = $"{Request.Method} {Request.Url}";
+            }
+        }
+    }
+
+    private async Task CreateNewCollection()
+    {
+        if (string.IsNullOrWhiteSpace(_newCollectionName)) return;
+
+        var created = await CollectionService.CreateCollectionAsync(_newCollectionName);
+        _selectedCollectionId = created.Id;
+        _newCollectionName = string.Empty;
+        _collections = await CollectionService.GetCollectionTreeAsync();
+    }
+
+    private void SelectCollection(string collectionId)
+    {
+        _selectedCollectionId = collectionId;
+    }
+
+    private void Submit()
+    {
+        if (string.IsNullOrWhiteSpace(_requestName) || string.IsNullOrWhiteSpace(_selectedCollectionId))
+            return;
+
+        MudDialog.Close(DialogResult.Ok(new SaveToCollectionResult
+        {
+            CollectionId = _selectedCollectionId,
+            RequestName = _requestName
+        }));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private RenderFragment CollectionOption(CollectionModel collection, int depth) => __builder =>
+    {
+        var isSelected = _selectedCollectionId == collection.Id;
+
+        <MudStack Row="true" AlignItems="AlignItems.Center"
+                  Class="@($"pa-1 {(isSelected ? "mud-primary-text" : "")}")"
+                  Style="@($"padding-left: {depth * 16 + 8}px; cursor: pointer; border-radius: 4px; {(isSelected ? "background: var(--mud-palette-primary-lighten); " : "")}")"
+                  @onclick="() => SelectCollection(collection.Id)">
+            <MudIcon Icon="@Icons.Material.Filled.Folder" Size="Size.Small" Color="Color.Warning"/>
+            <MudText Typo="Typo.body2">@collection.Name</MudText>
+            @if (isSelected)
+            {
+                <MudSpacer/>
+                <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Color="Color.Primary"/>
+            }
+        </MudStack>
+
+        @foreach (var child in collection.Children)
+        {
+            @CollectionOption(child, depth + 1)
+        }
+    };
+
+    public class SaveToCollectionResult
+    {
+        public string CollectionId { get; set; } = string.Empty;
+        public string RequestName { get; set; } = string.Empty;
+    }
+
+}

@@ -1,6 +1,8 @@
 @inject ApiService ApiService
 @inject HistoryService HistoryService
+@inject CollectionService CollectionService
 @inject EnvironmentService EnvironmentService
+@inject IDialogService DialogService
 
 <MudPaper Elevation="1" Class="pa-4 mb-4">
     <!-- Request URL Bar -->
@@ -42,6 +44,11 @@
                            OnClick="CancelRequest"
                            Size="Size.Medium" />
         }
+        <MudIconButton Icon="@Icons.Material.Filled.SaveAs"
+                       Color="Color.Secondary"
+                       OnClick="SaveToCollection"
+                       Size="Size.Medium"
+                       Title="Save to Collection" />
     </MudStack>
 
     <!-- Request Tabs -->
@@ -414,6 +421,25 @@
     private void OnBodyChanged(string value)
     {
         _request.Body = value;
+    }
+
+    private async Task SaveToCollection()
+    {
+        var parameters = new DialogParameters<SaveToCollectionDialog>
+        {
+            { x => x.Request, _request }
+        };
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<SaveToCollectionDialog>("Save to Collection", parameters, options);
+        var result = await dialog.Result;
+
+        if (result?.Canceled == false && result.Data is SaveToCollectionDialog.SaveToCollectionResult saveResult)
+        {
+            await CollectionService.AddRequestToCollectionAsync(
+                saveResult.CollectionId,
+                saveResult.RequestName,
+                _request);
+        }
     }
 
 }

@@ -1,0 +1,511 @@
+@page "/collections"
+@rendermode InteractiveServer
+@inject CollectionService CollectionService
+@inject IDialogService DialogService
+@inject NavigationManager NavigationManager
+@implements IDisposable
+
+<PageTitle>RobRequest - Collections</PageTitle>
+
+<MudGrid Spacing="2">
+    <!-- Left: Collection Tree -->
+    <MudItem xs="12" md="4">
+        <MudPaper Elevation="1" Class="pa-3" Style="min-height: calc(100vh - 120px);">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-3">
+                <MudText Typo="Typo.h6">Collections</MudText>
+                <MudSpacer/>
+                <MudIconButton Icon="@Icons.Material.Filled.CreateNewFolder"
+                               Color="Color.Primary"
+                               OnClick="CreateRootCollection"
+                               Title="New Collection"/>
+            </MudStack>
+
+            <MudTextField T="string"
+                          @bind-Value="_searchQuery"
+                          Placeholder="Search..."
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          Clearable="true"
+                          Immediate="true"
+                          DebounceInterval="300"
+                          OnDebounceIntervalElapsed="SearchCollections"
+                          Class="mb-3"/>
+
+            @if (_collections.Count == 0)
+            {
+                <MudText Typo="Typo.body2" Color="Color.Default" Align="Align.Center" Class="pa-4">
+                    No collections yet. Create one to get started.
+                </MudText>
+            }
+            else
+            {
+                <MudStack Spacing="0" Style="max-height: calc(100vh - 280px); overflow-y: auto;">
+                    @foreach (var collection in _collections)
+                    {
+                        @TreeNode(collection, 0)
+                    }
+                </MudStack>
+            }
+        </MudPaper>
+    </MudItem>
+
+    <!-- Right: Detail Panel -->
+    <MudItem xs="12" md="8">
+        <MudPaper Elevation="1" Class="pa-3" Style="min-height: calc(100vh - 120px);">
+            @if (_selectedCollection != null)
+            {
+                <!-- Collection Detail View -->
+                <MudStack Spacing="3">
+                    <MudStack Row="true" AlignItems="AlignItems.Center">
+                        <MudIcon Icon="@Icons.Material.Filled.Folder" Color="Color.Warning" Size="Size.Large"/>
+                        <MudText Typo="Typo.h5">@_selectedCollection.Name</MudText>
+                        <MudSpacer/>
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                       Color="Color.Error"
+                                       OnClick="DeleteSelectedCollection"
+                                       Title="Delete Collection"/>
+                    </MudStack>
+
+                    <MudDivider/>
+
+                    <!-- Editable Fields -->
+                    <MudTextField T="string"
+                                  Value="_selectedCollection.Name"
+                                  ValueChanged="OnNameChanged"
+                                  Label="Collection Name"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Immediate="true"
+                                  DebounceInterval="500"/>
+
+                    <MudTextField T="string"
+                                  Value="_selectedCollection.Description"
+                                  ValueChanged="OnDescriptionChanged"
+                                  Label="Description"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Lines="3"
+                                  Immediate="true"
+                                  DebounceInterval="500"/>
+
+                    <!-- Parent Collection -->
+                    <MudSelect T="string"
+                               Value="_selectedCollection.ParentId"
+                               ValueChanged="OnParentChanged"
+                               Label="Parent Collection"
+                               Variant="Variant.Outlined"
+                               Margin="Margin.Dense"
+                               Clearable="true"
+                               Placeholder="None (root collection)">
+                        @foreach (var col in _allCollections.Where(c => c.Id != _selectedCollection.Id))
+                        {
+                            <MudSelectItem Value="@col.Id">@col.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+
+                    <MudDivider/>
+
+                    <!-- Requests in this Collection -->
+                    <MudStack Row="true" AlignItems="AlignItems.Center">
+                        <MudText Typo="Typo.h6">Requests</MudText>
+                        <MudChip T="string" Size="Size.Small" Color="Color.Primary">
+                            @(_selectedCollectionRequests.Count)
+                        </MudChip>
+                    </MudStack>
+
+                    @if (_selectedCollectionRequests.Count == 0)
+                    {
+                        <MudAlert Severity="Severity.Info" Dense="true" Class="my-2">
+                            No requests in this collection. Use the Save button in the Request Panel to add requests.
+                        </MudAlert>
+                    }
+                    else
+                    {
+                        <MudTable Items="_selectedCollectionRequests" Dense="true" Hover="true" Elevation="0"
+                                  Style="border: 1px solid var(--mud-palette-lines-default); border-radius: 4px;">
+                            <HeaderContent>
+                                <MudTh>Method</MudTh>
+                                <MudTh>Name</MudTh>
+                                <MudTh>URL</MudTh>
+                                <MudTh Style="width: 100px;">Actions</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd>
+                                    <HttpMethodChip Method="@context.Request.Method"/>
+                                </MudTd>
+                                <MudTd>
+                                    <MudTextField T="string"
+                                                  Value="@context.Name"
+                                                  ValueChanged="@(v => OnRequestNameChanged(context, v))"
+                                                  Variant="Variant.Text"
+                                                  Margin="Margin.Dense"
+                                                  Immediate="true"
+                                                  DebounceInterval="500"/>
+                                </MudTd>
+                                <MudTd>
+                                    <MudText Typo="Typo.body2"
+                                             Style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 300px;">
+                                        @context.Request.Url
+                                    </MudText>
+                                </MudTd>
+                                <MudTd>
+                                    <MudStack Row="true" Spacing="0">
+                                        <MudIconButton Icon="@Icons.Material.Filled.OpenInNew"
+                                                       Size="Size.Small"
+                                                       Color="Color.Primary"
+                                                       OnClick="() => LoadRequestInPanel(context)"
+                                                       Title="Open in Request Panel"/>
+                                        <MudIconButton Icon="@Icons.Material.Filled.DriveFileMove"
+                                                       Size="Size.Small"
+                                                       Color="Color.Info"
+                                                       OnClick="() => MoveRequest(context)"
+                                                       Title="Move to another collection"/>
+                                        <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                       Size="Size.Small"
+                                                       Color="Color.Error"
+                                                       OnClick="() => DeleteRequest(context)"
+                                                       Title="Delete request"/>
+                                    </MudStack>
+                                </MudTd>
+                            </RowTemplate>
+                        </MudTable>
+                    }
+
+                    <!-- Sub-collections -->
+                    @if (_selectedCollection.Children.Count > 0)
+                    {
+                        <MudDivider Class="my-2"/>
+                        <MudText Typo="Typo.h6">Sub-folders</MudText>
+                        <MudSimpleTable Dense="true" Hover="true" Elevation="0"
+                                        Style="border: 1px solid var(--mud-palette-lines-default); border-radius: 4px;">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Requests</th>
+                                    <th>Created</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var child in _selectedCollection.Children)
+                                {
+                                    <tr style="cursor: pointer;" @onclick="() => SelectCollection(child.Id)">
+                                        <td>
+                                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                                <MudIcon Icon="@Icons.Material.Filled.Folder" Size="Size.Small" Color="Color.Warning"/>
+                                                <MudText>@child.Name</MudText>
+                                            </MudStack>
+                                        </td>
+                                        <td>@child.Requests.Count</td>
+                                        <td>@child.CreatedAt.ToString("yyyy-MM-dd")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </MudSimpleTable>
+                    }
+
+                    <!-- Metadata -->
+                    <MudDivider Class="my-2"/>
+                    <MudStack Row="true" Spacing="4">
+                        <MudText Typo="Typo.caption" Color="Color.Default">
+                            Created: @_selectedCollection.CreatedAt.ToString("yyyy-MM-dd HH:mm")
+                        </MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Default">
+                            Updated: @_selectedCollection.UpdatedAt.ToString("yyyy-MM-dd HH:mm")
+                        </MudText>
+                    </MudStack>
+                </MudStack>
+            }
+            else
+            {
+                <!-- No selection -->
+                <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center"
+                          Style="min-height: calc(100vh - 160px);">
+                    <MudIcon Icon="@Icons.Material.Filled.FolderOpen" Size="Size.Large"
+                             Color="Color.Default" Style="font-size: 64px; opacity: 0.3;"/>
+                    <MudText Typo="Typo.h6" Color="Color.Default" Align="Align.Center">
+                        Select a collection to view its details
+                    </MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Default" Align="Align.Center">
+                        Choose a collection from the tree on the left, or create a new one.
+                    </MudText>
+                </MudStack>
+            }
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+<SectionContent SectionName="EnvironmentSelector">
+    <EnvironmentSelector/>
+</SectionContent>
+
+@code {
+
+    private List<CollectionModel> _collections = new();
+    private List<CollectionModel> _allCollections = new();
+    private string _searchQuery = string.Empty;
+    private string? _selectedCollectionId;
+    private CollectionModel? _selectedCollection;
+    private List<CollectionRequestModel> _selectedCollectionRequests = new();
+    private HashSet<string> _expandedNodes = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        CollectionService.OnCollectionsChanged += OnCollectionsChanged;
+        await LoadCollections();
+    }
+
+    private async void OnCollectionsChanged()
+    {
+        await LoadCollections();
+        if (_selectedCollectionId != null)
+        {
+            await LoadSelectedCollection();
+        }
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task LoadCollections()
+    {
+        _allCollections = await CollectionService.GetAllCollectionsAsync();
+        _collections = string.IsNullOrWhiteSpace(_searchQuery)
+            ? await CollectionService.GetCollectionTreeAsync()
+            : await CollectionService.SearchCollectionsAsync(_searchQuery);
+    }
+
+    private async Task LoadSelectedCollection()
+    {
+        if (_selectedCollectionId == null)
+        {
+            _selectedCollection = null;
+            _selectedCollectionRequests = new();
+            return;
+        }
+
+        _selectedCollection = await CollectionService.GetCollectionAsync(_selectedCollectionId);
+        _selectedCollectionRequests = _selectedCollection?.Requests.ToList() ?? new();
+    }
+
+    private async Task SelectCollection(string collectionId)
+    {
+        _selectedCollectionId = collectionId;
+        _expandedNodes.Add(collectionId);
+        await LoadSelectedCollection();
+    }
+
+    private async Task SearchCollections(string query)
+    {
+        _searchQuery = query;
+        await LoadCollections();
+    }
+
+    private async Task CreateRootCollection()
+    {
+        var name = await PromptForName("New Collection", "Collection name");
+        if (!string.IsNullOrWhiteSpace(name))
+        {
+            var created = await CollectionService.CreateCollectionAsync(name);
+            await SelectCollection(created.Id);
+        }
+    }
+
+    private async Task CreateSubFolder(string parentId)
+    {
+        var name = await PromptForName("New Folder", "Folder name");
+        if (!string.IsNullOrWhiteSpace(name))
+        {
+            var created = await CollectionService.CreateCollectionAsync(name, parentId);
+            _expandedNodes.Add(parentId);
+            await SelectCollection(created.Id);
+        }
+    }
+
+    private async Task OnNameChanged(string value)
+    {
+        if (_selectedCollection == null || string.IsNullOrWhiteSpace(value)) return;
+        _selectedCollection.Name = value;
+        await CollectionService.UpdateCollectionAsync(_selectedCollection);
+        await LoadCollections();
+    }
+
+    private async Task OnDescriptionChanged(string? value)
+    {
+        if (_selectedCollection == null) return;
+        _selectedCollection.Description = value;
+        await CollectionService.UpdateCollectionAsync(_selectedCollection);
+    }
+
+    private async Task OnParentChanged(string? value)
+    {
+        if (_selectedCollection == null) return;
+        _selectedCollection.ParentId = value;
+        await CollectionService.UpdateCollectionAsync(_selectedCollection);
+        await LoadCollections();
+    }
+
+    private async Task OnRequestNameChanged(CollectionRequestModel request, string value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return;
+        request.Name = value;
+        await CollectionService.UpdateCollectionRequestAsync(request);
+    }
+
+    private async Task DeleteSelectedCollection()
+    {
+        if (_selectedCollection == null) return;
+
+        var result = await DialogService.ShowMessageBox(
+            "Delete Collection",
+            $"Are you sure you want to delete \"{_selectedCollection.Name}\" and all its contents?",
+            yesText: "Delete", cancelText: "Cancel");
+
+        if (result == true)
+        {
+            await CollectionService.DeleteCollectionAsync(_selectedCollection.Id);
+            _selectedCollectionId = null;
+            _selectedCollection = null;
+            _selectedCollectionRequests = new();
+            await LoadCollections();
+        }
+    }
+
+    private async Task DeleteRequest(CollectionRequestModel request)
+    {
+        var result = await DialogService.ShowMessageBox(
+            "Delete Request",
+            $"Are you sure you want to delete \"{request.Name}\"?",
+            yesText: "Delete", cancelText: "Cancel");
+
+        if (result == true)
+        {
+            await CollectionService.DeleteCollectionRequestAsync(request.Id);
+            await LoadSelectedCollection();
+        }
+    }
+
+    private async Task MoveRequest(CollectionRequestModel request)
+    {
+        var parameters = new DialogParameters<MoveToCollectionDialog>
+        {
+            { x => x.CurrentCollectionId, request.CollectionId },
+            { x => x.RequestName, request.Name }
+        };
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<MoveToCollectionDialog>("Move Request", parameters, options);
+        var dialogResult = await dialog.Result;
+
+        if (dialogResult?.Canceled == false && dialogResult.Data is string targetCollectionId)
+        {
+            await CollectionService.MoveRequestToCollectionAsync(request.Id, targetCollectionId);
+            await LoadSelectedCollection();
+        }
+    }
+
+    private void LoadRequestInPanel(CollectionRequestModel request)
+    {
+        NavigationManager.NavigateTo("/");
+    }
+
+    private void ToggleExpanded(string collectionId)
+    {
+        if (!_expandedNodes.Remove(collectionId))
+        {
+            _expandedNodes.Add(collectionId);
+        }
+    }
+
+    private bool IsExpanded(string collectionId) => _expandedNodes.Contains(collectionId);
+
+    private async Task<string?> PromptForName(string title, string label, string? defaultValue = null)
+    {
+        var parameters = new DialogParameters<NameInputDialog>
+        {
+            { x => x.Label, label },
+            { x => x.Value, defaultValue ?? string.Empty }
+        };
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<NameInputDialog>(title, parameters, options);
+        var result = await dialog.Result;
+        return result?.Canceled == false ? result.Data as string : null;
+    }
+
+    private RenderFragment TreeNode(CollectionModel collection, int depth) => __builder =>
+    {
+        var isExpanded = IsExpanded(collection.Id);
+        var isSelected = _selectedCollectionId == collection.Id;
+        var hasChildren = collection.Children.Count > 0;
+
+        <MudStack Row="true" AlignItems="AlignItems.Center"
+                  Class="@($"pa-1 {(isSelected ? "mud-primary-text" : "")}")"
+                  Style="@($"padding-left: {depth * 16}px; cursor: pointer; border-radius: 4px; {(isSelected ? "background: var(--mud-palette-primary-lighten);" : "")}")"
+                  @onclick="() => SelectCollection(collection.Id)">
+            @if (hasChildren)
+            {
+                <MudIconButton Icon="@(isExpanded ? Icons.Material.Filled.ExpandMore : Icons.Material.Filled.ChevronRight)"
+                               Size="Size.Small"
+                               OnClick="() => ToggleExpanded(collection.Id)"
+                               OnClickStopPropagation="true"/>
+            }
+            else
+            {
+                <div style="width: 30px;"></div>
+            }
+            <MudIcon Icon="@(isExpanded ? Icons.Material.Filled.FolderOpen : Icons.Material.Filled.Folder)"
+                     Size="Size.Small" Color="Color.Warning"/>
+            <MudText Typo="Typo.body2"
+                     Style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">
+                @collection.Name
+            </MudText>
+            @if (collection.Requests.Count > 0)
+            {
+                <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@collection.Requests.Count</MudChip>
+            }
+            <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small" Dense="true"
+                     AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                <MudMenuItem Icon="@Icons.Material.Filled.CreateNewFolder"
+                             OnClick="() => CreateSubFolder(collection.Id)">
+                    New Sub-folder
+                </MudMenuItem>
+                <MudMenuItem Icon="@Icons.Material.Filled.Delete" IconColor="Color.Error"
+                             OnClick="() => DeleteTreeCollection(collection)">
+                    Delete
+                </MudMenuItem>
+            </MudMenu>
+        </MudStack>
+
+        @if (isExpanded)
+        {
+            @foreach (var child in collection.Children)
+            {
+                @TreeNode(child, depth + 1)
+            }
+        }
+    };
+
+    private async Task DeleteTreeCollection(CollectionModel collection)
+    {
+        var result = await DialogService.ShowMessageBox(
+            "Delete Collection",
+            $"Are you sure you want to delete \"{collection.Name}\" and all its contents?",
+            yesText: "Delete", cancelText: "Cancel");
+
+        if (result == true)
+        {
+            if (_selectedCollectionId == collection.Id)
+            {
+                _selectedCollectionId = null;
+                _selectedCollection = null;
+                _selectedCollectionRequests = new();
+            }
+            await CollectionService.DeleteCollectionAsync(collection.Id);
+            await LoadCollections();
+        }
+    }
+
+    public void Dispose()
+    {
+        CollectionService.OnCollectionsChanged -= OnCollectionsChanged;
+    }
+
+}

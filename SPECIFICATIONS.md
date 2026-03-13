@@ -135,17 +135,38 @@ To create a responsive, feature-rich API testing tool that leverages modern web 
   - Configurable history retention (default: 1000 items)
 
 #### Collections
-- **Folder Organization**: Create nested folder structure
+- **Folder Organization**: Create nested folder structure with unlimited depth
 - **Request Grouping**: Organize related requests by project, API, or feature
-- **Collection Sharing**: 
+- **Collection Sidebar**: Collapsible sidebar section (MudCollapse) above History in the drawer
+  - Tree view of collections with expand/collapse per node
+  - Search/filter across collection names, descriptions, and request names/URLs
+  - Inline create, rename, and delete collections and sub-folders
+  - Click a saved request to load it into the RequestPanel
+- **Save to Collection**: Button in RequestPanel opens a dialog to:
+  - Name the request (auto-suggested from method + URL path)
+  - Select a target collection from a tree picker
+  - Create a new collection inline if needed
+- **Collections Page** (`/collections`): Dedicated management page for granular editing
+  - Left panel: full collection tree with selection, expand/collapse, and context menus
+  - Right panel: detail view of selected collection with:
+    - Editable name, description, and parent collection
+    - Table of saved requests with inline rename, open-in-panel, move, and delete
+    - Sub-folder listing with click-to-navigate
+    - Creation timestamp and last-updated metadata
+  - All changes auto-saved to the database
+- **Data Model**:
+  - `CollectionModel`: Id, Name, Description, ParentId (self-referencing), SortOrder, Children, Requests, CreatedAt, UpdatedAt
+  - `CollectionRequestModel`: Id, CollectionId, Name, SortOrder, Request (owned JSON HttpRequestModel), CreatedAt, UpdatedAt
+  - Cascade delete: removing a collection removes all sub-folders and requests
+- **Collection Sharing** (future): 
   - Export collections to JSON
   - Import from Postman collections (v2 format)
   - Import from Insomnia collections (v5 format)
   - Share via URL or file
-- **Collection Features**:
+- **Collection Features** (future):
   - Bulk operations (run all requests in collection)
   - Collection-level variables
-  - Description and documentation support
+  - Drag-and-drop reordering
 
 #### Persistence Strategy
 - **Primary Storage**: SQLite via Entity Framework Core (server-side; fully available in InteractiveServer mode)
@@ -258,10 +279,20 @@ The solution uses a **three-project layout**. Because InteractiveServer runs all
 
 #### Frontend Components (`RobRequest.Server/Components/`)
 - **Layout Components**: 
-  - `MainLayout.razor`: Overall application structure
-  - `Sidebar.razor`: Navigation and history panel
-  - `RequestPanel.razor`: Request building interface
+  - `MainLayout.razor`: Overall application structure with MudDrawer, MudAppBar
+  - `RequestPanel.razor`: Request building interface with Save to Collection button
   - `ResponsePanel.razor`: Response display interface
+- **Sidebar Components** (rendered inside MudDrawer via `SectionContent`):
+  - `CollectionSidebar.razor`: Collapsible collection tree with search, create, rename, delete; renders inside MudCollapse
+  - `HistorySidebar.razor`: Request history list with search; renders inside MudCollapse below CollectionSidebar
+- **Dialog Components**:
+  - `SaveToCollectionDialog.razor`: Dialog for saving a request to a collection (tree picker + inline create)
+  - `MoveToCollectionDialog.razor`: Dialog for moving a request between collections
+  - `NameInputDialog.razor`: Reusable name/rename prompt dialog
+- **Page Components**:
+  - `Home.razor`: Main request/response workspace; manages drawer SectionContent with collapsible sidebar sections
+  - `Collections.razor` (`/collections`): Dedicated collection management page with tree + detail panel
+  - `Settings.razor` (`/settings`): Application settings page
 
 #### Business Services (`RobRequest.Shared/Services/`)
 - **ApiService**: HTTP request execution and response handling (server-side `HttpClient`)
@@ -277,10 +308,10 @@ The solution uses a **three-project layout**. Because InteractiveServer runs all
 - **Migrations**: EF Core code-first migrations for schema management
 
 #### Data Models (`RobRequest.Shared/Models/`)
-- **Request Models**: `HttpRequestModel`, `HeaderItem`, `QueryParamItem`
-- **Response Models**: `HttpResponseModel`, `ResponseMetadata`
-- **Domain Models**: `Collection`, `Environment`, `HistoryItem`
-- **Configuration Models**: `UserSettings`, `AppConfiguration`
+- **Request Models**: `HttpRequestModel`, `HeaderItem`, `QueryParamItem`, `FormDataItem`
+- **Response Models**: `HttpResponseModel`
+- **Domain Models**: `CollectionModel`, `CollectionRequestModel`, `EnvironmentModel`, `HistoryItem`
+- **Configuration Models**: `UserSettings`
 
 > All models reside in `RobRequest.Shared` under the `RobRequest.Shared.Models` namespace.
 
@@ -385,6 +416,26 @@ public class HistoryService
 }
 ```
 
+#### CollectionService
+```csharp
+public class CollectionService
+{
+    // Persists to SQLite via EF Core (AppDbContext injected)
+    public event Action? OnCollectionsChanged;
+    public async Task<List<CollectionModel>> GetCollectionTreeAsync();
+    public async Task<List<CollectionModel>> GetAllCollectionsAsync();
+    public async Task<CollectionModel?> GetCollectionAsync(string id);
+    public async Task<CollectionModel> CreateCollectionAsync(string name, string? parentId = null, string? description = null);
+    public async Task UpdateCollectionAsync(CollectionModel collection);
+    public async Task DeleteCollectionAsync(string id);
+    public async Task<CollectionRequestModel> AddRequestToCollectionAsync(string collectionId, string name, HttpRequestModel request);
+    public async Task UpdateCollectionRequestAsync(CollectionRequestModel collectionRequest);
+    public async Task DeleteCollectionRequestAsync(string id);
+    public async Task MoveRequestToCollectionAsync(string requestId, string targetCollectionId);
+    public async Task<List<CollectionModel>> SearchCollectionsAsync(string query);
+}
+```
+
 #### EnvironmentService
 ```csharp
 public class EnvironmentService
@@ -408,86 +459,75 @@ public class EnvironmentService
 ### Layout Structure
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    Header Bar                               │
-│  [Logo] [Environment Selector]        [Theme] [Settings]    │
+│                    Header Bar (MudAppBar)                    │
+│  [☰][🔌 RobRequest]         [Env Selector][🌙][⚙ Settings] │
 ├─────────────────────────────────────────────────────────────┤
-│ Sidebar │                Main Content Area                  │
-│ ┌───────┬┤ ┌──────────────────────────────────────────────┐ │
-│ │History││ │              Request Builder                 │ │
-│ │       ││ │ [GET ▼][https://api.example.com/endpoint][Send]│
-│ │       ││ ├──────────────────────────────────────────────┤ │
-│ │Coll.  ││ │ Params | Headers | Body | Auth | Tests       │ │
-│ │       ││ │ [Tab Content Area]                           │ │
-│ │       ││ ├──────────────────────────────────────────────┤ │
-│ │Env.   ││ │              Response Viewer                 │ │
-│ │       ││ │ Status: 200 OK | Time: 245ms | Size: 1.2KB   │ │
-│ │       ││ │ Body | Headers | Cookies | Test Results      │ │
-│ │       ││ │ [Response Content Area]                      │ │
-│ └───────┴┤ └──────────────────────────────────────────────┘ │
+│ Drawer    │              Main Content Area                   │
+│ (300px)   │ ┌──────────────────────────────────────────────┐ │
+│ ┌────────┐│ │            Request Builder                   │ │
+│ │▾ Coll. ││ │ [GET▼][URL                         ][Send][💾]│
+│ │ 📁 API ││ ├──────────────────────────────────────────────┤ │
+│ │  GET /u││ │ Params | Headers | Body | Auth                │ │
+│ │  POST  ││ │ [Tab Content Area]                           │ │
+│ │▾ Hist. ││ ├──────────────────────────────────────────────┤ │
+│ │ GET 200││ │            Response Viewer                    │ │
+│ │ POST   ││ │ Status: 200 OK | Time: 245ms | Size: 1.2KB   │ │
+│ │        ││ │ Body | Headers | Cookies                     │ │
+│ │        ││ │ [Response Content Area]                      │ │
+│ └────────┘│ └──────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────┘
 ```
 
+### Sidebar Drawer Design
+The sidebar drawer uses `SectionContent`/`SectionOutlet` so each page controls its own drawer content. On the Home page, the drawer contains two collapsible sections:
+
+```
+┌─ Drawer ─────────────────────┐
+│ ▾ 📁 Collections             │  ← MudCollapse (expanded by default)
+│   [🔍 Search collections...] │
+│   Collections | [+ New]      │
+│   📁 My API                  │
+│     ▸ 📁 Users               │
+│     GET /health              │
+│   📁 Other Project           │
+│ ─────────────────────────────│
+│ ▾ 🕐 History                 │  ← MudCollapse (expanded by default)
+│   [🔍 Search history...]     │
+│   History            [🗑 All]│
+│   GET 200  api.example.com   │
+│   POST 201 api.example.com   │
+└──────────────────────────────┘
+```
+
 ### Component Hierarchy
-- **MainLayout**: Root layout following MudBlazor template pattern
-  ```razor
-  <MudLayout>
-      <MudAppBar Elevation="1">
-          <MudIconButton Icon="@Icons.Material.Filled.Menu" 
-                          Color="Color.Inherit" 
-                          Edge="Edge.Start" 
-                          OnClick="@DrawerToggle" />
-          <MudSpacer />
-          <MudText Typo="Typo.h6">API Client</MudText>
-          <MudSpacer />
-          <EnvironmentSelector />
-          <MudIconButton Icon="@Icons.Material.Filled.Settings" 
-                          Color="Color.Inherit" 
-                          Edge="Edge.End" />
-      </MudAppBar>
-      
-      <MudDrawer @bind-Open="_drawerOpen" Elevation="2">
-          <MudDrawerHeader>
-              <MudText Typo="Typo.h5">API Client</MudText>
-          </MudDrawerHeader>
-          <NavMenu />
-      </MudDrawer>
-      
-      <MudMainContent>
-          @Body
-      </MudMainContent>
-  </MudLayout>
-  ```
+- **MainLayout**: Root layout with MudAppBar, MudDrawer (`SectionOutlet`), MudMainContent
+  - MudDrawer renders `<SectionOutlet SectionName="Drawer"/>` — each page provides its own drawer content
 
-- **NavMenu**: Navigation drawer content
-  - **HistoryView**: Request history with search/filter
-  - **CollectionView**: Collection tree view with nested folders
-  - **EnvironmentView**: Environment management and switching
-  - **SettingsLink**: Quick access to application settings
+- **Home Page** (`/`): Main workspace
+  - Drawer `SectionContent`: Two MudCollapse sections
+    - **CollectionSidebar**: Tree view with search, create/rename/delete, request selection
+    - **HistorySidebar**: Searchable request history list with clear functionality
+  - Main content:
+    - **RequestPanel**: Method selector, URL input, Send button, **Save to Collection** button, tabbed request configuration (Params, Headers, Body, Auth)
+    - **ResponsePanel**: Status bar, tabbed response display (Body, Headers, Cookies)
 
-- **RequestPanel**: Main request building interface
-  - **RequestHeader**: Method selector, URL input, send button
-  - **RequestTabs**: MudTabs container for request sections
-    - **ParamsTab**: Query parameters management
-    - **HeadersTab**: HTTP headers configuration
-    - **BodyTab**: Request body editor (JSON, form, raw)
-    - **AuthTab**: Authentication configuration
-    - **TestsTab**: Response testing scripts
+- **Collections Page** (`/collections`): Dedicated collection management
+  - Left panel: Collection tree with selection, expand/collapse, context menus (new sub-folder, delete)
+  - Right panel: Selected collection detail with editable name/description/parent, request table, sub-folder list
 
-- **ResponsePanel**: Response display interface
-  - **ResponseStatusBar**: Status code, time, size indicators with color coding
-  - **ResponseTabs**: MudTabs for response sections
-    - **BodyTab**: Formatted response content with syntax highlighting
-    - **HeadersTab**: Response headers table with sorting/filtering
-    - **CookiesTab**: Response cookies management
-    - **TestResultsTab**: Test execution results
+- **Settings Page** (`/settings`): Application preferences
 
 - **Shared Components**
   - **EnvironmentSelector**: Dropdown for environment switching
   - **MethodSelector**: HTTP method dropdown with custom methods support
-  - **UrlInput**: URL input with validation and autocomplete
-  - **CodeEditor**: BlazorMonaco or MudExCodeEditor with syntax highlighting for JSON/XML
-  - **KeyValueEditor**: Dynamic key-value pair management
+  - **HttpMethodChip**: Color-coded HTTP method badge
+  - **HttpStatusChip**: Color-coded HTTP status code badge
+  - **MonacoEditor**: BlazorMonaco wrapper with syntax highlighting for JSON/XML
+  - **KeyValueEditor**: Generic dynamic key-value pair management
   - **StatusIndicator**: Color-coded status display
+  - **SaveToCollectionDialog**: Dialog for saving requests to collections with tree picker
+  - **MoveToCollectionDialog**: Dialog for moving requests between collections
+  - **NameInputDialog**: Reusable name/rename prompt dialog
 
 ### Design Principles
 - **Material Design 3**: Following latest Material Design guidelines
@@ -559,8 +599,8 @@ public class EnvironmentService
 
 #### Sprint 3.1: History & Collections
 - [ ] Request history persistence to SQLite via EF Core
-- [ ] Collection creation and management
-- [ ] Request organization into collections
+- [X] Collection creation and management
+- [X] Request organization into collections (Save to Collection dialog, CollectionSidebar, Collections page)
 - [ ] History search and filtering
 - [ ] Import/export functionality (JSON file download/upload)
 

@@ -20,6 +20,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // Register services with Scoped lifetime (one instance per SignalR circuit)
 builder.Services.AddHttpClient<ApiService>();
 builder.Services.AddScoped<HistoryService>();
+builder.Services.AddScoped<CollectionService>();
 builder.Services.AddScoped<EnvironmentService>();
 builder.Services.AddScoped<SettingsService>();
 
