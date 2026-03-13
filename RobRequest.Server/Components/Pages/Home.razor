@@ -52,7 +52,7 @@
 
 @code {
     
-    [CascadingParameter] public MainLayout Layout { get; set; }
+    [CascadingParameter] public required MainLayout Layout { get; set; }
     
     private RequestPanel? _requestPanel;
     private HttpResponseModel? _response;
@@ -62,6 +62,7 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await Layout.DrawerEnabledToggleAsync(true);
     }
 
     private void OnResponseReceived(HttpResponseModel response)

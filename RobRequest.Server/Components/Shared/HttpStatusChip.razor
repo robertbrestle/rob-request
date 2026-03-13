@@ -21,8 +21,8 @@
     [Parameter] public int StatusCode { get; set; }
     [Parameter] public string? StatusText { get; set; }
     [Parameter] public bool ShowStatusText { get; set; } = true;
-    [Parameter] public MudBlazor.Size Size { get; set; } = Size.Small;
-    [Parameter] public MudBlazor.Variant Variant { get; set; } = Variant.Filled;
+    [Parameter] public Size Size { get; set; } = Size.Small;
+    [Parameter] public Variant Variant { get; set; } = Variant.Filled;
 
     private Color GetStatusColor() => StatusCode switch
     {

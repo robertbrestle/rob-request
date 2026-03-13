@@ -153,11 +153,15 @@
 </MudContainer>
 
 @code {
+    
+    [CascadingParameter] public required MainLayout Layout { get; set; }
+    
     private UserSettings _settings = new();
     private IReadOnlyList<EnvironmentModel> _environments = Array.Empty<EnvironmentModel>();
 
     protected override async Task OnInitializedAsync()
     {
+        await Layout.DrawerEnabledToggleAsync(false);
         _settings = await SettingsService.GetSettingsAsync();
         _environments = await EnvironmentService.GetEnvironmentsAsync();
     }

@@ -19,7 +19,7 @@
                       AdornmentIcon="@Icons.Material.Filled.Air"
                       AdornmentAriaLabel="clean query parameters"
                       OnAdornmentClick="OnUrlChanged"
-                      Immediate="true" 
+                      Immediate="true"
                       OnKeyDown="OnSendRequest"/>
         <MudButton Variant="Variant.Filled"
                    Color="Color.Primary"
@@ -29,7 +29,7 @@
                    Size="Size.Large">
             @if (_isSending)
             {
-                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2"/>
                 <span>Sending...</span>
             }
             else
@@ -42,13 +42,13 @@
             <MudIconButton Icon="@Icons.Material.Filled.Cancel"
                            Color="Color.Error"
                            OnClick="CancelRequest"
-                           Size="Size.Medium" />
+                           Size="Size.Medium"/>
         }
         <MudIconButton Icon="@Icons.Material.Filled.SaveAs"
                        Color="Color.Secondary"
                        OnClick="SaveToCollection"
                        Size="Size.Medium"
-                       Title="Save to Collection" />
+                       Title="Save to Collection"/>
     </MudStack>
 
     <!-- Request Tabs -->
@@ -66,20 +66,23 @@
                             SetKey="@((i, v) => i.Key = v)"
                             SetValue="@((i, v) => i.Value = v)"
                             SetEnabled="@((i, v) => i.Enabled = v)"
-                            Style="max-height: calc(40vh); overflow-y: auto;" />
+                            Style="max-height: calc(40vh); overflow-y: auto;"/>
         </MudTabPanel>
 
         <!-- Headers Tab -->
         <MudTabPanel Text="Headers" BadgeData="@GetHeadersBadge()" BadgeColor="Color.Primary">
             <MudStack Spacing="2">
                 <MudStack Row="true" Spacing="1">
-                    <MudButton Size="Size.Small" Variant="Variant.Outlined" OnClick="@(() => AddCommonHeader("Content-Type", "application/json"))">
+                    <MudButton Size="Size.Small" Variant="Variant.Outlined"
+                               OnClick="@(() => AddCommonHeader("Content-Type", "application/json"))">
                         Content-Type: JSON
                     </MudButton>
-                    <MudButton Size="Size.Small" Variant="Variant.Outlined" OnClick="@(() => AddCommonHeader("Accept", "application/json"))">
+                    <MudButton Size="Size.Small" Variant="Variant.Outlined"
+                               OnClick="@(() => AddCommonHeader("Accept", "application/json"))">
                         Accept: JSON
                     </MudButton>
-                    <MudButton Size="Size.Small" Variant="Variant.Outlined" OnClick="@(() => AddCommonHeader("Authorization", "Bearer "))">
+                    <MudButton Size="Size.Small" Variant="Variant.Outlined"
+                               OnClick="@(() => AddCommonHeader("Authorization", "Bearer "))">
                         Authorization
                     </MudButton>
                 </MudStack>
@@ -94,7 +97,7 @@
                                 SetKey="@((i, v) => i.Key = v)"
                                 SetValue="@((i, v) => i.Value = v)"
                                 SetEnabled="@((i, v) => i.Enabled = v)"
-                                Style="max-height: calc(40vh); overflow-y: auto;" />
+                                Style="max-height: calc(40vh); overflow-y: auto;"/>
             </MudStack>
         </MudTabPanel>
 
@@ -122,13 +125,13 @@
                             </MudButton>
                         </MudStack>
                         <MonacoEditor Id="request-body-editor-json"
-                                    Value="@_request.Body"
-                                    ValueChanged="OnBodyChanged"
-                                    Language="json"
-                                    ReadOnly="false"
-                                    IsDarkMode="Layout.IsDarkMode()"
-                                    ShowMinimap="false"
-                                    CssClass="request-body-editor" />
+                                      Value="@_request.Body"
+                                      ValueChanged="OnBodyChanged"
+                                      Language="json"
+                                      ReadOnly="false"
+                                      IsDarkMode="Layout.IsDarkMode()"
+                                      ShowMinimap="false"
+                                      CssClass="request-body-editor"/>
                     }
                     else if (_request.BodyType == "form-data")
                     {
@@ -142,18 +145,18 @@
                                         GetEnabled="@(i => i.Enabled)"
                                         SetKey="@((i, v) => i.Key = v)"
                                         SetValue="@((i, v) => i.Value = v)"
-                                        SetEnabled="@((i, v) => i.Enabled = v)" />
+                                        SetEnabled="@((i, v) => i.Enabled = v)"/>
                     }
                     else
                     {
                         <MonacoEditor Id="@($"request-body-editor-{_request.BodyType}")"
-                                    Value="@_request.Body"
-                                    ValueChanged="OnBodyChanged"
-                                    Language="@_request.BodyType"
-                                    ReadOnly="false"
-                                    IsDarkMode="Layout.IsDarkMode()"
-                                    ShowMinimap="false"
-                                    CssClass="request-body-editor" />
+                                      Value="@_request.Body"
+                                      ValueChanged="OnBodyChanged"
+                                      Language="@_request.BodyType"
+                                      ReadOnly="false"
+                                      IsDarkMode="Layout.IsDarkMode()"
+                                      ShowMinimap="false"
+                                      CssClass="request-body-editor"/>
                     }
                 }
             </MudStack>
@@ -162,7 +165,8 @@
         <!-- Auth Tab -->
         <MudTabPanel Text="Auth">
             <MudStack Spacing="3">
-                <MudSelect T="AuthType" @bind-Value="_request.AuthType" Label="Auth Type" Variant="Variant.Outlined" Margin="Margin.Dense">
+                <MudSelect T="AuthType" @bind-Value="_request.AuthType" Label="Auth Type" Variant="Variant.Outlined"
+                           Margin="Margin.Dense">
                     <MudSelectItem Value="AuthType.None">No Auth</MudSelectItem>
                     <MudSelectItem Value="AuthType.Bearer">Bearer Token</MudSelectItem>
                     <MudSelectItem Value="AuthType.Basic">Basic Auth</MudSelectItem>
@@ -178,7 +182,7 @@
                                       Placeholder="Enter bearer token"
                                       Variant="Variant.Outlined"
                                       Margin="Margin.Dense"
-                                      InputType="InputType.Password" />
+                                      InputType="InputType.Password"/>
                         break;
 
                     case AuthType.Basic:
@@ -186,13 +190,13 @@
                                       @bind-Value="_request.AuthUsername"
                                       Label="Username"
                                       Variant="Variant.Outlined"
-                                      Margin="Margin.Dense" />
+                                      Margin="Margin.Dense"/>
                         <MudTextField T="string"
                                       @bind-Value="_request.AuthPassword"
                                       Label="Password"
                                       Variant="Variant.Outlined"
                                       Margin="Margin.Dense"
-                                      InputType="InputType.Password" />
+                                      InputType="InputType.Password"/>
                         break;
 
                     case AuthType.ApiKey:
@@ -201,14 +205,10 @@
                                       Label="Key Name"
                                       Placeholder="e.g. X-API-Key"
                                       Variant="Variant.Outlined"
-                                      Margin="Margin.Dense" />
-                        <MudTextField T="string"
-                                      @bind-Value="_request.ApiKeyValue"
-                                      Label="Key Value"
-                                      Variant="Variant.Outlined"
-                                      Margin="Margin.Dense"
-                                      InputType="InputType.Password" />
-                        <MudSelect T="ApiKeyLocation" @bind-Value="_request.ApiKeyLocation" Label="Add to" Variant="Variant.Outlined" Margin="Margin.Dense">
+                                      Margin="Margin.Dense"/>
+                        <MudTextPasswordField @bind-Value="_request.ApiKeyValue" Label="Key Value"/>
+                        <MudSelect T="ApiKeyLocation" @bind-Value="_request.ApiKeyLocation" Label="Add to"
+                                   Variant="Variant.Outlined" Margin="Margin.Dense">
                             <MudSelectItem Value="ApiKeyLocation.Header">Header</MudSelectItem>
                             <MudSelectItem Value="ApiKeyLocation.QueryParam">Query Param</MudSelectItem>
                         </MudSelect>
@@ -223,7 +223,7 @@
 
     [Parameter] public EventCallback<HttpResponseModel> OnResponseReceived { get; set; }
     [Parameter] public EventCallback<bool> OnSendingChanged { get; set; }
-    [CascadingParameter] public MainLayout Layout { get; set; }
+    [CascadingParameter] public required MainLayout Layout { get; set; }
 
     private HttpRequestModel _request = new();
     private bool _isSending;

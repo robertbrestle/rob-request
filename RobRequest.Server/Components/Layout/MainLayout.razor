@@ -10,12 +10,19 @@
 <CascadingValue Value="this">
     <MudLayout>
         <MudAppBar Elevation="1" Dense="true">
-            <MudIconButton Icon="@Icons.Material.Filled.Menu"
-                           Color="Color.Inherit"
-                           Edge="Edge.Start"
-                           OnClick="DrawerToggle"/>
+            @if (_isDrawerEnabled)
+            {
+                <MudIconButton Icon="@Icons.Material.Filled.Menu"
+                               Color="Color.Inherit"
+                               Edge="Edge.Start"
+                               OnClick="DrawerToggle"/>
+            }
             <MudIcon Icon="@Icons.Material.Filled.Api" Class="mr-2"/>
-            <MudText Typo="Typo.h6" Class="mr-4">RobRequest</MudText>
+            <MudLink Href="/">
+                <MudText Typo="Typo.h6" Class="mr-4">
+                    RobRequest
+                </MudText>
+            </MudLink>
             <MudSpacer/>
             <MudContainer MaxWidth="MaxWidth.ExtraSmall">
                 <SectionOutlet SectionName="EnvironmentSelector"/>
@@ -30,9 +37,12 @@
                            Class="ml-1"/>
         </MudAppBar>
 
-        <MudDrawer @bind-Open="_drawerOpen" Elevation="2" ClipMode="DrawerClipMode.Always" Width="300px">
-            <SectionOutlet SectionName="Drawer"/>
-        </MudDrawer>
+        @if (_isDrawerEnabled)
+        {
+            <MudDrawer @bind-Open="_isDrawerOpen" Elevation="2" ClipMode="DrawerClipMode.Always" Width="300px">
+                <SectionOutlet SectionName="Drawer"/>
+            </MudDrawer>
+        }
 
         <MudMainContent>
             @Body
@@ -42,7 +52,8 @@
 
 @code {
 
-    private bool _drawerOpen = true;
+    private bool _isDrawerOpen = true;
+    private bool _isDrawerEnabled = true;
     private bool _isDarkMode = true;
 
     protected override async Task OnInitializedAsync()
@@ -56,7 +67,13 @@
 
     private void DrawerToggle()
     {
-        _drawerOpen = !_drawerOpen;
+        _isDrawerOpen = !_isDrawerOpen;
+    }
+
+    public async Task DrawerEnabledToggleAsync(bool enabled)
+    {
+        _isDrawerEnabled = enabled;
+        await InvokeAsync(StateHasChanged);
     }
 
     private async void OnSettingsChanged()
@@ -67,13 +84,14 @@
             _isDarkMode = settings.DarkMode;
             await InvokeAsync(StateHasChanged);
         }
-        catch (Exception e)
+        catch (Exception)
         {
             // ignored
         }
     }
 
     public bool IsDarkMode() => _isDarkMode;
+    public bool IsDrawerEnabled() => _isDrawerEnabled;
 
     private async Task ToggleDarkMode()
     {

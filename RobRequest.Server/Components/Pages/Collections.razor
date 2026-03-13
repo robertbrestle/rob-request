@@ -241,6 +241,8 @@
 </SectionContent>
 
 @code {
+    
+    [CascadingParameter] public required MainLayout Layout { get; set; }
 
     private List<CollectionModel> _collections = new();
     private List<CollectionModel> _allCollections = new();
@@ -252,6 +254,7 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await Layout.DrawerEnabledToggleAsync(false);
         CollectionService.OnCollectionsChanged += OnCollectionsChanged;
         await LoadCollections();
     }

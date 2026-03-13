@@ -7,8 +7,8 @@
 @code {
     [Parameter] public string? Method { get; set; }
     [Parameter] public bool IsError { get; set; }
-    [Parameter] public MudBlazor.Size Size { get; set; } = Size.Small;
-    [Parameter] public MudBlazor.Variant Variant { get; set; } = Variant.Filled;
+    [Parameter] public Size Size { get; set; } = Size.Small;
+    [Parameter] public Variant Variant { get; set; } = Variant.Filled;
 
     private Color GetMethodColor()
     {

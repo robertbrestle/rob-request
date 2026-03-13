@@ -139,7 +139,7 @@
 
     [Parameter] public HttpResponseModel? Response { get; set; }
     [Parameter] public bool IsSending { get; set; }
-    [CascadingParameter] public MainLayout Layout { get; set; }
+    [CascadingParameter] public required MainLayout Layout { get; set; }
 
     private bool _showFormatted = true;
     private string _headerSearch = string.Empty;
