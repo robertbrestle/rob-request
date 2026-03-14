@@ -15,16 +15,15 @@
                   DebounceInterval="300"
                   OnDebounceIntervalElapsed="SearchHistory"/>
 
-    <!-- History List -->
     <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-1">
-        <MudText Typo="Typo.subtitle2"><b>History</b></MudText>
         <MudSpacer/>
         @if (_history.Count > 0)
         {
             <MudIconButton Icon="@Icons.Material.Filled.DeleteSweep"
                            Size="Size.Small"
                            Color="Color.Error"
-                           OnClick="ClearHistory"/>
+                           OnClick="ClearHistory"
+                           Title="Clear all history"/>
         }
     </MudStack>
 
