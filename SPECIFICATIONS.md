@@ -479,24 +479,24 @@ public class EnvironmentService
 
 ### Layout Structure
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    Header Bar (MudAppBar)                    │
-│  [☰][🔌 RobRequest]     [Env Selector][🌙][🖧 Env][⚙ Settings] │
-├─────────────────────────────────────────────────────────────┤
-│ Drawer    │              Main Content Area                   │
-│ (300px)   │ ┌──────────────────────────────────────────────┐ │
-│ ┌────────┐│ │            Request Builder                   │ │
-│ │▾ Coll. ││ │ [GET▼][URL                         ][Send][💾]│
-│ │ 📁 API ││ ├──────────────────────────────────────────────┤ │
-│ │  GET /u││ │ Params | Headers | Body | Auth                │ │
-│ │  POST  ││ │ [Tab Content Area]                           │ │
-│ │▾ Hist. ││ ├──────────────────────────────────────────────┤ │
-│ │ GET 200││ │            Response Viewer                    │ │
-│ │ POST   ││ │ Status: 200 OK | Time: 245ms | Size: 1.2KB   │ │
-│ │        ││ │ Body | Headers | Cookies                     │ │
-│ │        ││ │ [Response Content Area]                      │ │
-│ └────────┘│ └──────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────┐
+│                    Header Bar (MudAppBar)                      │
+│  [☰][🔌 RobRequest]                 [Env Selector][⚙ Settings] │
+├────────────────────────────────────────────────────────────────┤
+│ Drawer    │              Main Content Area                     │
+│ (300px)   │ ┌────────────────────────────────────────────────┐ │
+│ ┌────────┐│ │            Request Builder                     │ │
+│ │▾ Coll. ││ │ [GET▼][URL                       ][Send][💾]   │ │
+│ │ 📁 API ││ ├────────────────────────────────────────────────┤ │
+│ │  GET /u││ │ Params | Headers | Body | Auth                 │ │
+│ │  POST  ││ │ [Tab Content Area]                             │ │
+│ │▾ Hist. ││ ├────────────────────────────────────────────────┤ │
+│ │ GET 200││ │            Response Viewer                     │ │
+│ │ POST   ││ │ Status: 200 OK | Time: 245ms | Size: 1.2KB     │ │
+│ │        ││ │ Body | Headers | Cookies                       │ │
+│ │        ││ │ [Response Content Area]                        │ │
+│ └────────┘│ └────────────────────────────────────────────────┘ │
+└────────────────────────────────────────────────────────────────┘
 ```
 
 ### Sidebar Drawer Design
@@ -505,16 +505,16 @@ The sidebar drawer uses `SectionContent`/`SectionOutlet` so each page controls i
 ```
 ┌─ Drawer ─────────────────────┐
 │ ▾ 📁 Collections             │  ← MudCollapse (expanded by default)
-│   [🔍 Search collections...] │
+│   [Search collections...]    │
 │   Collections | [+ New]      │
 │   📁 My API                  │
 │     ▸ 📁 Users               │
 │     GET /health              │
 │   📁 Other Project           │
 │ ─────────────────────────────│
-│ ▾ 🕐 History                 │  ← MudCollapse (expanded by default)
-│   [🔍 Search history...]     │
-│   History            [🗑 All]│
+│ ▾    History                 │  ← MudCollapse (expanded by default)
+│   [Search history...]        │
+│   History              [All] │
 │   GET 200  api.example.com   │
 │   POST 201 api.example.com   │
 └──────────────────────────────┘
