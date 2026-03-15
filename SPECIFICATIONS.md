@@ -251,7 +251,7 @@ To create a responsive, feature-rich API testing tool that leverages modern web 
 
 ### Technology Stack
 - **Framework**: ASP.NET Core .NET 10.0 with **InteractiveServer** render mode
-- **UI Framework**: MudBlazor 8.x for Material Design components
+- **UI Framework**: MudBlazor 9.x for Material Design components
 - **HTTP Client**: `System.Net.Http.HttpClient` via `IHttpClientFactory` (server-side; no browser CORS restrictions)
 - **Persistence**: SQLite via Entity Framework Core (server-side database)
 - **State Management**: Scoped services (one DI scope per SignalR circuit); use `@inject` with `Scoped` lifetime

@@ -9,7 +9,7 @@
 
 <MudGrid Spacing="2">
     <!-- Left: Collection Tree -->
-    <MudItem xs="12" md="4">
+    <MudItem xs="12" md="3">
         <MudPaper Elevation="1" Class="pa-3" Style="min-height: calc(100vh - 120px);">
             <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-3">
                 <MudText Typo="Typo.h6">Collections</MudText>
@@ -17,7 +17,7 @@
                 <MudIconButton Icon="@Icons.Material.Filled.CreateNewFolder"
                                Color="Color.Primary"
                                OnClick="CreateRootCollection"
-                               Title="New Collection"/>
+                               title="New collection"/>
             </MudStack>
 
             <MudTextField T="string"
@@ -65,7 +65,7 @@
                         <MudIconButton Icon="@Icons.Material.Filled.Delete"
                                        Color="Color.Error"
                                        OnClick="DeleteSelectedCollection"
-                                       Title="Delete Collection"/>
+                                       title="Delete Collection"/>
                     </MudStack>
 
                     <MudDivider/>
@@ -156,17 +156,17 @@
                                                        Size="Size.Small"
                                                        Color="Color.Primary"
                                                        OnClick="() => LoadRequestInPanel(context)"
-                                                       Title="Open in Request Panel"/>
+                                                       title="Open in Request Panel"/>
                                         <MudIconButton Icon="@Icons.Material.Filled.DriveFileMove"
                                                        Size="Size.Small"
                                                        Color="Color.Info"
                                                        OnClick="() => MoveRequest(context)"
-                                                       Title="Move to another collection"/>
+                                                       title="Move to another collection"/>
                                         <MudIconButton Icon="@Icons.Material.Filled.Delete"
                                                        Size="Size.Small"
                                                        Color="Color.Error"
                                                        OnClick="() => DeleteRequest(context)"
-                                                       Title="Delete request"/>
+                                                       title="Delete request"/>
                                     </MudStack>
                                 </MudTd>
                             </RowTemplate>
@@ -324,7 +324,7 @@
         }
     }
 
-    private async Task OnNameChanged(string value)
+    private async Task OnNameChanged(string? value)
     {
         if (_selectedCollection == null || string.IsNullOrWhiteSpace(value)) return;
         _selectedCollection.Name = value;
@@ -358,7 +358,7 @@
     {
         if (_selectedCollection == null) return;
 
-        var result = await DialogService.ShowMessageBox(
+        var result = await DialogService.ShowMessageBoxAsync(
             "Delete Collection",
             $"Are you sure you want to delete \"{_selectedCollection.Name}\" and all its contents?",
             yesText: "Delete", cancelText: "Cancel");
@@ -375,7 +375,7 @@
 
     private async Task DeleteRequest(CollectionRequestModel request)
     {
-        var result = await DialogService.ShowMessageBox(
+        var result = await DialogService.ShowMessageBoxAsync(
             "Delete Request",
             $"Are you sure you want to delete \"{request.Name}\"?",
             yesText: "Delete", cancelText: "Cancel");
@@ -440,19 +440,20 @@
         var hasChildren = collection.Children.Count > 0;
 
         <MudStack Row="true" AlignItems="AlignItems.Center"
-                  Class="@($"pa-1 {(isSelected ? "mud-primary-text" : "")}")"
-                  Style="@($"padding-left: {depth * 16}px; cursor: pointer; border-radius: 4px; {(isSelected ? "background: var(--mud-palette-primary-lighten);" : "")}")"
+                  Class="@($"pr-1 pt-1 pb-1 {(isSelected ? "mud-theme-primary" : "")}")"
+                  Style="@($"padding-left: {depth * 16}px; cursor: pointer; border-radius: 4px; ")"
                   @onclick="() => SelectCollection(collection.Id)">
             @if (hasChildren)
             {
                 <MudIconButton Icon="@(isExpanded ? Icons.Material.Filled.ExpandMore : Icons.Material.Filled.ChevronRight)"
                                Size="Size.Small"
                                OnClick="() => ToggleExpanded(collection.Id)"
-                               OnClickStopPropagation="true"/>
+                               ClickPropagation="false"/>
             }
             else
             {
-                <div style="width: 30px;"></div>
+                <MudIconButton Icon="@Icons.Material.Filled.ChevronRight" Size="Size.Small"
+                         Style="visibility: hidden;"/>
             }
             <MudIcon Icon="@(isExpanded ? Icons.Material.Filled.FolderOpen : Icons.Material.Filled.Folder)"
                      Size="Size.Small" Color="Color.Warning"/>
@@ -462,13 +463,15 @@
             </MudText>
             @if (collection.Requests.Count > 0)
             {
-                <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@collection.Requests.Count</MudChip>
+                <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Style="@(isSelected ? "color:white;" : "")">
+                    @collection.Requests.Count
+                </MudChip>
             }
             <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small" Dense="true"
                      AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
                 <MudMenuItem Icon="@Icons.Material.Filled.CreateNewFolder"
                              OnClick="() => CreateSubFolder(collection.Id)">
-                    New Sub-folder
+                    New sub-folder
                 </MudMenuItem>
                 <MudMenuItem Icon="@Icons.Material.Filled.Delete" IconColor="Color.Error"
                              OnClick="() => DeleteTreeCollection(collection)">
@@ -488,7 +491,7 @@
 
     private async Task DeleteTreeCollection(CollectionModel collection)
     {
-        var result = await DialogService.ShowMessageBox(
+        var result = await DialogService.ShowMessageBoxAsync(
             "Delete Collection",
             $"Are you sure you want to delete \"{collection.Name}\" and all its contents?",
             yesText: "Delete", cancelText: "Cancel");

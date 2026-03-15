@@ -15,10 +15,11 @@
                 <MudIconButton Icon="@Icons.Material.Filled.Menu"
                                Color="Color.Inherit"
                                Edge="Edge.Start"
-                               OnClick="DrawerToggle"/>
+                               OnClick="DrawerToggle"
+                               aria-label="toggle drawer"/>
             }
             <MudIcon Icon="@Icons.Material.Filled.Api" Class="mr-2"/>
-            <MudLink Href="/">
+            <MudLink Href="/" Color="Color.Inherit">
                 <MudText Typo="Typo.h6" Class="mr-4">
                     RobRequest
                 </MudText>
@@ -30,11 +31,13 @@
             <MudIconButton Icon="@(_isDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
                            Color="Color.Inherit"
                            OnClick="ToggleDarkMode"
-                           Class="ml-2"/>
+                           Class="ml-2"
+                           aria-label="toggle dark mode"/>
             <MudIconButton Icon="@Icons.Material.Filled.Settings"
                            Color="Color.Inherit"
                            Href="/settings"
-                           Class="ml-1"/>
+                           Class="ml-1"
+                           aria-label="open settings"/>
         </MudAppBar>
 
         @if (_isDrawerEnabled)

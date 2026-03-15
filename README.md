@@ -1,6 +1,6 @@
 # RobRequest
 
-A lightweight, modern REST API development client built with .NET 10 Blazor WebAssembly and MudBlazor. A streamlined alternative to Postman that runs entirely in the browser.
+A lightweight, modern REST API development client built with .NET 10 Blazor Server, SQLite, and MudBlazor. A streamlined alternative to Postman that runs entirely in the browser.
 
 ## Prerequisites
 
@@ -18,12 +18,15 @@ Then open `https://localhost:7025` in your browser.
 
 ## Project Structure
 
-- **RobRequest/** — Server project (hosts static files, serves the WASM app)
-- **RobRequest.Client/** — Blazor WebAssembly client project
+- **RobRequest.Server/** — Blazor Server project
+  - `Components/` - Routable pages and reusable UI components
+  - `wwwroot/` - Static files (favicon, images, etc.)
+- **RobRequest.Shared/** — shared library models and services
   - `Models/` — Data models (HttpRequestModel, HttpResponseModel, etc.)
   - `Services/` — Business logic (ApiService, HistoryService, EnvironmentService, SettingsService)
-  - `Components/` — Reusable UI components (RequestPanel, ResponsePanel, Sidebar)
-  - `Pages/` — Routable pages (Home, Settings)
+  - `Migrations/` — Entity Framework Core migrations
+  - `Data/` - Application database context
+- **RobRequest.Tests/** — unit tests
 
 ## Features
 
@@ -36,6 +39,8 @@ Then open `https://localhost:7025` in your browser.
 
 ## Tech Stack
 
-- .NET 10 Blazor WebAssembly (InteractiveWebAssembly render mode)
-- MudBlazor 8.x (Material Design UI)
-- In-memory storage (IndexedDB persistence planned for Phase 3)
+- .NET 10.0 Blazor Server
+- MudBlazor 9.x (Material Design UI)
+- SQLite (server-side database)
+
+&nbsp;

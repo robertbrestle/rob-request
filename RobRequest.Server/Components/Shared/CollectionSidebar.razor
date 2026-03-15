@@ -23,12 +23,14 @@
                        Size="Size.Small"
                        Color="Color.Primary"
                        OnClick="CreateRootCollection"
-                       Title="New Collection"/>
+                       title="New Collection"
+                       aria-label="new collection"/>
         <MudIconButton Icon="@Icons.Material.Filled.Settings"
                        Size="Size.Small"
                        Color="Color.Inherit"
                        Href="/collections"
-                       Title="Collection settings"/>
+                       title="Collection settings"
+                       aria-label="collection settings"/>
     </MudStack>
 
     @if (_collections.Count == 0)
@@ -122,7 +124,7 @@
 
     private async Task DeleteCollection(CollectionModel collection)
     {
-        var result = await DialogService.ShowMessageBox(
+        var result = await DialogService.ShowMessageBoxAsync(
             "Delete Collection",
             $"Are you sure you want to delete \"{collection.Name}\" and all its contents?",
             yesText: "Delete", cancelText: "Cancel");
@@ -135,7 +137,7 @@
 
     private async Task DeleteRequest(CollectionRequestModel request)
     {
-        var result = await DialogService.ShowMessageBox(
+        var result = await DialogService.ShowMessageBoxAsync(
             "Delete Request",
             $"Are you sure you want to delete \"{request.Name}\"?",
             yesText: "Delete", cancelText: "Cancel");
@@ -170,8 +172,11 @@
                       @onclick="() => ToggleExpanded(collection.Id)">
                 @if (hasChildren)
                 {
-                    <MudIcon Icon="@(isExpanded ? Icons.Material.Filled.ExpandMore : Icons.Material.Filled.ChevronRight)"
-                             Size="Size.Small"/>
+                    <MudIcon
+                        Icon="@(isExpanded ? Icons.Material.Filled.ExpandMore : Icons.Material.Filled.ChevronRight)"
+                        Size="Size.Small"
+                        Title="@(isExpanded ? "Collapse collection" : "Expand collection")"
+                        aria-label="@(isExpanded ? "Collapse collection" : "Expand collection")"/>
                 }
                 else
                 {
@@ -185,17 +190,24 @@
                     @collection.Name
                 </MudText>
                 <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small" Dense="true"
-                         AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                         AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight"
+                         title="Open collection actions">
                     <MudMenuItem Icon="@Icons.Material.Filled.CreateNewFolder"
-                                 OnClick="() => CreateSubFolder(collection.Id)">
+                                 OnClick="() => CreateSubFolder(collection.Id)"
+                                 title="Create a new folder under this collection"
+                                 aria-label="create new folder">
                         New Folder
                     </MudMenuItem>
                     <MudMenuItem Icon="@Icons.Material.Filled.Edit"
-                                 OnClick="() => RenameCollection(collection)">
+                                 OnClick="() => RenameCollection(collection)"
+                                 title="Rename this collection"
+                                 aria-label="rename collection">
                         Rename
                     </MudMenuItem>
                     <MudMenuItem Icon="@Icons.Material.Filled.Delete" IconColor="Color.Error"
-                                 OnClick="() => DeleteCollection(collection)">
+                                 OnClick="() => DeleteCollection(collection)"
+                                 title="Delete this collection and all its contents"
+                                 aria-label="delete collection">
                         Delete
                     </MudMenuItem>
                 </MudMenu>
@@ -213,16 +225,21 @@
                     <MudStack Row="true" AlignItems="AlignItems.Center"
                               Class="request-node pr-1 pt-1 pb-1"
                               Style="@($"padding-left: {(depth + 1) * 16}px; cursor: pointer; border-radius: 4px;")"
-                              @onclick="() => OnRequestSelected.InvokeAsync(request)">
+                              @onclick="() => OnRequestSelected.InvokeAsync(request)"
+                              title="Open request"
+                              aria-label="open request">
                         <MudText Typo="Typo.body2"
-                                 Style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;" Title="@request.Name">
+                                 Style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;"
+                                 title="@request.Name">
                             @request.Name
                         </MudText>
                         <MudIconButton Icon="@Icons.Material.Filled.Delete"
                                        Size="Size.Small"
                                        Color="Color.Error"
                                        OnClick="() => DeleteRequest(request)"
-                                       OnClickStopPropagation="true"/>
+                                       ClickPropagation="false"
+                                       title="Delete this request"
+                                       aria-label="delete request"/>
                     </MudStack>
                 }
             }
