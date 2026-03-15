@@ -8,7 +8,9 @@
            Dense="true"
            Margin="Margin.Dense"
            Label="Environment"
-           Class="ml-2">
+           OuterClass="environment-selector"
+           title="Select environment"
+           aria-label="select environment">
     @foreach (var env in _environments)
     {
         <MudSelectItem Value="@env.Id">@env.Name</MudSelectItem>
@@ -16,19 +18,20 @@
 </MudSelect>
 
 @code {
-    private IReadOnlyList<EnvironmentModel> _environments = Array.Empty<EnvironmentModel>();
+    private List<EnvironmentModel> _environments = new();
     private string? _activeId;
 
     protected override async Task OnInitializedAsync()
     {
-        _environments = await EnvironmentService.GetEnvironmentsAsync();
+        await EnvironmentService.InitializeAsync();
+        _environments = await EnvironmentService.GetAllEnvironmentsAsync();
         _activeId = EnvironmentService.ActiveEnvironmentId;
         EnvironmentService.OnEnvironmentChanged += OnChanged;
     }
 
     private async void OnChanged()
     {
-        _environments = await EnvironmentService.GetEnvironmentsAsync();
+        _environments = await EnvironmentService.GetAllEnvironmentsAsync();
         _activeId = EnvironmentService.ActiveEnvironmentId;
         await InvokeAsync(StateHasChanged);
     }

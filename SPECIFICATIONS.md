@@ -177,26 +177,35 @@ To create a responsive, feature-rich API testing tool that leverages modern web 
 ### 3.4 Environment Variables
 
 #### Variable Management
-- **Environment Sets**: Create multiple environments (Dev, Staging, Production)
+- **Environment Sets**: Create multiple standalone environments (Dev, Staging, Production)
 - **Variable Types**: 
   - String values
   - Secret values (masked in UI)
-  - Dynamic values (timestamps, UUIDs)
-- **Variable Scope**: 
-  - Global variables (available everywhere)
-  - Environment-specific variables
-  - Collection-level variables
+  - Dynamic values (timestamps, UUIDs) — future enhancement
+- **Variable Scope**: Environment-specific only (no global or collection-level variables)
+- **Environments Page** (`/environments`): Dedicated management page with similar layout to Collections
+  - Left panel: flat list of environments with search, create, delete, and context menus
+  - Right panel: detail view of selected environment with:
+    - Editable name and description
+    - Set Active button
+    - Variables table with enabled toggle, key, value (with secret/password toggle), and delete
+    - Add Variable button
+    - Creation and last-updated timestamps
+  - All changes auto-saved to the database
+- **Data Model**:
+  - `EnvironmentModel`: Id, Name, Description, SortOrder, Variables (owned JSON), CreatedAt, UpdatedAt
+  - `EnvironmentVariable`: Key, Value, IsSecret, Enabled (stored as owned JSON array on EnvironmentModel)
 
 #### Variable Substitution
 - **Syntax**: `{{variableName}}` format for substitution
-- **Contexts**: Variables work in URLs, headers, request bodies
-- **Real-time Preview**: Show substituted values before sending
-- **Error Handling**: Clear indication of undefined variables
+- **Contexts**: Variables work in URLs, headers, query parameters, request bodies, and all authentication fields (token, username, password, API key value)
+- **Real-time Preview**: Substituted URL preview shown below the URL bar when `{{variables}}` are detected; updates on URL change and environment switch
+- **Error Handling**: Undefined variables are left as `{{variableName}}` in the resolved output
 
 #### Advanced Features (Phase 4)
 - **Variable Functions**: Built-in functions for common operations
 - **Chained Variables**: Variables referencing other variables
-- **Environment Switching**: Quick environment selector in UI
+- **Environment Switching**: Quick environment selector in AppBar (EnvironmentSelector component)
 - **Variable Import**: Import from .env files or JSON
 
 ---
@@ -292,13 +301,14 @@ The solution uses a **three-project layout**. Because InteractiveServer runs all
 - **Page Components**:
   - `Home.razor`: Main request/response workspace; manages drawer SectionContent with collapsible sidebar sections
   - `Collections.razor` (`/collections`): Dedicated collection management page with tree + detail panel
+  - `Environments.razor` (`/environments`): Dedicated environment management page with list + detail panel
   - `Settings.razor` (`/settings`): Application settings page
 
 #### Business Services (`RobRequest.Shared/Services/`)
 - **ApiService**: HTTP request execution and response handling (server-side `HttpClient`)
 - **HistoryService**: Request history management and persistence (EF Core)
 - **CollectionService**: Collection CRUD operations (EF Core)
-- **EnvironmentService**: Variable management and substitution
+- **EnvironmentService**: Environment CRUD, variable management, `{{variable}}` substitution, and active environment persistence (EF Core)
 - **SettingsService**: User preferences and configuration (EF Core)
 
 > All services reside in `RobRequest.Shared` under the `RobRequest.Shared.Services` namespace and are registered in the server's DI container with **Scoped** lifetime (one instance per circuit).
@@ -440,9 +450,20 @@ public class CollectionService
 ```csharp
 public class EnvironmentService
 {
-    public async Task<string> SubstituteVariablesAsync(string input, string environmentId);
-    public async Task<Environment> GetEnvironmentAsync(string id);
+    // Persists to SQLite via EF Core (AppDbContext injected); SettingsService for active environment persistence
+    public event Action? OnEnvironmentChanged;
+    public string? ActiveEnvironmentId { get; set; }
+    public async Task InitializeAsync();
+    public async Task<List<EnvironmentModel>> GetAllEnvironmentsAsync();
+    public async Task<EnvironmentModel?> GetEnvironmentAsync(string id);
+    public async Task<EnvironmentModel?> GetActiveEnvironmentAsync();
+    public async Task<EnvironmentModel> CreateEnvironmentAsync(string name, string? description = null);
+    public async Task UpdateEnvironmentAsync(EnvironmentModel environment);
+    public async Task DeleteEnvironmentAsync(string id);
+    public async Task<List<EnvironmentModel>> SearchEnvironmentsAsync(string query);
     public async Task SetVariableAsync(string environmentId, string key, string value);
+    public async Task<string> SubstituteVariablesAsync(string input);
+    public static bool ContainsVariables(string? input);
 }
 ```
 
@@ -460,7 +481,7 @@ public class EnvironmentService
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    Header Bar (MudAppBar)                    │
-│  [☰][🔌 RobRequest]         [Env Selector][🌙][⚙ Settings] │
+│  [☰][🔌 RobRequest]     [Env Selector][🌙][🖧 Env][⚙ Settings] │
 ├─────────────────────────────────────────────────────────────┤
 │ Drawer    │              Main Content Area                   │
 │ (300px)   │ ┌──────────────────────────────────────────────┐ │
@@ -514,6 +535,10 @@ The sidebar drawer uses `SectionContent`/`SectionOutlet` so each page controls i
 - **Collections Page** (`/collections`): Dedicated collection management
   - Left panel: Collection tree with selection, expand/collapse, context menus (new sub-folder, delete)
   - Right panel: Selected collection detail with editable name/description/parent, request table, sub-folder list
+
+- **Environments Page** (`/environments`): Dedicated environment management
+  - Left panel: Flat list of environments with search, create, delete, and context menus
+  - Right panel: Selected environment detail with editable name/description, active toggle, variables table, timestamps
 
 - **Settings Page** (`/settings`): Application preferences
 
@@ -605,10 +630,10 @@ The sidebar drawer uses `SectionContent`/`SectionOutlet` so each page controls i
 - [ ] Import/export functionality (JSON file download/upload)
 
 #### Sprint 3.2: UI Polish
-- [ ] Sidebar implementation
+- [X] Sidebar implementation
 - [ ] Keyboard shortcuts
 - [ ] Settings page
-- [ ] Theme switching (dark/light)
+- [X] Theme switching (dark/light)
 - [ ] Responsive design improvements
 
 **Acceptance Criteria**:

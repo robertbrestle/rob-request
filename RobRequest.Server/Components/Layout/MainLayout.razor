@@ -18,7 +18,7 @@
                                OnClick="DrawerToggle"
                                aria-label="toggle drawer"/>
             }
-            <MudIcon Icon="@Icons.Material.Filled.Api" Class="mr-2"/>
+            <MudIcon Icon="@Icons.Material.Filled.Api" Class="mx-2"/>
             <MudLink Href="/" Color="Color.Inherit">
                 <MudText Typo="Typo.h6" Class="mr-4">
                     RobRequest
@@ -28,16 +28,26 @@
             <MudContainer MaxWidth="MaxWidth.ExtraSmall">
                 <SectionOutlet SectionName="EnvironmentSelector"/>
             </MudContainer>
-            <MudIconButton Icon="@(_isDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
-                           Color="Color.Inherit"
-                           OnClick="ToggleDarkMode"
-                           Class="ml-2"
-                           aria-label="toggle dark mode"/>
-            <MudIconButton Icon="@Icons.Material.Filled.Settings"
-                           Color="Color.Inherit"
-                           Href="/settings"
-                           Class="ml-1"
-                           aria-label="open settings"/>
+            <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small" Dense="true"
+                     AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                <MudMenuItem Icon="@Icons.Material.Filled.Dns"
+                             Href="/environments">
+                    Environments
+                </MudMenuItem>
+                <MudMenuItem Icon="@Icons.Material.Filled.CreateNewFolder"
+                             Href="/collections">
+                    Collections
+                </MudMenuItem>
+                <MudDivider/>
+                <MudMenuItem Icon="@(_isDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
+                             OnClick="ToggleDarkMode">
+                    Theme
+                </MudMenuItem>
+                <MudMenuItem Icon="@Icons.Material.Filled.Settings"
+                             Href="/settings">
+                    Settings
+                </MudMenuItem>
+            </MudMenu>
         </MudAppBar>
 
         @if (_isDrawerEnabled)

@@ -1,0 +1,444 @@
+@page "/environments"
+@rendermode InteractiveServer
+@inject EnvironmentService EnvironmentService
+@inject IDialogService DialogService
+@implements IDisposable
+
+<PageTitle>RobRequest - Environments</PageTitle>
+
+<MudGrid Spacing="2">
+    <!-- Left: Environment List -->
+    <MudItem xs="12" md="3">
+        <MudPaper Elevation="1" Class="pa-3" Style="min-height: calc(100vh - 120px);">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-3">
+                <MudText Typo="Typo.h6">Environments</MudText>
+                <MudSpacer/>
+                <MudIconButton Icon="@Icons.Material.Filled.Add"
+                               Color="Color.Primary"
+                               OnClick="CreateEnvironment"
+                               title="New environment"/>
+            </MudStack>
+
+            <MudTextField T="string"
+                          @bind-Value="_searchQuery"
+                          Placeholder="Search..."
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          Clearable="true"
+                          Immediate="true"
+                          DebounceInterval="300"
+                          OnDebounceIntervalElapsed="SearchEnvironments"
+                          Class="mb-3"/>
+
+            @if (_environments.Count == 0)
+            {
+                <MudText Typo="Typo.body2" Color="Color.Default" Align="Align.Center" Class="pa-4">
+                    No environments yet. Create one to get started.
+                </MudText>
+            }
+            else
+            {
+                <MudStack Spacing="0" Style="max-height: calc(100vh - 280px); overflow-y: auto;">
+                    @foreach (var env in _environments)
+                    {
+                        var isSelected = _selectedEnvironmentId == env.Id;
+                        var isActive = EnvironmentService.ActiveEnvironmentId == env.Id;
+
+                        <MudStack Row="true" AlignItems="AlignItems.Center"
+                                  Class="@($"pr-1 pt-1 pb-1 {(isSelected ? "mud-theme-primary" : "")}")"
+                                  Style="padding-left: 8px; cursor: pointer; border-radius: 4px;"
+                                  @onclick="() => SelectEnvironment(env.Id)">
+                            <MudIcon Icon="@Icons.Material.Filled.Dns" Size="Size.Small"
+                                     Color="@(isActive ? Color.Success : Color.Default)"/>
+                            <MudText Typo="Typo.body2"
+                                     Style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">
+                                @env.Name
+                            </MudText>
+                            @if (isActive)
+                            {
+                                <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Outlined"
+                                         Style="@(isSelected ? "color:white; border-color:white;" : "")">
+                                    Active
+                                </MudChip>
+                            }
+                            @if (env.Variables.Count > 0)
+                            {
+                                <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined"
+                                         Style="@(isSelected ? "color:white; border-color:white;" : "")">
+                                    @env.Variables.Count
+                                </MudChip>
+                            }
+                            <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small" Dense="true"
+                                     AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                                <MudMenuItem Icon="@Icons.Material.Filled.Delete" IconColor="Color.Error"
+                                             OnClick="() => DeleteEnvironmentFromList(env)">
+                                    Delete
+                                </MudMenuItem>
+                            </MudMenu>
+                        </MudStack>
+                    }
+                </MudStack>
+            }
+        </MudPaper>
+    </MudItem>
+
+    <!-- Right: Detail Panel -->
+    <MudItem xs="12" md="8">
+        <MudPaper Elevation="1" Class="pa-3" Style="min-height: calc(100vh - 120px);">
+            @if (_selectedEnvironment != null)
+            {
+                <MudStack Spacing="3">
+                    <MudStack Row="true" AlignItems="AlignItems.Center">
+                        <MudIcon Icon="@Icons.Material.Filled.Dns" Color="Color.Primary" Size="Size.Large"/>
+                        <MudText Typo="Typo.h5">@_selectedEnvironment.Name</MudText>
+                        <MudSpacer/>
+                        @if (EnvironmentService.ActiveEnvironmentId == _selectedEnvironment.Id)
+                        {
+                            <MudChip T="string" Color="Color.Success" Size="Size.Small">Active</MudChip>
+                        }
+                        else
+                        {
+                            <MudButton Size="Size.Small"
+                                       Variant="Variant.Outlined"
+                                       Color="Color.Primary"
+                                       StartIcon="@Icons.Material.Filled.CheckCircle"
+                                       OnClick="SetActiveEnvironment">
+                                Set Active
+                            </MudButton>
+                        }
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                       Color="Color.Error"
+                                       OnClick="DeleteSelectedEnvironment"
+                                       title="Delete Environment"/>
+                    </MudStack>
+
+                    <MudDivider/>
+
+                    <!-- Editable Fields -->
+                    <MudTextField T="string"
+                                  Value="_selectedEnvironment.Name"
+                                  ValueChanged="OnNameChanged"
+                                  Label="Environment Name"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Immediate="true"
+                                  DebounceInterval="500"/>
+
+                    <MudTextField T="string"
+                                  Value="_selectedEnvironment.Description"
+                                  ValueChanged="OnDescriptionChanged"
+                                  Label="Description"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Lines="2"
+                                  Immediate="true"
+                                  DebounceInterval="500"/>
+
+                    <MudDivider/>
+
+                    <!-- Variables Section -->
+                    <MudStack Row="true" AlignItems="AlignItems.Center">
+                        <MudText Typo="Typo.h6">Variables</MudText>
+                        <MudChip T="string" Size="Size.Small" Color="Color.Primary">
+                            @(_selectedEnvironment.Variables.Count)
+                        </MudChip>
+                    </MudStack>
+
+                    <MudText Typo="Typo.caption" Color="Color.Default">
+                        Use <code>@("{{variableName}}")</code> syntax in URLs, headers, body, and auth fields to substitute variables.
+                    </MudText>
+
+                    @if (_selectedEnvironment.Variables.Count == 0)
+                    {
+                        <MudAlert Severity="Severity.Info" Dense="true" Class="my-2">
+                            No variables defined. Add variables to use in your requests.
+                        </MudAlert>
+                    }
+                    else
+                    {
+                        <MudSimpleTable Dense="true" Hover="true" Elevation="0"
+                                        Style="border: 1px solid var(--mud-palette-lines-default); border-radius: 4px;">
+                            <thead>
+                                <tr>
+                                    <th style="width: 50px;">On</th>
+                                    <th>Key</th>
+                                    <th>Value</th>
+                                    <th style="width: 70px;">Secret</th>
+                                    <th style="width: 50px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var variable in _selectedEnvironment.Variables)
+                                {
+                                    <tr>
+                                        <td>
+                                            <MudCheckBox T="bool" Value="variable.Enabled"
+                                                         ValueChanged="v => OnVariableEnabledChanged(variable, v)"
+                                                         Size="Size.Small" Dense="true"/>
+                                        </td>
+                                        <td>
+                                            <MudTextField T="string"
+                                                          Value="variable.Key"
+                                                          ValueChanged="v => OnVariableKeyChanged(variable, v)"
+                                                          Variant="Variant.Text"
+                                                          Margin="Margin.Dense"
+                                                          Placeholder="variable_name"
+                                                          Immediate="true"
+                                                          DebounceInterval="500"/>
+                                        </td>
+                                        <td>
+                                            <MudTextField T="string"
+                                                          Value="variable.Value"
+                                                          ValueChanged="v => OnVariableValueChanged(variable, v)"
+                                                          Variant="Variant.Text"
+                                                          Margin="Margin.Dense"
+                                                          Placeholder="value"
+                                                          InputType="@(variable.IsSecret ? InputType.Password : InputType.Text)"
+                                                          Immediate="true"
+                                                          DebounceInterval="500"/>
+                                        </td>
+                                        <td>
+                                            <MudCheckBox T="bool" Value="variable.IsSecret"
+                                                         ValueChanged="v => OnVariableSecretChanged(variable, v)"
+                                                         Size="Size.Small" Dense="true"/>
+                                        </td>
+                                        <td>
+                                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                           Size="Size.Small"
+                                                           Color="Color.Error"
+                                                           OnClick="() => RemoveVariable(variable)"/>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </MudSimpleTable>
+                    }
+
+                    <MudButton StartIcon="@Icons.Material.Filled.Add"
+                               Size="Size.Small"
+                               Variant="Variant.Outlined"
+                               Color="Color.Primary"
+                               OnClick="AddVariable">
+                        Add Variable
+                    </MudButton>
+
+                    <!-- Metadata -->
+                    <MudDivider Class="my-2"/>
+                    <MudStack Row="true" Spacing="4">
+                        <MudText Typo="Typo.caption" Color="Color.Default">
+                            Created: @_selectedEnvironment.CreatedAt.ToString("yyyy-MM-dd HH:mm")
+                        </MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Default">
+                            Updated: @_selectedEnvironment.UpdatedAt.ToString("yyyy-MM-dd HH:mm")
+                        </MudText>
+                    </MudStack>
+                </MudStack>
+            }
+            else
+            {
+                <!-- No selection -->
+                <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center"
+                          Style="min-height: calc(100vh - 160px);">
+                    <MudIcon Icon="@Icons.Material.Filled.Dns" Size="Size.Large"
+                             Color="Color.Default" Style="font-size: 64px; opacity: 0.3;"/>
+                    <MudText Typo="Typo.h6" Color="Color.Default" Align="Align.Center">
+                        Select an environment to view its details
+                    </MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Default" Align="Align.Center">
+                        Choose an environment from the list on the left, or create a new one.
+                    </MudText>
+                </MudStack>
+            }
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+<SectionContent SectionName="EnvironmentSelector">
+    <EnvironmentSelector/>
+</SectionContent>
+
+@code {
+
+    [CascadingParameter] public required MainLayout Layout { get; set; }
+
+    private List<EnvironmentModel> _environments = new();
+    private string _searchQuery = string.Empty;
+    private string? _selectedEnvironmentId;
+    private EnvironmentModel? _selectedEnvironment;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Layout.DrawerEnabledToggleAsync(false);
+        EnvironmentService.OnEnvironmentChanged += OnEnvironmentsChanged;
+        await LoadEnvironments();
+    }
+
+    private async void OnEnvironmentsChanged()
+    {
+        await LoadEnvironments();
+        if (_selectedEnvironmentId != null)
+        {
+            await LoadSelectedEnvironment();
+        }
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task LoadEnvironments()
+    {
+        _environments = string.IsNullOrWhiteSpace(_searchQuery)
+            ? await EnvironmentService.GetAllEnvironmentsAsync()
+            : await EnvironmentService.SearchEnvironmentsAsync(_searchQuery);
+    }
+
+    private async Task LoadSelectedEnvironment()
+    {
+        if (_selectedEnvironmentId == null)
+        {
+            _selectedEnvironment = null;
+            return;
+        }
+
+        _selectedEnvironment = await EnvironmentService.GetEnvironmentAsync(_selectedEnvironmentId);
+    }
+
+    private async Task SelectEnvironment(string environmentId)
+    {
+        _selectedEnvironmentId = environmentId;
+        await LoadSelectedEnvironment();
+    }
+
+    private async Task SearchEnvironments(string query)
+    {
+        _searchQuery = query;
+        await LoadEnvironments();
+    }
+
+    private async Task CreateEnvironment()
+    {
+        var parameters = new DialogParameters<NameInputDialog>
+        {
+            { x => x.Label, "Environment name" },
+            { x => x.Value, string.Empty }
+        };
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<NameInputDialog>("New Environment", parameters, options);
+        var result = await dialog.Result;
+
+        if (result?.Canceled == false && result.Data is string name && !string.IsNullOrWhiteSpace(name))
+        {
+            var created = await EnvironmentService.CreateEnvironmentAsync(name);
+            await LoadEnvironments();
+            await SelectEnvironment(created.Id);
+        }
+    }
+
+    private async Task OnNameChanged(string? value)
+    {
+        if (_selectedEnvironment == null || string.IsNullOrWhiteSpace(value)) return;
+        _selectedEnvironment.Name = value;
+        await EnvironmentService.UpdateEnvironmentAsync(_selectedEnvironment);
+        await LoadEnvironments();
+    }
+
+    private async Task OnDescriptionChanged(string? value)
+    {
+        if (_selectedEnvironment == null) return;
+        _selectedEnvironment.Description = value;
+        await EnvironmentService.UpdateEnvironmentAsync(_selectedEnvironment);
+    }
+
+    private void SetActiveEnvironment()
+    {
+        if (_selectedEnvironment == null) return;
+        EnvironmentService.ActiveEnvironmentId = _selectedEnvironment.Id;
+    }
+
+    private async Task DeleteSelectedEnvironment()
+    {
+        if (_selectedEnvironment == null) return;
+
+        var result = await DialogService.ShowMessageBoxAsync(
+            "Delete Environment",
+            $"Are you sure you want to delete \"{_selectedEnvironment.Name}\" and all its variables?",
+            yesText: "Delete", cancelText: "Cancel");
+
+        if (result == true)
+        {
+            await EnvironmentService.DeleteEnvironmentAsync(_selectedEnvironment.Id);
+            _selectedEnvironmentId = null;
+            _selectedEnvironment = null;
+            await LoadEnvironments();
+        }
+    }
+
+    private async Task DeleteEnvironmentFromList(EnvironmentModel env)
+    {
+        var result = await DialogService.ShowMessageBoxAsync(
+            "Delete Environment",
+            $"Are you sure you want to delete \"{env.Name}\" and all its variables?",
+            yesText: "Delete", cancelText: "Cancel");
+
+        if (result == true)
+        {
+            if (_selectedEnvironmentId == env.Id)
+            {
+                _selectedEnvironmentId = null;
+                _selectedEnvironment = null;
+            }
+            await EnvironmentService.DeleteEnvironmentAsync(env.Id);
+            await LoadEnvironments();
+        }
+    }
+
+    private async Task AddVariable()
+    {
+        if (_selectedEnvironment == null) return;
+        _selectedEnvironment.Variables.Add(new EnvironmentVariable());
+        await EnvironmentService.UpdateEnvironmentAsync(_selectedEnvironment);
+    }
+
+    private async Task RemoveVariable(EnvironmentVariable variable)
+    {
+        if (_selectedEnvironment == null) return;
+        _selectedEnvironment.Variables.Remove(variable);
+        await EnvironmentService.UpdateEnvironmentAsync(_selectedEnvironment);
+    }
+
+    private async Task OnVariableEnabledChanged(EnvironmentVariable variable, bool value)
+    {
+        variable.Enabled = value;
+        await SaveCurrentEnvironment();
+    }
+
+    private async Task OnVariableKeyChanged(EnvironmentVariable variable, string value)
+    {
+        variable.Key = value;
+        await SaveCurrentEnvironment();
+    }
+
+    private async Task OnVariableValueChanged(EnvironmentVariable variable, string value)
+    {
+        variable.Value = value;
+        await SaveCurrentEnvironment();
+    }
+
+    private async Task OnVariableSecretChanged(EnvironmentVariable variable, bool value)
+    {
+        variable.IsSecret = value;
+        await SaveCurrentEnvironment();
+    }
+
+    private async Task SaveCurrentEnvironment()
+    {
+        if (_selectedEnvironment == null) return;
+        await EnvironmentService.UpdateEnvironmentAsync(_selectedEnvironment);
+    }
+
+    public void Dispose()
+    {
+        EnvironmentService.OnEnvironmentChanged -= OnEnvironmentsChanged;
+    }
+
+}

@@ -4,6 +4,7 @@
 @inject CollectionService CollectionService
 @inject EnvironmentService EnvironmentService
 @inject IDialogService DialogService
+@implements IDisposable
 
 <MudHotkey Key="JsKey.Enter" KeyModifiers="[JsKeyModifier.ControlRight]" OnHotkeyPressed="SendRequest"/>
 
@@ -13,7 +14,8 @@
         <MethodSelector @bind-Value="_request.Method" IsDarkMode="Layout.IsDarkMode()"/>
         <MudTextField T="string"
                       @ref="_urlField"
-                      @bind-Value="_request.Url"
+                      Value="_request.Url"
+                      ValueChanged="OnUrlValueChanged"
                       Placeholder="Enter request URL (e.g. https://api.example.com/endpoint)"
                       Variant="Variant.Outlined"
                       Margin="Margin.Dense"
@@ -23,6 +25,7 @@
                       AdornmentAriaLabel="clean query parameters"
                       OnAdornmentClick="OnUrlChanged"
                       Immediate="true"
+                      DebounceInterval="300"
                       OnKeyDown="OnSendRequest"/>
         <MudButton Variant="Variant.Filled"
                    Color="Color.Primary"
@@ -56,6 +59,16 @@
                        Size="Size.Medium"
                        title="Save to collection"/>
     </MudStack>
+
+    @if (_showUrlPreview && !string.IsNullOrEmpty(_resolvedUrlPreview))
+    {
+        <MudText Typo="Typo.caption" Color="Color.Inherit" Class="ml-1 mb-1"
+                 Style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+            <MudIcon Icon="@Icons.Material.Filled.SwapHoriz" Size="Size.Small" Class="mr-1"
+                     Style="vertical-align: middle; font-size: 14px;"/>
+            @_resolvedUrlPreview
+        </MudText>
+    }
 
     <!-- Request Tabs -->
     <MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true" TabButtonsClass="pa-3">
@@ -235,8 +248,10 @@
     private bool _isSending;
     private CancellationTokenSource? _cts;
     private MudTextField<string>? _urlField;
+    private bool _showUrlPreview;
+    private string? _resolvedUrlPreview;
 
-    public void LoadRequest(HttpRequestModel request)
+    public async void LoadRequest(HttpRequestModel request)
     {
         _request = new HttpRequestModel
         {
@@ -257,6 +272,7 @@
             ApiKeyLocation = request.ApiKeyLocation,
             TimeoutSeconds = request.TimeoutSeconds
         };
+        await UpdateUrlPreview();
         StateHasChanged();
     }
 
@@ -280,7 +296,31 @@
 
         try
         {
-            // Process form data substitution separately
+            // Substitute environment variables in headers
+            var substitutedHeaders = new List<HeaderItem>();
+            foreach (var h in _request.Headers)
+            {
+                substitutedHeaders.Add(new HeaderItem
+                {
+                    Key = h.Key,
+                    Value = await EnvironmentService.SubstituteVariablesAsync(h.Value),
+                    Enabled = h.Enabled
+                });
+            }
+
+            // Substitute environment variables in query params
+            var substitutedQueryParams = new List<QueryParamItem>();
+            foreach (var q in _request.QueryParams)
+            {
+                substitutedQueryParams.Add(new QueryParamItem
+                {
+                    Key = q.Key,
+                    Value = await EnvironmentService.SubstituteVariablesAsync(q.Value),
+                    Enabled = q.Enabled
+                });
+            }
+
+            // Substitute environment variables in form data
             var substitutedFormData = new List<FormDataItem>();
             foreach (var f in _request.FormData)
             {
@@ -295,21 +335,21 @@
                 });
             }
 
-            // Substitute environment variables
+            // Build fully substituted request
             var substitutedRequest = new HttpRequestModel
             {
                 Method = _request.Method,
                 Url = await EnvironmentService.SubstituteVariablesAsync(_request.Url),
-                Headers = _request.Headers,
-                QueryParams = _request.QueryParams,
+                Headers = substitutedHeaders,
+                QueryParams = substitutedQueryParams,
                 FormData = substitutedFormData,
                 BodyType = _request.BodyType,
                 Body = await EnvironmentService.SubstituteVariablesAsync(_request.Body),
                 ContentType = _request.ContentType,
                 AuthType = _request.AuthType,
                 AuthToken = await EnvironmentService.SubstituteVariablesAsync(_request.AuthToken),
-                AuthUsername = _request.AuthUsername,
-                AuthPassword = _request.AuthPassword,
+                AuthUsername = await EnvironmentService.SubstituteVariablesAsync(_request.AuthUsername),
+                AuthPassword = await EnvironmentService.SubstituteVariablesAsync(_request.AuthPassword),
                 ApiKeyName = _request.ApiKeyName,
                 ApiKeyValue = await EnvironmentService.SubstituteVariablesAsync(_request.ApiKeyValue),
                 ApiKeyLocation = _request.ApiKeyLocation,
@@ -448,6 +488,41 @@
                 saveResult.RequestName,
                 _request);
         }
+    }
+
+    protected override void OnInitialized()
+    {
+        EnvironmentService.OnEnvironmentChanged += OnEnvironmentChanged;
+    }
+
+    private async void OnEnvironmentChanged()
+    {
+        await UpdateUrlPreview();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OnUrlValueChanged(string value)
+    {
+        _request.Url = value;
+        await UpdateUrlPreview();
+    }
+
+    private async Task UpdateUrlPreview()
+    {
+        if (!EnvironmentService.ContainsVariables(_request.Url))
+        {
+            _showUrlPreview = false;
+            _resolvedUrlPreview = null;
+            return;
+        }
+
+        _resolvedUrlPreview = await EnvironmentService.SubstituteVariablesAsync(_request.Url);
+        _showUrlPreview = _resolvedUrlPreview != _request.Url;
+    }
+
+    public void Dispose()
+    {
+        EnvironmentService.OnEnvironmentChanged -= OnEnvironmentChanged;
     }
 
 }

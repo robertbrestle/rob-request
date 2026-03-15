@@ -1,9 +1,14 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace RobRequest.Shared.Models;
 
 public class EnvironmentModel
 {
+    [Key]
     public string Id { get; set; } = Guid.NewGuid().ToString();
     public string Name { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public int SortOrder { get; set; }
     public List<EnvironmentVariable> Variables { get; set; } = new();
     public DateTime CreatedAt { get; set; } = DateTime.Now;
     public DateTime UpdatedAt { get; set; } = DateTime.Now;

@@ -1,7 +1,6 @@
 @page "/settings"
 @rendermode InteractiveServer
 @inject SettingsService SettingsService
-@inject EnvironmentService EnvironmentService
 
 <PageTitle>Settings - RobRequest</PageTitle>
 
@@ -52,96 +51,6 @@
     </MudPaper>
 
     <MudPaper Elevation="1" Class="pa-4 mb-4">
-        <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-3">
-            <MudText Typo="Typo.h6">Environments</MudText>
-            <MudSpacer />
-            <MudButton Variant="Variant.Outlined"
-                       Color="Color.Primary"
-                       StartIcon="@Icons.Material.Filled.Add"
-                       Size="Size.Small"
-                       OnClick="AddEnvironment">
-                New Environment
-            </MudButton>
-        </MudStack>
-
-        @foreach (var env in _environments)
-        {
-            <MudPaper Elevation="0" Class="pa-3 mb-3" Style="border: 1px solid var(--mud-palette-lines-default); border-radius: 4px;">
-                <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-2">
-                    <MudTextField T="string"
-                                  @bind-Value="env.Name"
-                                  Label="Environment Name"
-                                  Variant="Variant.Outlined"
-                                  Margin="Margin.Dense"
-                                  Style="max-width: 300px;" />
-                    <MudSpacer />
-                    @if (env.Id == EnvironmentService.ActiveEnvironmentId)
-                    {
-                        <MudChip T="string" Color="Color.Success" Size="Size.Small">Active</MudChip>
-                    }
-                    else
-                    {
-                        <MudButton Size="Size.Small"
-                                   Variant="Variant.Outlined"
-                                   Color="Color.Primary"
-                                   OnClick="@(() => SetActiveEnvironment(env.Id))">
-                            Set Active
-                        </MudButton>
-                    }
-                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                   Color="Color.Error"
-                                   Size="Size.Small"
-                                   OnClick="@(() => DeleteEnvironment(env.Id))" />
-                </MudStack>
-
-                <MudText Typo="Typo.subtitle2" Class="mb-2">Variables</MudText>
-
-                @foreach (var variable in env.Variables)
-                {
-                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="mb-1">
-                        <MudCheckBox T="bool" @bind-Value="variable.Enabled" Size="Size.Small" Dense="true" />
-                        <MudTextField T="string"
-                                      @bind-Value="variable.Key"
-                                      Placeholder="Key"
-                                      Variant="Variant.Outlined"
-                                      Margin="Margin.Dense"
-                                      Style="flex: 1;" />
-                        <MudTextField T="string"
-                                      @bind-Value="variable.Value"
-                                      Placeholder="Value"
-                                      Variant="Variant.Outlined"
-                                      Margin="Margin.Dense"
-                                      InputType="@(variable.IsSecret ? InputType.Password : InputType.Text)"
-                                      Style="flex: 1;" />
-                        <MudCheckBox T="bool" @bind-Value="variable.IsSecret" Size="Size.Small" Dense="true" Label="Secret" />
-                        <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                       Size="Size.Small"
-                                       Color="Color.Error"
-                                       OnClick="@(() => env.Variables.Remove(variable))" />
-                    </MudStack>
-                }
-
-                <MudButton StartIcon="@Icons.Material.Filled.Add"
-                           Size="Size.Small"
-                           Variant="Variant.Text"
-                           Color="Color.Primary"
-                           OnClick="@(() => env.Variables.Add(new EnvironmentVariable()))">
-                    Add Variable
-                </MudButton>
-
-                <MudButton StartIcon="@Icons.Material.Filled.Save"
-                           Size="Size.Small"
-                           Variant="Variant.Filled"
-                           Color="Color.Primary"
-                           Class="ml-2"
-                           OnClick="@(() => SaveEnvironment(env))">
-                    Save
-                </MudButton>
-            </MudPaper>
-        }
-    </MudPaper>
-
-    <MudPaper Elevation="1" Class="pa-4 mb-4">
         <MudText Typo="Typo.h6" GutterBottom="true">About</MudText>
         <MudText Typo="Typo.body1">
             <strong>RobRequest</strong> — A lightweight REST API client built with .NET 10 Blazor Interactive Server and MudBlazor.
@@ -157,13 +66,11 @@
     [CascadingParameter] public required MainLayout Layout { get; set; }
     
     private UserSettings _settings = new();
-    private IReadOnlyList<EnvironmentModel> _environments = Array.Empty<EnvironmentModel>();
 
     protected override async Task OnInitializedAsync()
     {
         await Layout.DrawerEnabledToggleAsync(false);
         _settings = await SettingsService.GetSettingsAsync();
-        _environments = await EnvironmentService.GetEnvironmentsAsync();
     }
 
     private async Task OnDarkModeChanged(bool value)
@@ -175,28 +82,5 @@
     private async Task SaveSettings()
     {
         await SettingsService.UpdateSettingsAsync(_settings);
-    }
-
-    private async Task AddEnvironment()
-    {
-        var env = new EnvironmentModel { Name = "New Environment" };
-        await EnvironmentService.AddEnvironmentAsync(env);
-        _environments = await EnvironmentService.GetEnvironmentsAsync();
-    }
-
-    private async Task DeleteEnvironment(string id)
-    {
-        await EnvironmentService.DeleteEnvironmentAsync(id);
-        _environments = await EnvironmentService.GetEnvironmentsAsync();
-    }
-
-    private void SetActiveEnvironment(string id)
-    {
-        EnvironmentService.ActiveEnvironmentId = id;
-    }
-
-    private async Task SaveEnvironment(EnvironmentModel env)
-    {
-        await EnvironmentService.UpdateEnvironmentAsync(env);
     }
 }

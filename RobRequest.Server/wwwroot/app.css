@@ -51,3 +51,7 @@ h1:focus {
     width: 120px;
     flex-grow: unset;
 }
+
+.environment-selector * {
+    color: white !important;
+}

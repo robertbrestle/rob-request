@@ -11,6 +11,7 @@ public class AppDbContext : DbContext
     public DbSet<UserSettings> UserSettings => Set<UserSettings>();
     public DbSet<CollectionModel> Collections => Set<CollectionModel>();
     public DbSet<CollectionRequestModel> CollectionRequests => Set<CollectionRequestModel>();
+    public DbSet<EnvironmentModel> Environments => Set<EnvironmentModel>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -67,6 +68,16 @@ public class AppDbContext : DbContext
                 r.OwnsMany(req => req.Headers);
                 r.OwnsMany(req => req.QueryParams);
                 r.OwnsMany(req => req.FormData);
+            });
+        });
+
+        modelBuilder.Entity<EnvironmentModel>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Name);
+            entity.OwnsMany(e => e.Variables, v =>
+            {
+                v.ToJson();
             });
         });
     }

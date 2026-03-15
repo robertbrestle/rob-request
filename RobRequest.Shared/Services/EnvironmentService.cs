@@ -1,25 +1,23 @@
 using System.Text.RegularExpressions;
+using Microsoft.EntityFrameworkCore;
+using RobRequest.Shared.Data;
 using RobRequest.Shared.Models;
 
 namespace RobRequest.Shared.Services;
 
 public partial class EnvironmentService
 {
-    private readonly List<EnvironmentModel> _environments = new();
+    private readonly AppDbContext _db;
+    private readonly SettingsService _settingsService;
     private string? _activeEnvironmentId;
+    private bool _initialized;
 
     public event Action? OnEnvironmentChanged;
 
-    public EnvironmentService()
+    public EnvironmentService(AppDbContext db, SettingsService settingsService)
     {
-        // Create a default environment
-        var defaultEnv = new EnvironmentModel
-        {
-            Name = "Default",
-            Variables = new List<EnvironmentVariable>()
-        };
-        _environments.Add(defaultEnv);
-        _activeEnvironmentId = defaultEnv.Id;
+        _db = db;
+        _settingsService = settingsService;
     }
 
     public string? ActiveEnvironmentId
@@ -28,59 +26,125 @@ public partial class EnvironmentService
         set
         {
             _activeEnvironmentId = value;
+            _ = PersistActiveEnvironmentIdAsync(value);
             OnEnvironmentChanged?.Invoke();
         }
     }
 
-    public Task<IReadOnlyList<EnvironmentModel>> GetEnvironmentsAsync()
+    public async Task InitializeAsync()
     {
-        return Task.FromResult<IReadOnlyList<EnvironmentModel>>(_environments.ToList());
+        if (_initialized) return;
+        _initialized = true;
+
+        var settings = await _settingsService.GetSettingsAsync();
+        _activeEnvironmentId = settings.ActiveEnvironmentId;
     }
 
-    public Task<EnvironmentModel?> GetActiveEnvironmentAsync()
+    private async Task PersistActiveEnvironmentIdAsync(string? id)
     {
-        var env = _environments.FirstOrDefault(e => e.Id == _activeEnvironmentId);
-        return Task.FromResult(env);
-    }
-
-    public Task<EnvironmentModel?> GetEnvironmentAsync(string id)
-    {
-        var env = _environments.FirstOrDefault(e => e.Id == id);
-        return Task.FromResult(env);
-    }
-
-    public Task AddEnvironmentAsync(EnvironmentModel environment)
-    {
-        _environments.Add(environment);
-        OnEnvironmentChanged?.Invoke();
-        return Task.CompletedTask;
-    }
-
-    public Task UpdateEnvironmentAsync(EnvironmentModel environment)
-    {
-        var index = _environments.FindIndex(e => e.Id == environment.Id);
-        if (index >= 0)
+        try
         {
-            environment.UpdatedAt = DateTime.Now;
-            _environments[index] = environment;
-            OnEnvironmentChanged?.Invoke();
+            var settings = await _settingsService.GetSettingsAsync();
+            settings.ActiveEnvironmentId = id;
+            await _settingsService.UpdateSettingsAsync(settings);
         }
-        return Task.CompletedTask;
+        catch
+        {
+            // Best-effort persistence; don't block UI
+        }
     }
 
-    public Task DeleteEnvironmentAsync(string id)
+    public async Task<List<EnvironmentModel>> GetAllEnvironmentsAsync()
     {
-        _environments.RemoveAll(e => e.Id == id);
-        if (_activeEnvironmentId == id)
-            _activeEnvironmentId = _environments.FirstOrDefault()?.Id;
+        return await _db.Environments
+            .OrderBy(e => e.SortOrder)
+            .ThenBy(e => e.Name)
+            .AsNoTracking()
+            .ToListAsync();
+    }
+
+    public async Task<EnvironmentModel?> GetEnvironmentAsync(string id)
+    {
+        return await _db.Environments
+            .AsNoTracking()
+            .FirstOrDefaultAsync(e => e.Id == id);
+    }
+
+    public async Task<EnvironmentModel?> GetActiveEnvironmentAsync()
+    {
+        if (_activeEnvironmentId == null) return null;
+        return await GetEnvironmentAsync(_activeEnvironmentId);
+    }
+
+    public async Task<EnvironmentModel> CreateEnvironmentAsync(string name, string? description = null)
+    {
+        var maxSort = await _db.Environments
+            .MaxAsync(e => (int?)e.SortOrder) ?? -1;
+
+        var environment = new EnvironmentModel
+        {
+            Name = name,
+            Description = description,
+            SortOrder = maxSort + 1,
+            CreatedAt = DateTime.Now,
+            UpdatedAt = DateTime.Now
+        };
+
+        _db.Environments.Add(environment);
+        await _db.SaveChangesAsync();
         OnEnvironmentChanged?.Invoke();
-        return Task.CompletedTask;
+        return environment;
     }
 
-    public Task SetVariableAsync(string environmentId, string key, string value)
+    public async Task UpdateEnvironmentAsync(EnvironmentModel environment)
     {
-        var env = _environments.FirstOrDefault(e => e.Id == environmentId);
-        if (env == null) return Task.CompletedTask;
+        var existing = await _db.Environments.FindAsync(environment.Id);
+        if (existing == null) return;
+
+        existing.Name = environment.Name;
+        existing.Description = environment.Description;
+        existing.SortOrder = environment.SortOrder;
+        existing.Variables = environment.Variables;
+        existing.UpdatedAt = DateTime.Now;
+
+        await _db.SaveChangesAsync();
+        OnEnvironmentChanged?.Invoke();
+    }
+
+    public async Task DeleteEnvironmentAsync(string id)
+    {
+        var environment = await _db.Environments.FindAsync(id);
+        if (environment == null) return;
+
+        _db.Environments.Remove(environment);
+        await _db.SaveChangesAsync();
+
+        if (_activeEnvironmentId == id)
+        {
+            _activeEnvironmentId = (await _db.Environments
+                .OrderBy(e => e.SortOrder)
+                .FirstOrDefaultAsync())?.Id;
+        }
+
+        OnEnvironmentChanged?.Invoke();
+    }
+
+    public async Task<List<EnvironmentModel>> SearchEnvironmentsAsync(string query)
+    {
+        query = query.ToLower();
+        return await _db.Environments
+            .Where(e => e.Name.ToLower().Contains(query) ||
+                        (e.Description ?? "").ToLower().Contains(query))
+            .OrderBy(e => e.SortOrder)
+            .ThenBy(e => e.Name)
+            .AsNoTracking()
+            .ToListAsync();
+    }
+
+    public async Task SetVariableAsync(string environmentId, string key, string value)
+    {
+        var env = await _db.Environments.FindAsync(environmentId);
+        if (env == null) return;
 
         var variable = env.Variables.FirstOrDefault(v => v.Key == key);
         if (variable != null)
@@ -93,18 +157,20 @@ public partial class EnvironmentService
         }
 
         env.UpdatedAt = DateTime.Now;
+        await _db.SaveChangesAsync();
         OnEnvironmentChanged?.Invoke();
-        return Task.CompletedTask;
     }
 
-    public Task<string> SubstituteVariablesAsync(string input)
+    public async Task<string> SubstituteVariablesAsync(string input)
     {
         if (string.IsNullOrEmpty(input) || _activeEnvironmentId == null)
-            return Task.FromResult(input);
+            return input;
 
-        var env = _environments.FirstOrDefault(e => e.Id == _activeEnvironmentId);
+        var env = await _db.Environments
+            .AsNoTracking()
+            .FirstOrDefaultAsync(e => e.Id == _activeEnvironmentId);
         if (env == null)
-            return Task.FromResult(input);
+            return input;
 
         var result = VariablePattern().Replace(input, match =>
         {
@@ -113,7 +179,12 @@ public partial class EnvironmentService
             return variable?.Value ?? match.Value;
         });
 
-        return Task.FromResult(result);
+        return result;
+    }
+
+    public static bool ContainsVariables(string? input)
+    {
+        return !string.IsNullOrEmpty(input) && VariablePattern().IsMatch(input);
     }
 
     [GeneratedRegex(@"\{\{(\w+)\}\}")]
