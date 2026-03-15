@@ -165,8 +165,9 @@
     {
         var isExpanded = IsExpanded(collection.Id);
         var hasChildren = collection.Children.Count > 0 || collection.Requests.Count > 0;
+        var topLeftPadding = depth == 0 ? 0 : 20;
 
-        <MudStack Spacing="0" Style="@($"padding-left: {depth * 16}px")">
+        <MudStack Spacing="0" Style="@($"padding-left: {topLeftPadding}px")">
             <MudStack Row="true" AlignItems="AlignItems.Center" Class="collection-node pa-1"
                       Style="cursor: pointer; border-radius: 4px;"
                       @onclick="() => ToggleExpanded(collection.Id)">
@@ -186,7 +187,8 @@
                 <MudIcon Icon="@(isExpanded ? Icons.Material.Filled.FolderOpen : Icons.Material.Filled.Folder)"
                          Size="Size.Small" Color="Color.Warning"/>
                 <MudText Typo="Typo.body2"
-                         Style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">
+                         Style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;"
+                         title="@collection.Name">
                     @collection.Name
                 </MudText>
                 <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small" Dense="true"
@@ -224,10 +226,9 @@
                 {
                     <MudStack Row="true" AlignItems="AlignItems.Center"
                               Class="request-node pr-1 pt-1 pb-1"
-                              Style="@($"padding-left: {(depth + 1) * 16}px; cursor: pointer; border-radius: 4px;")"
+                              Style="@($"padding-left: {(depth + 1) * 20}px; cursor: pointer; border-radius: 4px;")"
                               @onclick="() => OnRequestSelected.InvokeAsync(request)"
-                              title="Open request"
-                              aria-label="open request">
+                              title="Open request" aria-label="open request">
                         <MudText Typo="Typo.body2"
                                  Style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;"
                                  title="@request.Name">

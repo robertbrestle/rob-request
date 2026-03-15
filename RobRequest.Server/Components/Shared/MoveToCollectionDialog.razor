@@ -70,7 +70,7 @@
 
         <MudStack Row="true" AlignItems="AlignItems.Center"
                   Class="@($"pa-1 {(isSelected ? "mud-primary-text" : "")} {(isCurrent ? "mud-text-disabled" : "")}")"
-                  Style="@($"padding-left: {depth * 16 + 8}px; cursor: {(isCurrent ? "default" : "pointer")}; border-radius: 4px; {(isSelected ? "background: var(--mud-palette-primary-lighten); " : "")}")"
+                  Style="@($"padding-left: {depth * 20}px; cursor: {(isCurrent ? "default" : "pointer")}; border-radius: 4px; {(isSelected ? "background: var(--mud-palette-primary-lighten); " : "")}")"
                   @onclick="() => { if (!isCurrent) SelectCollection(collection.Id); }">
             <MudIcon Icon="@Icons.Material.Filled.Folder" Size="Size.Small" Color="Color.Warning"/>
             <MudText Typo="Typo.body2">

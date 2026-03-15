@@ -122,7 +122,7 @@
 
         <MudStack Row="true" AlignItems="AlignItems.Center"
                   Class="@($"pr-1 pt-1 pb-1 {(isSelected ? "mud-primary-text" : "")}")"
-                  Style="@($"padding-left: {(depth + 1) * 16}px; cursor: pointer; border-radius: 4px; {(isSelected ? "background: var(--mud-palette-primary-lighten); " : "")}")"
+                  Style="@($"padding-left: {(depth + 1) * 20}px; cursor: pointer; border-radius: 4px; {(isSelected ? "background: var(--mud-palette-primary-lighten); " : "")}")"
                   @onclick="() => SelectCollection(collection.Id)">
             <MudIcon Icon="@Icons.Material.Filled.Folder" Size="Size.Small" Color="Color.Warning"/>
             <MudText Typo="Typo.body2">@collection.Name</MudText>

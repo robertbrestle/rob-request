@@ -441,7 +441,7 @@
 
         <MudStack Row="true" AlignItems="AlignItems.Center"
                   Class="@($"pr-1 pt-1 pb-1 {(isSelected ? "mud-theme-primary" : "")}")"
-                  Style="@($"padding-left: {depth * 16}px; cursor: pointer; border-radius: 4px; ")"
+                  Style="@($"padding-left: {depth * 20}px; cursor: pointer; border-radius: 4px; ")"
                   @onclick="() => SelectCollection(collection.Id)">
             @if (hasChildren)
             {

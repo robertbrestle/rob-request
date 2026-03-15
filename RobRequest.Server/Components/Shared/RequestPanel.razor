@@ -1,8 +1,11 @@
+@using MudBlazor.Utilities
 @inject ApiService ApiService
 @inject HistoryService HistoryService
 @inject CollectionService CollectionService
 @inject EnvironmentService EnvironmentService
 @inject IDialogService DialogService
+
+<MudHotkey Key="JsKey.Enter" KeyModifiers="[JsKeyModifier.ControlRight]" OnHotkeyPressed="SendRequest"/>
 
 <MudPaper Elevation="1" Class="pa-4 mb-4">
     <!-- Request URL Bar -->
@@ -38,6 +41,7 @@
                 <span>Send</span>
             }
         </MudButton>
+
         @if (_isSending)
         {
             <MudIconButton Icon="@Icons.Material.Filled.Cancel"
@@ -266,6 +270,8 @@
     private async Task SendRequest()
     {
         if (string.IsNullOrWhiteSpace(_request.Url))
+            return;
+        if (_isSending)
             return;
 
         _isSending = true;
