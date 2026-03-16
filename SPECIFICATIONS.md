@@ -131,7 +131,7 @@ To create a responsive, feature-rich API testing tool that leverages modern web 
 - **Search & Filter**: Find requests by URL, method, or date range
 - **History Management**: 
   - Clear individual items or bulk clear
-  - Export history to JSON/CSV
+  - Export history to JSON (via Import/Export on Settings page)
   - Configurable history retention (default: 1000 items)
 
 #### Collections
@@ -158,8 +158,13 @@ To create a responsive, feature-rich API testing tool that leverages modern web 
   - `CollectionModel`: Id, Name, Description, ParentId (self-referencing), SortOrder, Children, Requests, CreatedAt, UpdatedAt
   - `CollectionRequestModel`: Id, CollectionId, Name, SortOrder, Request (owned JSON HttpRequestModel), CreatedAt, UpdatedAt
   - Cascade delete: removing a collection removes all sub-folders and requests
-- **Collection Sharing** (future): 
-  - Export collections to JSON
+- **Import/Export**:
+  - Export selected collections (including full subtree and requests) to a versioned JSON file
+  - Import collections from a previously exported JSON file
+  - Name conflict resolution: if a top-level collection name already exists, a timestamp is appended (sub-collection names are not modified)
+  - All imported entities receive new IDs; `ParentId` references are remapped
+  - UI lives on the Settings page (`/settings`)
+- **Collection Sharing** (future):
   - Import from Postman collections (v2 format)
   - Import from Insomnia collections (v5 format)
   - Share via URL or file
@@ -171,7 +176,7 @@ To create a responsive, feature-rich API testing tool that leverages modern web 
 #### Persistence Strategy
 - **Primary Storage**: SQLite via Entity Framework Core (server-side; fully available in InteractiveServer mode)
 - **Backup Storage**: In-memory cache for transient session data
-- **Data Export**: JSON file download/upload for backup and portability
+- **Data Export**: Versioned JSON file download/upload for backup and portability (via `ImportExportService`)
 - **Note**: Because all component logic executes on the server, full EF Core with SQLite is available — no IndexedDB or JS interop workarounds needed
 
 ### 3.4 Environment Variables
@@ -310,6 +315,7 @@ The solution uses a **three-project layout**. Because InteractiveServer runs all
 - **CollectionService**: Collection CRUD operations (EF Core)
 - **EnvironmentService**: Environment CRUD, variable management, `{{variable}}` substitution, and active environment persistence (EF Core)
 - **SettingsService**: User preferences and configuration (EF Core)
+- **ImportExportService**: Versioned JSON export/import of collections, environments, and history (EF Core)
 
 > All services reside in `RobRequest.Shared` under the `RobRequest.Shared.Services` namespace and are registered in the server's DI container with **Scoped** lifetime (one instance per circuit).
 
@@ -322,6 +328,8 @@ The solution uses a **three-project layout**. Because InteractiveServer runs all
 - **Response Models**: `HttpResponseModel`
 - **Domain Models**: `CollectionModel`, `CollectionRequestModel`, `EnvironmentModel`, `HistoryItem`
 - **Configuration Models**: `UserSettings`
+- **Import/Export Models**: `RobRequestExport`, `ExportedCollection`, `ExportedCollectionRequest`, `ExportedEnvironment`, `ExportedHistoryItem`, `ImportResult`
+- **App Metadata**: `AppInfo` (static helper; reads assembly version from `RobRequest.Shared`)
 
 > All models reside in `RobRequest.Shared` under the `RobRequest.Shared.Models` namespace.
 
@@ -334,7 +342,7 @@ The solution uses a **three-project layout**. Because InteractiveServer runs all
 - **SQLite Schema**: EF Core code-first with tables for history, collections, environments, settings
 - **Migration Strategy**: EF Core migrations applied automatically on startup (`DbContext.Database.MigrateAsync()`)
 - **Indexing Strategy**: EF Core index attributes on URL, timestamp, and collection fields
-- **Backup Strategy**: Export to JSON with user control; SQLite file can also be backed up directly
+- **Backup Strategy**: Export to versioned JSON (format version `"1"`) with user control; SQLite file can also be backed up directly
 
 ---
 
@@ -467,6 +475,39 @@ public class EnvironmentService
 }
 ```
 
+#### ImportExportService
+```csharp
+public class ImportExportService
+{
+    // Versioned JSON export/import of collections, environments, and history
+    public async Task<RobRequestExport> BuildExportAsync(List<string>? collectionIds = null, List<string>? environmentIds = null, List<string>? historyIds = null);
+    public string SerializeExport(RobRequestExport export);
+    public RobRequestExport? DeserializeExport(string json);
+    public async Task<ImportResult> ImportAsync(RobRequestExport data);
+}
+```
+
+#### Export JSON Format (v1)
+```json
+{
+  "formatVersion": "1",
+  "appVersion": "1.0.0",
+  "exportedAt": "2026-03-15T00:00:00Z",
+  "collections": [ { "id": "...", "name": "...", "parentId": null, "requests": [...], ... } ],
+  "environments": [ { "id": "...", "name": "...", "variables": [...], ... } ],
+  "history": [ { "method": "GET", "url": "...", "statusCode": 200, ... } ]
+}
+```
+- **Format Version**: `"1"` — the import logic rejects any unrecognized version
+- **Collections**: Flat list with `parentId` references; subtrees are included when a parent is selected for export
+- **Name Conflict Resolution**: On import, top-level collection and environment names that conflict with existing names get ` (yyyy-MM-dd HH:mm:ss)` appended; sub-collection names are not modified
+- **New IDs**: All imported entities receive fresh GUIDs; `parentId` references are remapped via an old→new ID map
+
+#### App Version Management
+- The application version is defined in `RobRequest.Shared.csproj` via the `<Version>` MSBuild property
+- `AppInfo.Version` (static helper in `RobRequest.Shared`) reads the version at runtime from the assembly's `AssemblyInformationalVersionAttribute`
+- The Settings page displays the version dynamically instead of a hardcoded string
+
 ### Data Flow
 1. **User Input** → Browser (SignalR) → Server-side UI Components → Service Layer
 2. **Service Processing** → Variable Substitution → Server-side `HttpClient` Request to External API
@@ -540,7 +581,7 @@ The sidebar drawer uses `SectionContent`/`SectionOutlet` so each page controls i
   - Left panel: Flat list of environments with search, create, delete, and context menus
   - Right panel: Selected environment detail with editable name/description, active toggle, variables table, timestamps
 
-- **Settings Page** (`/settings`): Application preferences
+- **Settings Page** (`/settings`): Application preferences, import/export UI, and version info
 
 - **Shared Components**
   - **EnvironmentSelector**: Dropdown for environment switching
@@ -627,19 +668,19 @@ The sidebar drawer uses `SectionContent`/`SectionOutlet` so each page controls i
 - [X] Collection creation and management
 - [X] Request organization into collections (Save to Collection dialog, CollectionSidebar, Collections page)
 - [ ] History search and filtering
-- [ ] Import/export functionality (JSON file download/upload)
+- [X] Import/export functionality (versioned JSON file download/upload via Settings page)
 
 #### Sprint 3.2: UI Polish
 - [X] Sidebar implementation
 - [ ] Keyboard shortcuts
-- [ ] Settings page
+- [X] Settings page
 - [X] Theme switching (dark/light)
 - [ ] Responsive design improvements
 
 **Acceptance Criteria**:
 - Data persists between sessions
 - Collections can be created and organized
-- Import/export from Postman collections
+- Import/export via versioned JSON (collections, environments, history)
 - Professional UI with smooth interactions
 
 ### Phase 4: Advanced Features (Weeks 7-8)
@@ -1087,8 +1128,9 @@ With proper execution of this specification, the resulting application will prov
 
 ---
 
-**Document Version**: 2.0  
+**Document Version**: 2.1  
 **Last Updated**: March 2026  
 **Architecture**: InteractiveServer (migrated from InteractiveWebAssembly in v1.x)  
+**Changelog**: v2.1 — Added Import/Export feature (versioned JSON), app version management (`AppInfo`), `ImportExportService`  
 **Next Review**: April 2026 or as needed
  

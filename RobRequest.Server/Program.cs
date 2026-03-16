@@ -23,6 +23,7 @@ builder.Services.AddScoped<HistoryService>();
 builder.Services.AddScoped<CollectionService>();
 builder.Services.AddScoped<EnvironmentService>();
 builder.Services.AddScoped<SettingsService>();
+builder.Services.AddScoped<ImportExportService>();
 
 var app = builder.Build();
 

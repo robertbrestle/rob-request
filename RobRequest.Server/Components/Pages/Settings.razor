@@ -1,6 +1,12 @@
 @page "/settings"
 @rendermode InteractiveServer
 @inject SettingsService SettingsService
+@inject ImportExportService ImportExportService
+@inject CollectionService CollectionService
+@inject EnvironmentService EnvironmentService
+@inject HistoryService HistoryService
+@inject IJSRuntime Js
+@inject ISnackbar Snackbar
 
 <PageTitle>Settings - RobRequest</PageTitle>
 
@@ -15,31 +21,31 @@
                        Value="_settings.DarkMode"
                        ValueChanged="OnDarkModeChanged"
                        Label="Dark Mode"
-                       Color="Color.Primary" />
+                       Color="Color.Primary"/>
 
             <MudNumericField T="int"
                              @bind-Value="_settings.DefaultTimeoutSeconds"
                              Label="Default Request Timeout (seconds)"
                              Variant="Variant.Outlined"
                              Min="1"
-                             Max="300" />
+                             Max="300"/>
 
             <MudNumericField T="int"
                              @bind-Value="_settings.MaxHistoryItems"
                              Label="Max History Items"
                              Variant="Variant.Outlined"
                              Min="10"
-                             Max="10000" />
+                             Max="10000"/>
 
             <MudSwitch T="bool"
                        @bind-Value="_settings.AutoFormatJson"
                        Label="Auto-format JSON responses"
-                       Color="Color.Primary" />
+                       Color="Color.Primary"/>
 
             <MudSwitch T="bool"
                        @bind-Value="_settings.FollowRedirects"
                        Label="Follow Redirects"
-                       Color="Color.Primary" />
+                       Color="Color.Primary"/>
 
             <MudButton Variant="Variant.Filled"
                        Color="Color.Primary"
@@ -51,26 +57,184 @@
     </MudPaper>
 
     <MudPaper Elevation="1" Class="pa-4 mb-4">
+        <MudText Typo="Typo.h6" GutterBottom="true">Export</MudText>
+        <MudStack>
+            <MudText Typo="Typo.body2" Class="mb-3">
+                Select collections, environments, and/or history items to export as a JSON file.
+            </MudText>
+            <MudSelect T="string" Label="Collections" MultiSelection="true"
+                       @bind-SelectedValues="_selectedCollectionIds"
+                       Variant="Variant.Outlined" Dense="true"
+                       Disabled="@(!_collections.Any())">
+                @foreach (var col in _collections)
+                {
+                    <MudSelectItem T="string" Value="@col.Id">@col.Name</MudSelectItem>
+                }
+            </MudSelect>
+
+            <MudSelect T="string" Label="Environments" MultiSelection="true"
+                       @bind-SelectedValues="_selectedEnvironmentIds"
+                       Variant="Variant.Outlined" Dense="true"
+                       Disabled="@(!_environments.Any())">
+                @foreach (var env in _environments)
+                {
+                    <MudSelectItem T="string" Value="@env.Id">@env.Name</MudSelectItem>
+                }
+            </MudSelect>
+
+            <MudSelect T="string" Label="History Items" MultiSelection="true"
+                       @bind-SelectedValues="_selectedHistoryIds"
+                       Variant="Variant.Outlined" Dense="true"
+                       Disabled="@(!_historyItems.Any())">
+                @foreach (var h in _historyItems)
+                {
+                    <MudSelectItem T="string" Value="@h.Id">@h.Method @h.Url (@h.Timestamp.ToString("g"))
+                    </MudSelectItem>
+                }
+            </MudSelect>
+
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       OnClick="ExportAsync"
+                       StartIcon="@Icons.Material.Filled.FileDownload"
+                       Disabled="@(!HasExportSelection || _exporting)">
+                @if (_exporting)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2"/>
+                    <span>Exporting…</span>
+                }
+                else
+                {
+                    <span>Export to JSON</span>
+                }
+            </MudButton>
+        </MudStack>
+    </MudPaper>
+
+    <MudPaper Elevation="1" Class="pa-4 mb-4">
+        <MudText Typo="Typo.h6" GutterBottom="true">Import</MudText>
+        <MudStack>
+            <MudText Typo="Typo.body2" Class="mb-3">
+                Upload a previously exported RobRequest JSON file to import collections, environments, and history.
+            </MudText>
+            <MudAlert Severity="Severity.Normal" Variant="Variant.Outlined" Dense="true" Class="mb-3">
+                If an imported collection or environment has the same name as an existing one, a timestamp will be
+                appended to avoid conflicts.
+            </MudAlert>
+
+            <MudFileUpload T="IBrowserFile" Accept=".json" OnFilesChanged="OnImportFileChanged">
+                <CustomContent>
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.UploadFile"
+                               OnClick="@context.OpenFilePickerAsync">
+                        Select JSON File
+                    </MudButton>
+                </CustomContent>
+                <SelectedTemplate>
+                    @if (context == null)
+                    {
+                        <MudText>No file selected</MudText>
+                    }
+                </SelectedTemplate>
+            </MudFileUpload>
+
+            @if (_importPreview != null)
+            {
+                <MudAlert Severity="Severity.Normal" Dense="true">
+                    <strong>@_importFileName</strong> (format v@(_importPreview.FormatVersion),
+                    exported @_importPreview.ExportedAt.ToString("g") UTC)
+                </MudAlert>
+
+                <MudStack Row="true">
+                    @if (_importPreview.Collections is { Count: > 0 })
+                    {
+                        <MudChip T="string" Icon="@Icons.Material.Filled.Folder" Variant="Variant.Outlined">
+                            @_importPreview.Collections.Count collection@(_importPreview.Collections.Count == 1 ? "" : "s")
+                        </MudChip>
+                    }
+                    @if (_importPreview.Environments is { Count: > 0 })
+                    {
+                        <MudChip T="string" Icon="@Icons.Material.Filled.Dns" Variant="Variant.Outlined">
+                            @_importPreview.Environments.Count environment@(_importPreview.Environments.Count == 1 ? "" : "s")
+                        </MudChip>
+                    }
+                    @if (_importPreview.History is { Count: > 0 })
+                    {
+                        <MudChip T="string" Icon="@Icons.Material.Filled.History" Variant="Variant.Outlined">
+                            @_importPreview.History.Count history@(_importPreview.History.Count == 1 ? "" : "s")
+                        </MudChip>
+                    }
+                </MudStack>
+
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Success"
+                           OnClick="ImportAsync"
+                           StartIcon="@Icons.Material.Filled.FileUpload"
+                           Disabled="@_importing">
+                    @if (_importing)
+                    {
+                        <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2"/>
+                        <span>Importing…</span>
+                    }
+                    else
+                    {
+                        <span>Import</span>
+                    }
+                </MudButton>
+            }
+
+            @if (_importError != null)
+            {
+                <MudAlert Severity="Severity.Error" Dense="true">@_importError</MudAlert>
+            }
+        </MudStack>
+    </MudPaper>
+
+    <MudPaper Elevation="1" Class="pa-4 mb-4">
         <MudText Typo="Typo.h6" GutterBottom="true">About</MudText>
         <MudText Typo="Typo.body1">
-            <strong>RobRequest</strong> — A lightweight REST API client built with .NET 10 Blazor Interactive Server and MudBlazor.
+            <strong>RobRequest</strong> — A lightweight REST API client built with .NET 10 Blazor and MudBlazor.
         </MudText>
         <MudText Typo="Typo.body2" Color="Color.Default" Class="mt-2">
-            Version 1.0.0
+            Version @RobRequest.Shared.AppInfo.Version
         </MudText>
     </MudPaper>
 </MudContainer>
 
 @code {
-    
+
     [CascadingParameter] public required MainLayout Layout { get; set; }
-    
+
     private UserSettings _settings = new();
+
+    // Export state
+    private List<CollectionModel> _collections = new();
+    private List<EnvironmentModel> _environments = new();
+    private IReadOnlyList<HistoryItem> _historyItems = Array.Empty<HistoryItem>();
+    private IReadOnlyCollection<string> _selectedCollectionIds = Array.Empty<string>();
+    private IReadOnlyCollection<string> _selectedEnvironmentIds = Array.Empty<string>();
+    private IReadOnlyCollection<string> _selectedHistoryIds = Array.Empty<string>();
+    private bool _exporting;
+
+    private bool HasExportSelection =>
+        _selectedCollectionIds.Any() || _selectedEnvironmentIds.Any() || _selectedHistoryIds.Any();
+
+    // Import state
+    private RobRequestExport? _importPreview;
+    private string? _importFileName;
+    private string? _importJson;
+    private string? _importError;
+    private bool _importing;
 
     protected override async Task OnInitializedAsync()
     {
         await Layout.DrawerEnabledToggleAsync(false);
         _settings = await SettingsService.GetSettingsAsync();
+
+        _collections = await CollectionService.GetCollectionTreeAsync();
+        _environments = await EnvironmentService.GetAllEnvironmentsAsync();
+        _historyItems = await HistoryService.GetHistoryAsync(1000);
     }
 
     private async Task OnDarkModeChanged(bool value)
@@ -83,4 +247,120 @@
     {
         await SettingsService.UpdateSettingsAsync(_settings);
     }
+
+    private async Task ExportAsync()
+    {
+        _exporting = true;
+        try
+        {
+            var export = await ImportExportService.BuildExportAsync(
+                _selectedCollectionIds.ToList(),
+                _selectedEnvironmentIds.ToList(),
+                _selectedHistoryIds.ToList());
+
+            var json = ImportExportService.SerializeExport(export);
+            var bytes = System.Text.Encoding.UTF8.GetBytes(json);
+            var base64 = Convert.ToBase64String(bytes);
+            var fileName = $"robrequest-export-{DateTime.Now:yyyy-MM-dd}.json";
+
+            await Js.InvokeVoidAsync("downloadFileFromBytes", fileName, "application/json", base64);
+            Snackbar.Add("Export downloaded successfully.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Export failed: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _exporting = false;
+        }
+    }
+
+    private async Task OnImportFileChanged(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        await OnImportFileSelected(file);
+    }
+
+    private async Task OnImportFileSelected(IBrowserFile file)
+    {
+        _importPreview = null;
+        _importError = null;
+        _importJson = null;
+
+        try
+        {
+            _importFileName = file.Name;
+            using var stream = file.OpenReadStream(maxAllowedSize: 50 * 1024 * 1024);
+            using var reader = new System.IO.StreamReader(stream);
+            _importJson = await reader.ReadToEndAsync();
+
+            var preview = ImportExportService.DeserializeExport(_importJson);
+            if (preview == null)
+            {
+                _importError = "Failed to parse the JSON file. Please ensure it is a valid RobRequest export.";
+                return;
+            }
+
+            if (preview.FormatVersion != "1")
+            {
+                _importError = $"Unsupported format version: {preview.FormatVersion}. Only version \"1\" is supported.";
+                return;
+            }
+
+            _importPreview = preview;
+        }
+        catch (Exception ex)
+        {
+            _importError = $"Error reading file: {ex.Message}";
+        }
+    }
+
+    private async Task ImportAsync()
+    {
+        if (_importPreview == null || _importJson == null) return;
+
+        _importing = true;
+        _importError = null;
+        try
+        {
+            var data = ImportExportService.DeserializeExport(_importJson);
+            if (data == null)
+            {
+                _importError = "Failed to parse import data.";
+                return;
+            }
+
+            var result = await ImportExportService.ImportAsync(data);
+
+            if (!result.Success)
+            {
+                _importError = string.Join(" ", result.Errors);
+                Snackbar.Add("Import completed with errors.", Severity.Warning);
+            }
+            else
+            {
+                Snackbar.Add(result.Summary, Severity.Success);
+            }
+
+            // Refresh lists
+            _collections = await CollectionService.GetCollectionTreeAsync();
+            _environments = await EnvironmentService.GetAllEnvironmentsAsync();
+            _historyItems = await HistoryService.GetHistoryAsync(1000);
+
+            _importPreview = null;
+            _importJson = null;
+            _importFileName = null;
+        }
+        catch (Exception ex)
+        {
+            _importError = $"Import failed: {ex.Message}";
+            Snackbar.Add($"Import failed: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _importing = false;
+        }
+    }
+
 }

@@ -213,13 +213,13 @@
         }
     }
 
-    [Inject] private IJSRuntime JsRuntime { get; set; } = default!;
+    [Inject] private IJSRuntime Js { get; set; } = default!;
 
     private async Task CopyBody()
     {
         if (Response != null)
         {
-            await JsRuntime.InvokeVoidAsync("navigator.clipboard.writeText", GetDisplayBody());
+            await Js.InvokeVoidAsync("navigator.clipboard.writeText", GetDisplayBody());
         }
     }
 
@@ -229,7 +229,7 @@
         {
             var dict = Response.Headers.ToDictionary(h => h.Key, h => h.Value);
             var json = System.Text.Json.JsonSerializer.Serialize(dict, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
-            await JsRuntime.InvokeVoidAsync("navigator.clipboard.writeText", json);
+            await Js.InvokeVoidAsync("navigator.clipboard.writeText", json);
         }
     }
 
