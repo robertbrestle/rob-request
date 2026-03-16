@@ -247,4 +247,11 @@ public class CollectionService
         await _db.SaveChangesAsync();
         OnCollectionsChanged?.Invoke();
     }
+
+    public async Task ClearAllCollectionsAsync()
+    {
+        await _db.CollectionRequests.ExecuteDeleteAsync();
+        await _db.Collections.ExecuteDeleteAsync();
+        OnCollectionsChanged?.Invoke();
+    }
 }

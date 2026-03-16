@@ -1,9 +1,7 @@
 @page "/settings"
 @rendermode InteractiveServer
-@inject SettingsService SettingsService
 @inject ImportExportService ImportExportService
 @inject CollectionService CollectionService
-@inject EnvironmentService EnvironmentService
 @inject HistoryService HistoryService
 @inject IJSRuntime Js
 @inject ISnackbar Snackbar
@@ -53,6 +51,33 @@
                        StartIcon="@Icons.Material.Filled.Save">
                 Save Settings
             </MudButton>
+
+            <MudDivider Class="my-2"/>
+            <MudText Typo="Typo.subtitle1" Class="mt-2"><b>Clear Data</b></MudText>
+            <MudText Typo="Typo.body2" Color="Color.Default" Class="mb-2">
+                Permanently delete saved data. These actions cannot be undone.
+            </MudText>
+
+            <MudStack Row="true" Spacing="2">
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Error"
+                           OnClick="ClearCollectionsAsync"
+                           StartIcon="@Icons.Material.Filled.Folder">
+                    Clear Collections
+                </MudButton>
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Error"
+                           OnClick="ClearEnvironmentsAsync"
+                           StartIcon="@Icons.Material.Filled.Dns">
+                    Clear Environments
+                </MudButton>
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Error"
+                           OnClick="ClearHistoryAsync"
+                           StartIcon="@Icons.Material.Filled.History">
+                    Clear History
+                </MudButton>
+            </MudStack>
         </MudStack>
     </MudPaper>
 
@@ -64,6 +89,7 @@
             </MudText>
             <MudSelect T="string" Label="Collections" MultiSelection="true"
                        @bind-SelectedValues="_selectedCollectionIds"
+                       MultiSelectionTextFunc="@(ids => string.Join(", ", ids.Select(id => _collections.FirstOrDefault(c => c.Id == id)?.Name ?? id)))"
                        Variant="Variant.Outlined" Dense="true"
                        Disabled="@(!_collections.Any())">
                 @foreach (var col in _collections)
@@ -74,6 +100,7 @@
 
             <MudSelect T="string" Label="Environments" MultiSelection="true"
                        @bind-SelectedValues="_selectedEnvironmentIds"
+                       MultiSelectionTextFunc="@(ids => string.Join(", ", ids.Select(id => _environments.FirstOrDefault(e => e.Id == id)?.Name ?? id)))"
                        Variant="Variant.Outlined" Dense="true"
                        Disabled="@(!_environments.Any())">
                 @foreach (var env in _environments)
@@ -82,16 +109,11 @@
                 }
             </MudSelect>
 
-            <MudSelect T="string" Label="History Items" MultiSelection="true"
-                       @bind-SelectedValues="_selectedHistoryIds"
-                       Variant="Variant.Outlined" Dense="true"
-                       Disabled="@(!_historyItems.Any())">
-                @foreach (var h in _historyItems)
-                {
-                    <MudSelectItem T="string" Value="@h.Id">@h.Method @h.Url (@h.Timestamp.ToString("g"))
-                    </MudSelectItem>
-                }
-            </MudSelect>
+            <MudCheckBox T="bool"
+                         @bind-Value="_exportAllHistory"
+                         Label="@($"Export all history ({_historyItems.Count} items)")"
+                         Color="Color.Primary"
+                         Disabled="@(!_historyItems.Any())"/>
 
             <MudButton Variant="Variant.Filled"
                        Color="Color.Primary"
@@ -162,7 +184,7 @@
                     @if (_importPreview.History is { Count: > 0 })
                     {
                         <MudChip T="string" Icon="@Icons.Material.Filled.History" Variant="Variant.Outlined">
-                            @_importPreview.History.Count history@(_importPreview.History.Count == 1 ? "" : "s")
+                            @_importPreview.History.Count histor@(_importPreview.History.Count == 1 ? "y" : "ies")
                         </MudChip>
                     }
                 </MudStack>
@@ -214,11 +236,12 @@
     private IReadOnlyList<HistoryItem> _historyItems = Array.Empty<HistoryItem>();
     private IReadOnlyCollection<string> _selectedCollectionIds = Array.Empty<string>();
     private IReadOnlyCollection<string> _selectedEnvironmentIds = Array.Empty<string>();
-    private IReadOnlyCollection<string> _selectedHistoryIds = Array.Empty<string>();
     private bool _exporting;
 
+    private bool _exportAllHistory;
+
     private bool HasExportSelection =>
-        _selectedCollectionIds.Any() || _selectedEnvironmentIds.Any() || _selectedHistoryIds.Any();
+        _selectedCollectionIds.Any() || _selectedEnvironmentIds.Any() || _exportAllHistory;
 
     // Import state
     private RobRequestExport? _importPreview;
@@ -253,10 +276,14 @@
         _exporting = true;
         try
         {
+            var historyIds = _exportAllHistory
+                ? _historyItems.Select(h => h.Id).ToList()
+                : new List<string>();
+
             var export = await ImportExportService.BuildExportAsync(
                 _selectedCollectionIds.ToList(),
                 _selectedEnvironmentIds.ToList(),
-                _selectedHistoryIds.ToList());
+                historyIds);
 
             var json = ImportExportService.SerializeExport(export);
             var bytes = System.Text.Encoding.UTF8.GetBytes(json);
@@ -313,6 +340,54 @@
         catch (Exception ex)
         {
             _importError = $"Error reading file: {ex.Message}";
+        }
+    }
+
+    private async Task ClearHistoryAsync()
+    {
+        var result = await DialogService.ShowMessageBoxAsync(
+            "Clear History",
+            (MarkupString)"<strong>Warning:</strong> This will permanently delete all request history. This action cannot be undone.",
+            yesText: "Delete All", cancelText: "Cancel");
+
+        if (result == true)
+        {
+            await HistoryService.ClearHistoryAsync();
+            _historyItems = await HistoryService.GetHistoryAsync(1000);
+            _exportAllHistory = false;
+            Snackbar.Add("All history cleared.", Severity.Success);
+        }
+    }
+
+    private async Task ClearCollectionsAsync()
+    {
+        var result = await DialogService.ShowMessageBoxAsync(
+            "Clear Collections",
+            (MarkupString)"<strong>Warning:</strong> This will permanently delete all collections and their saved requests. This action cannot be undone.",
+            yesText: "Delete All", cancelText: "Cancel");
+
+        if (result == true)
+        {
+            await CollectionService.ClearAllCollectionsAsync();
+            _collections = await CollectionService.GetCollectionTreeAsync();
+            _selectedCollectionIds = Array.Empty<string>();
+            Snackbar.Add("All collections cleared.", Severity.Success);
+        }
+    }
+
+    private async Task ClearEnvironmentsAsync()
+    {
+        var result = await DialogService.ShowMessageBoxAsync(
+            "Clear Environments",
+            (MarkupString)"<strong>Warning:</strong> This will permanently delete all environments and their variables. This action cannot be undone.",
+            yesText: "Delete All", cancelText: "Cancel");
+
+        if (result == true)
+        {
+            await EnvironmentService.ClearAllEnvironmentsAsync();
+            _environments = await EnvironmentService.GetAllEnvironmentsAsync();
+            _selectedEnvironmentIds = Array.Empty<string>();
+            Snackbar.Add("All environments cleared.", Severity.Success);
         }
     }
 

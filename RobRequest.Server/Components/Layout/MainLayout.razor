@@ -28,15 +28,15 @@
             <MudContainer MaxWidth="MaxWidth.ExtraSmall">
                 <SectionOutlet SectionName="EnvironmentSelector"/>
             </MudContainer>
-            <MudMenu Icon="@Icons.Material.Filled.MoreVert" 
+            <MudMenu Icon="@Icons.Material.Filled.MoreVert"
                      AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                <MudMenuItem Icon="@Icons.Material.Filled.Folder"
+                             Href="/collections">
+                    Collections
+                </MudMenuItem>
                 <MudMenuItem Icon="@Icons.Material.Filled.Dns"
                              Href="/environments">
                     Environments
-                </MudMenuItem>
-                <MudMenuItem Icon="@Icons.Material.Filled.CreateNewFolder"
-                             Href="/collections">
-                    Collections
                 </MudMenuItem>
                 <MudDivider/>
                 <MudMenuItem Icon="@(_isDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"

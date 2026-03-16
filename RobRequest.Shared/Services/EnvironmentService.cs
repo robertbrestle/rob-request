@@ -182,6 +182,14 @@ public partial class EnvironmentService
         return result;
     }
 
+    public async Task ClearAllEnvironmentsAsync()
+    {
+        await _db.Environments.ExecuteDeleteAsync();
+        _activeEnvironmentId = null;
+        await PersistActiveEnvironmentIdAsync(null);
+        OnEnvironmentChanged?.Invoke();
+    }
+
     public static bool ContainsVariables(string? input)
     {
         return !string.IsNullOrEmpty(input) && VariablePattern().IsMatch(input);
