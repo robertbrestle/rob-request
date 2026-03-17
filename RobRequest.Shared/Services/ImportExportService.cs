@@ -9,6 +9,7 @@ namespace RobRequest.Shared.Services;
 public class ImportExportService
 {
     private readonly AppDbContext _db;
+    private readonly CurrentUserService _currentUser;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -25,9 +26,10 @@ public class ImportExportService
         Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
     };
 
-    public ImportExportService(AppDbContext db)
+    public ImportExportService(AppDbContext db, CurrentUserService currentUser)
     {
         _db = db;
+        _currentUser = currentUser;
     }
 
     public async Task<RobRequestExport> BuildExportAsync(
@@ -100,8 +102,9 @@ public class ImportExportService
 
     private async Task<List<ExportedCollection>> BuildCollectionExportAsync(List<string> collectionIds)
     {
-        // Get all collections to traverse subtrees
+        // Get all collections to traverse subtrees (scoped to current user)
         var allCollections = await _db.Collections
+            .Where(c => c.UserId == _currentUser.UserId)
             .Include(c => c.Requests)
             .AsNoTracking()
             .ToListAsync();
@@ -153,7 +156,7 @@ public class ImportExportService
     private async Task<List<ExportedEnvironment>> BuildEnvironmentExportAsync(List<string> environmentIds)
     {
         var environments = await _db.Environments
-            .Where(e => environmentIds.Contains(e.Id))
+            .Where(e => e.UserId == _currentUser.UserId && environmentIds.Contains(e.Id))
             .AsNoTracking()
             .ToListAsync();
 
@@ -172,7 +175,7 @@ public class ImportExportService
     private async Task<List<ExportedHistoryItem>> BuildHistoryExportAsync(List<string> historyIds)
     {
         var items = await _db.HistoryItems
-            .Where(h => historyIds.Contains(h.Id))
+            .Where(h => h.UserId == _currentUser.UserId && historyIds.Contains(h.Id))
             .AsNoTracking()
             .ToListAsync();
 
@@ -192,7 +195,7 @@ public class ImportExportService
     {
         var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
         var existingNames = await _db.Collections
-            .Where(c => c.ParentId == null)
+            .Where(c => c.UserId == _currentUser.UserId && c.ParentId == null)
             .Select(c => c.Name)
             .ToListAsync();
         var existingNameSet = new HashSet<string>(existingNames, StringComparer.OrdinalIgnoreCase);
@@ -232,6 +235,7 @@ public class ImportExportService
                 Id = newId,
                 Name = name,
                 Description = col.Description,
+                UserId = _currentUser.UserId ?? string.Empty,
                 ParentId = newParentId,
                 SortOrder = col.SortOrder,
                 CreatedAt = col.CreatedAt,
@@ -267,6 +271,7 @@ public class ImportExportService
     {
         var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
         var existingNames = await _db.Environments
+            .Where(e => e.UserId == _currentUser.UserId)
             .Select(e => e.Name)
             .ToListAsync();
         var existingNameSet = new HashSet<string>(existingNames, StringComparer.OrdinalIgnoreCase);
@@ -284,6 +289,7 @@ public class ImportExportService
                 Id = Guid.NewGuid().ToString(),
                 Name = name,
                 Description = env.Description,
+                UserId = _currentUser.UserId ?? string.Empty,
                 SortOrder = env.SortOrder,
                 Variables = env.Variables.Select(v => new EnvironmentVariable
                 {
@@ -314,6 +320,7 @@ public class ImportExportService
                 Url = item.Url,
                 StatusCode = item.StatusCode,
                 ResponseTimeMs = item.ResponseTimeMs,
+                UserId = _currentUser.UserId ?? string.Empty,
                 Timestamp = item.Timestamp,
                 Request = item.Request != null ? CloneRequest(item.Request) : null,
                 Response = item.Response != null ? CloneResponse(item.Response) : null

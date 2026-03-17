@@ -4,6 +4,7 @@ public class ImportExportServiceTests : IDisposable
 {
     private readonly AppDbContext _db;
     private readonly ImportExportService _sut;
+    private const string TestUserId = TestHelpers.TestUserId;
 
     public ImportExportServiceTests()
     {
@@ -13,7 +14,8 @@ public class ImportExportServiceTests : IDisposable
         _db = new AppDbContext(options);
         _db.Database.OpenConnection();
         _db.Database.EnsureCreated();
-        _sut = new ImportExportService(_db);
+        TestHelpers.SeedTestUser(_db);
+        _sut = new ImportExportService(_db, TestHelpers.CreateTestCurrentUser());
     }
 
     public void Dispose()
@@ -44,6 +46,7 @@ public class ImportExportServiceTests : IDisposable
             Id = "col-1",
             Name = "Test Collection",
             Description = "A test",
+            UserId = TestUserId,
             CreatedAt = DateTime.Now,
             UpdatedAt = DateTime.Now
         };
@@ -73,10 +76,10 @@ public class ImportExportServiceTests : IDisposable
     [Fact]
     public async Task BuildExportAsync_IncludesSubtree()
     {
-        _db.Collections.Add(new CollectionModel { Id = "parent", Name = "Parent" });
-        _db.Collections.Add(new CollectionModel { Id = "child", Name = "Child", ParentId = "parent" });
-        _db.Collections.Add(new CollectionModel { Id = "grandchild", Name = "Grandchild", ParentId = "child" });
-        _db.Collections.Add(new CollectionModel { Id = "other", Name = "Other" });
+        _db.Collections.Add(new CollectionModel { Id = "parent", Name = "Parent", UserId = TestUserId });
+        _db.Collections.Add(new CollectionModel { Id = "child", Name = "Child", ParentId = "parent", UserId = TestUserId });
+        _db.Collections.Add(new CollectionModel { Id = "grandchild", Name = "Grandchild", ParentId = "child", UserId = TestUserId });
+        _db.Collections.Add(new CollectionModel { Id = "other", Name = "Other", UserId = TestUserId });
         await _db.SaveChangesAsync();
 
         var export = await _sut.BuildExportAsync(collectionIds: new List<string> { "parent" });
@@ -93,12 +96,13 @@ public class ImportExportServiceTests : IDisposable
         {
             Id = "env-1",
             Name = "Dev",
+            UserId = TestUserId,
             Variables = new List<EnvironmentVariable>
             {
                 new() { Key = "BASE_URL", Value = "http://localhost:5000", Enabled = true }
             }
         });
-        _db.Environments.Add(new EnvironmentModel { Id = "env-2", Name = "Prod" });
+        _db.Environments.Add(new EnvironmentModel { Id = "env-2", Name = "Prod", UserId = TestUserId });
         await _db.SaveChangesAsync();
 
         var export = await _sut.BuildExportAsync(environmentIds: new List<string> { "env-1" });
@@ -119,9 +123,10 @@ public class ImportExportServiceTests : IDisposable
             Url = "https://example.com",
             StatusCode = 200,
             ResponseTimeMs = 100,
+            UserId = TestUserId,
             Timestamp = DateTime.Now
         });
-        _db.HistoryItems.Add(new HistoryItem { Id = "h-2", Method = "POST", Url = "https://other.com" });
+        _db.HistoryItems.Add(new HistoryItem { Id = "h-2", Method = "POST", Url = "https://other.com", UserId = TestUserId });
         await _db.SaveChangesAsync();
 
         var export = await _sut.BuildExportAsync(historyIds: new List<string> { "h-1" });
@@ -136,11 +141,12 @@ public class ImportExportServiceTests : IDisposable
     [Fact]
     public async Task SerializeAndDeserialize_RoundTrip()
     {
-        _db.Collections.Add(new CollectionModel { Id = "col-1", Name = "My API" });
+        _db.Collections.Add(new CollectionModel { Id = "col-1", Name = "My API", UserId = TestUserId });
         _db.Environments.Add(new EnvironmentModel
         {
             Id = "env-1",
             Name = "Dev",
+            UserId = TestUserId,
             Variables = new List<EnvironmentVariable>
             {
                 new() { Key = "URL", Value = "http://localhost", Enabled = true, IsSecret = false }
@@ -219,7 +225,7 @@ public class ImportExportServiceTests : IDisposable
     [Fact]
     public async Task ImportAsync_AppendsTimestampOnCollectionNameConflict()
     {
-        _db.Collections.Add(new CollectionModel { Id = "existing", Name = "My API" });
+        _db.Collections.Add(new CollectionModel { Id = "existing", Name = "My API", UserId = TestUserId });
         await _db.SaveChangesAsync();
 
         var data = new RobRequestExport
@@ -244,7 +250,7 @@ public class ImportExportServiceTests : IDisposable
     [Fact]
     public async Task ImportAsync_DoesNotRenameSubCollections()
     {
-        _db.Collections.Add(new CollectionModel { Id = "existing-child", Name = "Requests" });
+        _db.Collections.Add(new CollectionModel { Id = "existing-child", Name = "Requests", UserId = TestUserId });
         await _db.SaveChangesAsync();
 
         var data = new RobRequestExport
@@ -293,7 +299,7 @@ public class ImportExportServiceTests : IDisposable
     [Fact]
     public async Task ImportAsync_AppendsTimestampOnEnvironmentNameConflict()
     {
-        _db.Environments.Add(new EnvironmentModel { Id = "existing", Name = "Dev" });
+        _db.Environments.Add(new EnvironmentModel { Id = "existing", Name = "Dev", UserId = TestUserId });
         await _db.SaveChangesAsync();
 
         var data = new RobRequestExport

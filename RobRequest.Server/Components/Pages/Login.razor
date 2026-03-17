@@ -1,0 +1,87 @@
+@page "/login"
+@attribute [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+@layout MinimalLayout
+@inject NavigationManager Navigation
+
+<PageTitle>Login - RobRequest</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="d-flex align-center" Style="min-height: 100vh;">
+    <MudPaper Elevation="3" Class="pa-8" Style="width: 100%;">
+        <MudStack Spacing="4" AlignItems="AlignItems.Center">
+            <MudIcon Icon="@Icons.Material.Filled.Api" Size="Size.Large" Color="Color.Primary"/>
+            <MudText Typo="Typo.h4">RobRequest</MudText>
+            <MudText Typo="Typo.body1" Color="Color.Default">Sign in to continue</MudText>
+
+            @if (_registered)
+            {
+                <MudAlert Severity="Severity.Success" Dense="true" Class="w-100">
+                    Registration successful! Your account is pending admin approval.
+                </MudAlert>
+            }
+
+            @if (_error != null)
+            {
+                <MudAlert Severity="Severity.Error" Dense="true" Class="w-100">
+                    @_error
+                </MudAlert>
+            }
+
+            <form method="post" action="/api/auth/login" style="width: 100%;">
+                <MudStack Spacing="3">
+                    <MudTextField T="string"
+                                  @bind-Value="_username"
+                                  Label="Username"
+                                  Variant="Variant.Outlined"
+                                  Required="true"
+                                  InputType="InputType.Text"
+                                  name="username"
+                                  Immediate="true"
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Person"/>
+
+                    <MudTextField T="string"
+                                  @bind-Value="_password"
+                                  Label="Password"
+                                  Variant="Variant.Outlined"
+                                  Required="true"
+                                  InputType="InputType.Password"
+                                  name="password"
+                                  Immediate="true"
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Lock"/>
+
+                    <MudButton ButtonType="ButtonType.Submit"
+                               Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               FullWidth="true"
+                               Size="Size.Large">
+                        Sign In
+                    </MudButton>
+                </MudStack>
+            </form>
+
+            <MudLink Href="/register" Typo="Typo.body2">
+                Don't have an account? Register
+            </MudLink>
+        </MudStack>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private string _username = string.Empty;
+    private string _password = string.Empty;
+    private string? _error;
+    private bool _registered;
+
+    protected override void OnInitialized()
+    {
+        var uri = new Uri(Navigation.Uri);
+        var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+
+        if (query["error"] == "invalid")
+            _error = "Invalid username or password, or account not yet approved.";
+
+        if (query["registered"] == "true")
+            _registered = true;
+    }
+}

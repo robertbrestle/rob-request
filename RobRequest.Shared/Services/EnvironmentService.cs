@@ -9,15 +9,17 @@ public partial class EnvironmentService
 {
     private readonly AppDbContext _db;
     private readonly SettingsService _settingsService;
+    private readonly CurrentUserService _currentUser;
     private string? _activeEnvironmentId;
     private bool _initialized;
 
     public event Action? OnEnvironmentChanged;
 
-    public EnvironmentService(AppDbContext db, SettingsService settingsService)
+    public EnvironmentService(AppDbContext db, SettingsService settingsService, CurrentUserService currentUser)
     {
         _db = db;
         _settingsService = settingsService;
+        _currentUser = currentUser;
     }
 
     public string? ActiveEnvironmentId
@@ -57,6 +59,7 @@ public partial class EnvironmentService
     public async Task<List<EnvironmentModel>> GetAllEnvironmentsAsync()
     {
         return await _db.Environments
+            .Where(e => e.UserId == _currentUser.UserId)
             .OrderBy(e => e.SortOrder)
             .ThenBy(e => e.Name)
             .AsNoTracking()
@@ -79,12 +82,14 @@ public partial class EnvironmentService
     public async Task<EnvironmentModel> CreateEnvironmentAsync(string name, string? description = null)
     {
         var maxSort = await _db.Environments
+            .Where(e => e.UserId == _currentUser.UserId)
             .MaxAsync(e => (int?)e.SortOrder) ?? -1;
 
         var environment = new EnvironmentModel
         {
             Name = name,
             Description = description,
+            UserId = _currentUser.UserId ?? string.Empty,
             SortOrder = maxSort + 1,
             CreatedAt = DateTime.Now,
             UpdatedAt = DateTime.Now
@@ -122,6 +127,7 @@ public partial class EnvironmentService
         if (_activeEnvironmentId == id)
         {
             _activeEnvironmentId = (await _db.Environments
+                .Where(e => e.UserId == _currentUser.UserId)
                 .OrderBy(e => e.SortOrder)
                 .FirstOrDefaultAsync())?.Id;
         }
@@ -133,6 +139,7 @@ public partial class EnvironmentService
     {
         query = query.ToLower();
         return await _db.Environments
+            .Where(e => e.UserId == _currentUser.UserId)
             .Where(e => e.Name.ToLower().Contains(query) ||
                         (e.Description ?? "").ToLower().Contains(query))
             .OrderBy(e => e.SortOrder)
@@ -184,7 +191,7 @@ public partial class EnvironmentService
 
     public async Task ClearAllEnvironmentsAsync()
     {
-        await _db.Environments.ExecuteDeleteAsync();
+        await _db.Environments.Where(e => e.UserId == _currentUser.UserId).ExecuteDeleteAsync();
         _activeEnvironmentId = null;
         await PersistActiveEnvironmentIdAsync(null);
         OnEnvironmentChanged?.Invoke();

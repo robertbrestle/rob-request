@@ -1,0 +1,239 @@
+@page "/admin/users"
+@rendermode InteractiveServer
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Policy = "Admin")]
+@inject UserService UserService
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<PageTitle>User Management - RobRequest</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-4">
+        <MudText Typo="Typo.h4">User Management</MudText>
+        <MudSpacer/>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.PersonAdd"
+                   OnClick="OpenCreateDialog">
+            Create User
+        </MudButton>
+    </MudStack>
+
+    @if (_pendingApprovals.Any())
+    {
+        <MudPaper Elevation="1" Class="pa-4 mb-4">
+            <MudText Typo="Typo.h6" GutterBottom="true" Color="Color.Warning">
+                <MudIcon Icon="@Icons.Material.Filled.PendingActions" Class="mr-1"/>
+                Pending Approvals (@_pendingApprovals.Count)
+            </MudText>
+            <MudTable Items="_pendingApprovals" Dense="true" Hover="true" Elevation="0">
+                <HeaderContent>
+                    <MudTh>Username</MudTh>
+                    <MudTh>Group</MudTh>
+                    <MudTh>Registered</MudTh>
+                    <MudTh Style="text-align: right">Actions</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.Username</MudTd>
+                    <MudTd>
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">
+                            @(context.Group?.Name ?? "unknown")
+                        </MudChip>
+                    </MudTd>
+                    <MudTd>@context.CreatedAt.ToString("g")</MudTd>
+                    <MudTd Style="text-align: right">
+                        <MudButton Size="Size.Small"
+                                   Variant="Variant.Filled"
+                                   Color="Color.Success"
+                                   StartIcon="@Icons.Material.Filled.Check"
+                                   OnClick="() => ApproveUserAsync(context.Id)">
+                            Approve
+                        </MudButton>
+                        <MudButton Size="Size.Small"
+                                   Variant="Variant.Outlined"
+                                   Color="Color.Error"
+                                   StartIcon="@Icons.Material.Filled.Delete"
+                                   Class="ml-2"
+                                   OnClick="() => DeleteUserAsync(context.Id, context.Username)">
+                            Delete
+                        </MudButton>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudPaper>
+    }
+
+    <MudPaper Elevation="1" Class="pa-4">
+        <MudText Typo="Typo.h6" GutterBottom="true">All Users</MudText>
+        <MudTable Items="_users" Dense="true" Hover="true" Elevation="0" Loading="_loading">
+            <HeaderContent>
+                <MudTh>Username</MudTh>
+                <MudTh>Group</MudTh>
+                <MudTh>Status</MudTh>
+                <MudTh>Approved</MudTh>
+                <MudTh>Created</MudTh>
+                <MudTh>Updated</MudTh>
+                <MudTh Style="text-align: right">Actions</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>
+                    <MudText Typo="Typo.body2"><b>@context.Username</b></MudText>
+                </MudTd>
+                <MudTd>
+                    <MudChip T="string" Size="Size.Small"
+                             Color="@(context.Group?.Name == "admin" ? Color.Primary : Color.Default)"
+                             Variant="Variant.Outlined">
+                        @(context.Group?.Name ?? "unknown")
+                    </MudChip>
+                </MudTd>
+                <MudTd>
+                    <MudChip T="string" Size="Size.Small"
+                             Color="@(context.IsEnabled ? Color.Success : Color.Error)"
+                             Variant="Variant.Filled">
+                        @(context.IsEnabled ? "Enabled" : "Disabled")
+                    </MudChip>
+                </MudTd>
+                <MudTd>
+                    @if (context.IsApproved)
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Small"/>
+                    }
+                    else
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.HourglassEmpty" Color="Color.Warning" Size="Size.Small"/>
+                    }
+                </MudTd>
+                <MudTd>@context.CreatedAt.ToString("g")</MudTd>
+                <MudTd>@context.UpdatedAt.ToString("g")</MudTd>
+                <MudTd Style="text-align: right">
+                    <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small"
+                             AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                        @if (!context.IsApproved)
+                        {
+                            <MudMenuItem Icon="@Icons.Material.Filled.Check"
+                                         OnClick="() => ApproveUserAsync(context.Id)">
+                                Approve
+                            </MudMenuItem>
+                        }
+                        <MudMenuItem Icon="@(context.IsEnabled ? Icons.Material.Filled.Block : Icons.Material.Filled.CheckCircle)"
+                                     OnClick="() => ToggleEnabledAsync(context.Id)">
+                            @(context.IsEnabled ? "Disable" : "Enable")
+                        </MudMenuItem>
+                        <MudMenuItem Icon="@Icons.Material.Filled.LockReset"
+                                     OnClick="() => ResetPasswordAsync(context.Id, context.Username)">
+                            Reset Password
+                        </MudMenuItem>
+                        <MudDivider/>
+                        <MudMenuItem Icon="@Icons.Material.Filled.Delete"
+                                     IconColor="Color.Error"
+                                     OnClick="() => DeleteUserAsync(context.Id, context.Username)">
+                            Delete
+                        </MudMenuItem>
+                    </MudMenu>
+                </MudTd>
+            </RowTemplate>
+            <NoRecordsContent>
+                <MudText>No users found.</MudText>
+            </NoRecordsContent>
+        </MudTable>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    [CascadingParameter] public required MainLayout Layout { get; set; }
+
+    private List<User> _users = new();
+    private List<User> _pendingApprovals = new();
+    private List<UserGroup> _groups = new();
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Layout.DrawerEnabledToggleAsync(false);
+        _groups = await UserService.GetAllGroupsAsync();
+        await RefreshUsersAsync();
+    }
+
+    private async Task RefreshUsersAsync()
+    {
+        _loading = true;
+        _users = await UserService.GetAllUsersAsync();
+        _pendingApprovals = await UserService.GetPendingApprovalsAsync();
+        _loading = false;
+    }
+
+    private async Task OpenCreateDialog()
+    {
+        var parameters = new DialogParameters<CreateUserDialog>
+        {
+            { x => x.Groups, _groups }
+        };
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<CreateUserDialog>("Create User", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
+        {
+            await RefreshUsersAsync();
+            Snackbar.Add("User created successfully.", Severity.Success);
+        }
+    }
+
+    private async Task ApproveUserAsync(string userId)
+    {
+        var success = await UserService.ApproveUserAsync(userId);
+        if (success)
+        {
+            Snackbar.Add("User approved.", Severity.Success);
+            await RefreshUsersAsync();
+        }
+    }
+
+    private async Task ToggleEnabledAsync(string userId)
+    {
+        var success = await UserService.ToggleEnabledAsync(userId);
+        if (success)
+        {
+            Snackbar.Add("User status updated.", Severity.Success);
+            await RefreshUsersAsync();
+        }
+    }
+
+    private async Task ResetPasswordAsync(string userId, string username)
+    {
+        var confirm = await DialogService.ShowMessageBoxAsync(
+            "Reset Password",
+            $"Reset the password for user \"{username}\"? A new password will be generated.",
+            yesText: "Reset", cancelText: "Cancel");
+
+        if (confirm == true)
+        {
+            var newPassword = await UserService.ResetPasswordAsync(userId);
+            if (newPassword != null)
+            {
+                await DialogService.ShowMessageBoxAsync(
+                    "New Password",
+                    (MarkupString)$"The new password for <strong>{username}</strong> is:<br/><br/><code>{newPassword}</code><br/><br/>Please share this securely with the user.",
+                    yesText: "OK");
+            }
+        }
+    }
+
+    private async Task DeleteUserAsync(string userId, string username)
+    {
+        var confirm = await DialogService.ShowMessageBoxAsync(
+            "Delete User",
+            (MarkupString)$"<strong>Warning:</strong> This will permanently delete user \"{username}\" and all their data (collections, environments, history, settings). This cannot be undone.",
+            yesText: "Delete", cancelText: "Cancel");
+
+        if (confirm == true)
+        {
+            var success = await UserService.DeleteUserAsync(userId);
+            if (success)
+            {
+                Snackbar.Add($"User \"{username}\" deleted.", Severity.Success);
+                await RefreshUsersAsync();
+            }
+        }
+    }
+}

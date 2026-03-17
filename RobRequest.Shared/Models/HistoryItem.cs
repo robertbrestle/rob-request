@@ -10,6 +10,8 @@ public class HistoryItem
     public string Url { get; set; } = string.Empty;
     public int StatusCode { get; set; }
     public long ResponseTimeMs { get; set; }
+    public string UserId { get; set; } = string.Empty;
+    public User? User { get; set; }
     public DateTime Timestamp { get; set; } = DateTime.Now;
     public HttpRequestModel? Request { get; set; }
     public HttpResponseModel? Response { get; set; }

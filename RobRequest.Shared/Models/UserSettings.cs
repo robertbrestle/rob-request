@@ -5,7 +5,9 @@ namespace RobRequest.Shared.Models;
 public class UserSettings
 {
     [Key]
-    public string Id { get; set; } = "default";
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public string UserId { get; set; } = string.Empty;
+    public User? User { get; set; }
     public bool DarkMode { get; set; } = true;
     public int DefaultTimeoutSeconds { get; set; } = 30;
     public int MaxHistoryItems { get; set; } = 1000;

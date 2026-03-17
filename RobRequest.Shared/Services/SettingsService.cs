@@ -7,23 +7,32 @@ namespace RobRequest.Shared.Services;
 public class SettingsService
 {
     private readonly AppDbContext _db;
+    private readonly CurrentUserService _currentUser;
     private UserSettings _settings = new();
 
     public event Action? OnSettingsChanged;
 
-    public SettingsService(AppDbContext db)
+    public SettingsService(AppDbContext db, CurrentUserService currentUser)
     {
         _db = db;
+        _currentUser = currentUser;
     }
 
     public UserSettings Settings => _settings;
 
     public async Task<UserSettings> GetSettingsAsync()
     {
-        var settings = await _db.UserSettings.FindAsync("default");
+        var userId = _currentUser.UserId;
+        if (string.IsNullOrEmpty(userId))
+        {
+            return _settings;
+        }
+
+        var settings = await _db.UserSettings
+            .FirstOrDefaultAsync(s => s.UserId == userId);
         if (settings is null)
         {
-            settings = new UserSettings();
+            settings = new UserSettings { UserId = userId };
             _db.UserSettings.Add(settings);
             await _db.SaveChangesAsync();
         }
@@ -34,15 +43,29 @@ public class SettingsService
 
     public async Task UpdateSettingsAsync(UserSettings settings)
     {
-        settings.Id = "default";
-        var existing = await _db.UserSettings.FindAsync("default");
+        var userId = _currentUser.UserId;
+        if (string.IsNullOrEmpty(userId))
+        {
+            return;
+        }
+
+        var existing = await _db.UserSettings
+            .FirstOrDefaultAsync(s => s.UserId == userId);
         if (existing is null)
         {
+            settings.UserId = userId;
             _db.UserSettings.Add(settings);
         }
         else
         {
-            _db.Entry(existing).CurrentValues.SetValues(settings);
+            existing.DarkMode = settings.DarkMode;
+            existing.DefaultTimeoutSeconds = settings.DefaultTimeoutSeconds;
+            existing.MaxHistoryItems = settings.MaxHistoryItems;
+            existing.AutoFormatJson = settings.AutoFormatJson;
+            existing.FollowRedirects = settings.FollowRedirects;
+            existing.ValidateSslCertificates = settings.ValidateSslCertificates;
+            existing.ActiveEnvironmentId = settings.ActiveEnvironmentId;
+            settings = existing;
         }
 
         await _db.SaveChangesAsync();

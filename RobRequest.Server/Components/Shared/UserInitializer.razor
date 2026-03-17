@@ -1,0 +1,30 @@
+@using System.Security.Claims
+@inject CurrentUserService CurrentUser
+
+<CascadingValue Value="CurrentUser">
+    @ChildContent
+</CascadingValue>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthStateTask { get; set; }
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthStateTask != null)
+        {
+            var authState = await AuthStateTask;
+            var user = authState.User;
+
+            if (user.Identity?.IsAuthenticated == true)
+            {
+                CurrentUser.UserId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                CurrentUser.Username = user.FindFirst(ClaimTypes.Name)?.Value;
+                CurrentUser.GroupName = user.FindFirst("group")?.Value;
+            }
+        }
+    }
+}

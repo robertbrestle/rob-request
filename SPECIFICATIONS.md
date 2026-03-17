@@ -213,6 +213,60 @@ To create a responsive, feature-rich API testing tool that leverages modern web 
 - **Environment Switching**: Quick environment selector in AppBar (EnvironmentSelector component)
 - **Variable Import**: Import from .env files or JSON
 
+### 3.5 User Accounts & Authorization
+
+#### Authentication
+- **Cookie Authentication**: ASP.NET Core cookie authentication with 7-day sliding expiration
+- **Login**: Username/password form posting to `/api/auth/login` endpoint; sets authentication cookie and redirects to home
+- **Registration**: Username/password form posting to `/api/auth/register`; new accounts require admin approval before login
+- **Logout**: GET endpoint at `/api/auth/logout` clears authentication cookie and redirects to login page
+- **Password Hashing**: Secure password hashing via `IPasswordHasher<User>` from `Microsoft.Extensions.Identity.Core`
+- **Minimum Password Length**: 8 characters enforced on registration and user creation
+
+#### User Groups
+- **Two Groups**: `admin` and `user` — seeded on first startup
+- **Admin Privileges**: Access to User Management page; full CRUD on all users
+- **User Privileges**: Standard access to own data (collections, environments, history, settings)
+- **Authorization Policy**: `Admin` policy requires `group` claim equal to `"admin"`
+
+#### Initial Setup
+- **Admin Seed**: On first startup (when no admin user exists), an `admin` account is created with a randomly generated GUID password
+- **Console Output**: The admin username and generated password are printed to the server console
+- **Default Settings**: A `UserSettings` record is automatically created for the seeded admin user
+
+#### User Management Page (`/admin/users`)
+- **Admin-only**: Protected by `[Authorize(Policy = "Admin")]`
+- **Pending Approvals**: Dedicated section showing unapproved registrations with Approve/Delete actions
+- **User Table**: All users displayed with username, group, enabled/disabled status, approval status, timestamps
+- **Actions per User**:
+  - Approve (for pending users)
+  - Enable/Disable toggle
+  - Reset Password (generates new GUID, displayed in dialog)
+  - Delete (with confirmation; cascades to all user data)
+- **Create User Dialog**: Admin can create users with username, password, and group selection
+
+#### Data Ownership
+- **All data is user-scoped**: Collections, environments, history items, and settings are attributed to the authenticated user via a `UserId` foreign key
+- **Service Filtering**: `CurrentUserService` (scoped) holds the authenticated user's ID, username, and group; all data services (`HistoryService`, `CollectionService`, `EnvironmentService`, `SettingsService`, `ImportExportService`) filter queries by `CurrentUserService.UserId`
+- **Import/Export**: Exported data is scoped to the current user; imported data is assigned to the current user
+- **Cascade Delete**: Deleting a user cascades to all their collections, environments, history, and settings
+
+#### Data Models
+- **`UserGroup`**: Id, Name, CreatedAt
+- **`User`**: Id, Username, PasswordHash, GroupId (FK → UserGroup), IsEnabled, IsApproved, CreatedAt, UpdatedAt
+- **Foreign Keys**: `UserId` added to `HistoryItem`, `CollectionModel`, `EnvironmentModel`, `UserSettings` with cascade delete and indexes
+
+#### Pages & Components
+- **`Login.razor`** (`/login`): Login form with error/success messages; uses `MinimalLayout` (no app shell)
+- **`Register.razor`** (`/register`): Registration form with client-side validation; uses `MinimalLayout`
+- **`UserManagement.razor`** (`/admin/users`): Admin user management page with pending approvals, user table, and create dialog
+- **`MinimalLayout.razor`**: Minimal layout for auth pages (MudThemeProvider + MudLayout only)
+- **`RedirectToLogin.razor`**: Redirects unauthenticated users to `/login`
+- **`UserInitializer.razor`**: Populates `CurrentUserService` from `CascadingAuthenticationState` on each render
+- **`CreateUserDialog.razor`**: MudDialog for admin user creation
+- **`Routes.razor`**: Uses `AuthorizeRouteView` instead of `RouteView`; unauthenticated users see `RedirectToLogin`
+- **`MainLayout.razor`**: Wrapped in `UserInitializer`; AppBar menu includes admin-only "User Management" link and logout button showing current username
+
 ---
 
 ## 4. Non-Functional Requirements
@@ -308,14 +362,25 @@ The solution uses a **three-project layout**. Because InteractiveServer runs all
   - `Collections.razor` (`/collections`): Dedicated collection management page with tree + detail panel
   - `Environments.razor` (`/environments`): Dedicated environment management page with list + detail panel
   - `Settings.razor` (`/settings`): Application settings page
+  - `Login.razor` (`/login`): Login page with `[AllowAnonymous]`; uses `MinimalLayout`
+  - `Register.razor` (`/register`): Registration page with `[AllowAnonymous]`; uses `MinimalLayout`
+  - `UserManagement.razor` (`/admin/users`): Admin-only user management page
+- **Auth Components**:
+  - `MinimalLayout.razor`: Minimal layout for login/register pages
+  - `RedirectToLogin.razor`: Redirects unauthenticated users to `/login`
+  - `UserInitializer.razor`: Populates `CurrentUserService` from authentication state
+  - `CreateUserDialog.razor`: Dialog for admin user creation
 
 #### Business Services (`RobRequest.Shared/Services/`)
 - **ApiService**: HTTP request execution and response handling (server-side `HttpClient`)
-- **HistoryService**: Request history management and persistence (EF Core)
-- **CollectionService**: Collection CRUD operations (EF Core)
-- **EnvironmentService**: Environment CRUD, variable management, `{{variable}}` substitution, and active environment persistence (EF Core)
-- **SettingsService**: User preferences and configuration (EF Core)
-- **ImportExportService**: Versioned JSON export/import of collections, environments, and history (EF Core)
+- **AuthService**: User registration, login, and password management with `IPasswordHasher<User>`
+- **UserService**: Admin user management — CRUD, enable/disable, approve, reset password, change group
+- **CurrentUserService**: Scoped service holding the authenticated user's ID, username, and group name; populated from `CascadingAuthenticationState` by `UserInitializer`
+- **HistoryService**: Request history management and persistence (EF Core); filtered by `CurrentUserService.UserId`
+- **CollectionService**: Collection CRUD operations (EF Core); filtered by `CurrentUserService.UserId`
+- **EnvironmentService**: Environment CRUD, variable management, `{{variable}}` substitution, and active environment persistence (EF Core); filtered by `CurrentUserService.UserId`
+- **SettingsService**: User preferences and configuration (EF Core); filtered by `CurrentUserService.UserId`
+- **ImportExportService**: Versioned JSON export/import of collections, environments, and history (EF Core); scoped to current user
 
 > All services reside in `RobRequest.Shared` under the `RobRequest.Shared.Services` namespace and are registered in the server's DI container with **Scoped** lifetime (one instance per circuit).
 
@@ -327,6 +392,7 @@ The solution uses a **three-project layout**. Because InteractiveServer runs all
 - **Request Models**: `HttpRequestModel`, `HeaderItem`, `QueryParamItem`, `FormDataItem`
 - **Response Models**: `HttpResponseModel`
 - **Domain Models**: `CollectionModel`, `CollectionRequestModel`, `EnvironmentModel`, `HistoryItem`
+- **User Models**: `User`, `UserGroup`
 - **Configuration Models**: `UserSettings`
 - **Import/Export Models**: `RobRequestExport`, `ExportedCollection`, `ExportedCollectionRequest`, `ExportedEnvironment`, `ExportedHistoryItem`, `ImportResult`
 - **App Metadata**: `AppInfo` (static helper; reads assembly version from `RobRequest.Shared`)
@@ -339,7 +405,7 @@ The solution uses a **three-project layout**. Because InteractiveServer runs all
 - **Component Tests** (`Tests/Components/`): bUnit tests for Razor components (RequestPanel, ResponsePanel, Sidebar, Settings)
 
 ### Data Architecture
-- **SQLite Schema**: EF Core code-first with tables for history, collections, environments, settings
+- **SQLite Schema**: EF Core code-first with tables for users, user groups, history, collections, environments, settings
 - **Migration Strategy**: EF Core migrations applied automatically on startup (`DbContext.Database.MigrateAsync()`)
 - **Indexing Strategy**: EF Core index attributes on URL, timestamp, and collection fields
 - **Backup Strategy**: Export to versioned JSON (format version `"1"`) with user control; SQLite file can also be backed up directly
@@ -1005,7 +1071,7 @@ jobs:
 - **Content Security Policy**: Restrict resource loading; allow SignalR WebSocket connections
 - **XSS Protection**: Blazor's built-in Razor encoding + `HtmlSanitizer` for user-supplied HTML
 - **CSRF Protection**: Blazor antiforgery middleware (`app.UseAntiforgery()`) with `<AntiforgeryToken />` in `App.razor`
-- **Authentication**: Secure token handling; sensitive values stored server-side only
+- **Authentication**: Cookie authentication with secure password hashing (`IPasswordHasher<User>`); all user data stored server-side; admin approval required for new registrations
 - **Data Privacy**: API request/response data processed server-side; never persisted to browser storage
 
 #### Infrastructure Security
@@ -1128,9 +1194,10 @@ With proper execution of this specification, the resulting application will prov
 
 ---
 
-**Document Version**: 2.1  
+**Document Version**: 2.2  
 **Last Updated**: March 2026  
 **Architecture**: InteractiveServer (migrated from InteractiveWebAssembly in v1.x)  
-**Changelog**: v2.1 — Added Import/Export feature (versioned JSON), app version management (`AppInfo`), `ImportExportService`  
+**Changelog**: v2.2 — Added User Accounts & Authorization (cookie auth, user groups, admin seeding, user management page, per-user data scoping, `AuthService`, `UserService`, `CurrentUserService`)  
+v2.1 — Added Import/Export feature (versioned JSON), app version management (`AppInfo`), `ImportExportService`  
 **Next Review**: April 2026 or as needed
  

@@ -1,5 +1,7 @@
+@using System.Security.Claims
 @inherits LayoutComponentBase
 @inject SettingsService SettingsService
+@inject CurrentUserService CurrentUser
 @implements IDisposable
 
 <MudThemeProvider @bind-IsDarkMode="_isDarkMode"/>
@@ -7,6 +9,7 @@
 <MudDialogProvider/>
 <MudSnackbarProvider/>
 
+<UserInitializer>
 <CascadingValue Value="this">
     <MudLayout>
         <MudAppBar Elevation="1" Dense="true">
@@ -47,6 +50,21 @@
                              Href="/settings">
                     Settings
                 </MudMenuItem>
+                <AuthorizeView Policy="Admin">
+                    <Authorized>
+                        <MudDivider/>
+                        <MudMenuItem Icon="@Icons.Material.Filled.AdminPanelSettings"
+                                     Href="/admin/users">
+                            User Management
+                        </MudMenuItem>
+                    </Authorized>
+                </AuthorizeView>
+                <MudDivider/>
+                <MudMenuItem Icon="@Icons.Material.Filled.Logout"
+                             Href="/api/auth/logout"
+                             ForceLoad="true">
+                    Logout (@CurrentUser.Username)
+                </MudMenuItem>
             </MudMenu>
         </MudAppBar>
 
@@ -62,6 +80,7 @@
         </MudMainContent>
     </MudLayout>
 </CascadingValue>
+</UserInitializer>
 
 @code {
 

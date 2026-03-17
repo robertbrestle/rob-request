@@ -7,17 +7,20 @@ namespace RobRequest.Shared.Services;
 public class CollectionService
 {
     private readonly AppDbContext _db;
+    private readonly CurrentUserService _currentUser;
 
     public event Action? OnCollectionsChanged;
 
-    public CollectionService(AppDbContext db)
+    public CollectionService(AppDbContext db, CurrentUserService currentUser)
     {
         _db = db;
+        _currentUser = currentUser;
     }
 
     public async Task<List<CollectionModel>> GetRootCollectionsAsync()
     {
         return await _db.Collections
+            .Where(c => c.UserId == _currentUser.UserId)
             .Where(c => c.ParentId == null)
             .Include(c => c.Children)
             .Include(c => c.Requests)
@@ -30,6 +33,7 @@ public class CollectionService
     public async Task<List<CollectionModel>> GetAllCollectionsAsync()
     {
         return await _db.Collections
+            .Where(c => c.UserId == _currentUser.UserId)
             .Include(c => c.Requests)
             .OrderBy(c => c.SortOrder)
             .ThenBy(c => c.Name)
@@ -40,6 +44,7 @@ public class CollectionService
     public async Task<List<CollectionModel>> GetCollectionTreeAsync()
     {
         var all = await _db.Collections
+            .Where(c => c.UserId == _currentUser.UserId)
             .Include(c => c.Requests.OrderBy(r => r.SortOrder).ThenBy(r => r.Name))
             .OrderBy(c => c.SortOrder)
             .ThenBy(c => c.Name)
@@ -83,6 +88,7 @@ public class CollectionService
         {
             Name = name,
             Description = description,
+            UserId = _currentUser.UserId ?? string.Empty,
             ParentId = parentId,
             SortOrder = maxSort + 1,
             CreatedAt = DateTime.Now,
@@ -200,6 +206,7 @@ public class CollectionService
     {
         query = query.ToLower();
         var allCollections = await _db.Collections
+            .Where(c => c.UserId == _currentUser.UserId)
             .Include(c => c.Requests)
             .AsNoTracking()
             .ToListAsync();
@@ -250,8 +257,12 @@ public class CollectionService
 
     public async Task ClearAllCollectionsAsync()
     {
-        await _db.CollectionRequests.ExecuteDeleteAsync();
-        await _db.Collections.ExecuteDeleteAsync();
+        var userCollectionIds = await _db.Collections
+            .Where(c => c.UserId == _currentUser.UserId)
+            .Select(c => c.Id)
+            .ToListAsync();
+        await _db.CollectionRequests.Where(r => userCollectionIds.Contains(r.CollectionId)).ExecuteDeleteAsync();
+        await _db.Collections.Where(c => c.UserId == _currentUser.UserId).ExecuteDeleteAsync();
         OnCollectionsChanged?.Invoke();
     }
 }

@@ -7,6 +7,8 @@ public class AppDbContext : DbContext
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
+    public DbSet<User> Users => Set<User>();
+    public DbSet<UserGroup> UserGroups => Set<UserGroup>();
     public DbSet<HistoryItem> HistoryItems => Set<HistoryItem>();
     public DbSet<UserSettings> UserSettings => Set<UserSettings>();
     public DbSet<CollectionModel> Collections => Set<CollectionModel>();
@@ -15,11 +17,34 @@ public class AppDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<UserGroup>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Name).IsUnique();
+        });
+
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Username).IsUnique();
+
+            entity.HasOne(e => e.Group)
+                .WithMany()
+                .HasForeignKey(e => e.GroupId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
         modelBuilder.Entity<HistoryItem>(entity =>
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.Timestamp);
             entity.HasIndex(e => e.Url);
+            entity.HasIndex(e => e.UserId);
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             entity.OwnsOne(e => e.Request, r =>
             {
@@ -38,6 +63,12 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<UserSettings>(entity =>
         {
             entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.UserId).IsUnique();
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<CollectionModel>(entity =>
@@ -45,6 +76,12 @@ public class AppDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.ParentId);
             entity.HasIndex(e => e.Name);
+            entity.HasIndex(e => e.UserId);
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasOne(e => e.Parent)
                 .WithMany(e => e.Children)
@@ -75,6 +112,12 @@ public class AppDbContext : DbContext
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.Name);
+            entity.HasIndex(e => e.UserId);
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
             entity.OwnsMany(e => e.Variables, v =>
             {
                 v.ToJson();

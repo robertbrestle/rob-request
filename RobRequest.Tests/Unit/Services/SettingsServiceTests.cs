@@ -13,7 +13,8 @@ public class SettingsServiceTests : IDisposable
         _db = new AppDbContext(options);
         _db.Database.OpenConnection();
         _db.Database.EnsureCreated();
-        _sut = new SettingsService(_db);
+        TestHelpers.SeedTestUser(_db);
+        _sut = new SettingsService(_db, TestHelpers.CreateTestCurrentUser());
     }
 
     public void Dispose()

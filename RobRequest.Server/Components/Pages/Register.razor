@@ -1,0 +1,129 @@
+@page "/register"
+@attribute [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+@layout MinimalLayout
+@inject NavigationManager Navigation
+
+<PageTitle>Register - RobRequest</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="d-flex align-center" Style="min-height: 100vh;">
+    <MudPaper Elevation="3" Class="pa-8" Style="width: 100%;">
+        <MudStack Spacing="4" AlignItems="AlignItems.Center">
+            <MudIcon Icon="@Icons.Material.Filled.Api" Size="Size.Large" Color="Color.Primary"/>
+            <MudText Typo="Typo.h4">RobRequest</MudText>
+            <MudText Typo="Typo.body1" Color="Color.Default">Create a new account</MudText>
+
+            @if (_error != null)
+            {
+                <MudAlert Severity="Severity.Error" Dense="true" Class="w-100">
+                    @_error
+                </MudAlert>
+            }
+
+            @if (!string.IsNullOrEmpty(_clientError))
+            {
+                <MudAlert Severity="Severity.Warning" Dense="true" Class="w-100">
+                    @_clientError
+                </MudAlert>
+            }
+
+            <form method="post" action="/api/auth/register" id="registerForm" style="width: 100%;">
+                <MudStack Spacing="3">
+                    <MudTextField T="string"
+                                  @bind-Value="_username"
+                                  Label="Username"
+                                  Variant="Variant.Outlined"
+                                  Required="true"
+                                  InputType="InputType.Text"
+                                  name="username"
+                                  Immediate="true"
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Person"/>
+
+                    <MudTextField T="string"
+                                  @bind-Value="_password"
+                                  Label="Password"
+                                  Variant="Variant.Outlined"
+                                  Required="true"
+                                  InputType="InputType.Password"
+                                  name="password"
+                                  Immediate="true"
+                                  HelperText="Minimum 8 characters"
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Lock"/>
+
+                    <MudTextField T="string"
+                                  @bind-Value="_confirmPassword"
+                                  Label="Confirm Password"
+                                  Variant="Variant.Outlined"
+                                  Required="true"
+                                  InputType="InputType.Password"
+                                  Immediate="true"
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Lock"/>
+
+                    <MudButton ButtonType="ButtonType.Button"
+                               Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               FullWidth="true"
+                               Size="Size.Large"
+                               OnClick="ValidateAndSubmit">
+                        Register
+                    </MudButton>
+                </MudStack>
+            </form>
+
+            <MudAlert Severity="Severity.Info" Dense="true" Variant="Variant.Outlined" Class="w-100">
+                After registering, an administrator must approve your account before you can sign in.
+            </MudAlert>
+
+            <MudLink Href="/login" Typo="Typo.body2">
+                Already have an account? Sign in
+            </MudLink>
+        </MudStack>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private string _username = string.Empty;
+    private string _password = string.Empty;
+    private string _confirmPassword = string.Empty;
+    private string? _error;
+    private string? _clientError;
+
+    [Inject] private IJSRuntime Js { get; set; } = default!;
+
+    protected override void OnInitialized()
+    {
+        var uri = new Uri(Navigation.Uri);
+        var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+        var errorParam = query["error"];
+        if (!string.IsNullOrEmpty(errorParam))
+            _error = errorParam;
+    }
+
+    private async Task ValidateAndSubmit()
+    {
+        _clientError = null;
+
+        if (string.IsNullOrWhiteSpace(_username) || string.IsNullOrWhiteSpace(_password))
+        {
+            _clientError = "Username and password are required.";
+            return;
+        }
+
+        if (_password.Length < 8)
+        {
+            _clientError = "Password must be at least 8 characters.";
+            return;
+        }
+
+        if (_password != _confirmPassword)
+        {
+            _clientError = "Passwords do not match.";
+            return;
+        }
+
+        // Submit the form via JS since we need form POST for cookie auth
+        await Js.InvokeVoidAsync("document.getElementById('registerForm').submit");
+    }
+}

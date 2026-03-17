@@ -5,6 +5,7 @@ public class EnvironmentServiceTests : IDisposable
     private readonly AppDbContext _db;
     private readonly SettingsService _settingsService;
     private readonly EnvironmentService _sut;
+    private readonly CurrentUserService _currentUser;
 
     public EnvironmentServiceTests()
     {
@@ -14,8 +15,10 @@ public class EnvironmentServiceTests : IDisposable
         _db = new AppDbContext(options);
         _db.Database.OpenConnection();
         _db.Database.EnsureCreated();
-        _settingsService = new SettingsService(_db);
-        _sut = new EnvironmentService(_db, _settingsService);
+        TestHelpers.SeedTestUser(_db);
+        _currentUser = TestHelpers.CreateTestCurrentUser();
+        _settingsService = new SettingsService(_db, _currentUser);
+        _sut = new EnvironmentService(_db, _settingsService, _currentUser);
     }
 
     public void Dispose()
@@ -270,7 +273,7 @@ public class EnvironmentServiceTests : IDisposable
         await _settingsService.UpdateSettingsAsync(settings);
 
         // Create a fresh service to test initialization
-        var freshService = new EnvironmentService(_db, _settingsService);
+        var freshService = new EnvironmentService(_db, _settingsService, _currentUser);
         await freshService.InitializeAsync();
 
         freshService.ActiveEnvironmentId.Should().Be(env.Id);

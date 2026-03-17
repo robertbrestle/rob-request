@@ -3,6 +3,7 @@ namespace RobRequest.Tests.Integration;
 public class DatabaseIntegrationTests : IDisposable
 {
     private readonly AppDbContext _db;
+    private readonly CurrentUserService _currentUser;
 
     public DatabaseIntegrationTests()
     {
@@ -12,6 +13,8 @@ public class DatabaseIntegrationTests : IDisposable
         _db = new AppDbContext(options);
         _db.Database.OpenConnection();
         _db.Database.EnsureCreated();
+        TestHelpers.SeedTestUser(_db);
+        _currentUser = TestHelpers.CreateTestCurrentUser();
     }
 
     public void Dispose()
@@ -23,7 +26,7 @@ public class DatabaseIntegrationTests : IDisposable
     [Fact]
     public async Task HistoryItem_PersistsAndReloads()
     {
-        var service = new HistoryService(_db);
+        var service = new HistoryService(_db, _currentUser);
         var request = new HttpRequestModel
         {
             Method = "POST",
@@ -63,7 +66,7 @@ public class DatabaseIntegrationTests : IDisposable
     [Fact]
     public async Task HistoryItem_RemoveById_DeletesOnlyTarget()
     {
-        var service = new HistoryService(_db);
+        var service = new HistoryService(_db, _currentUser);
         var response = new HttpResponseModel { StatusCode = 200 };
 
         await service.AddToHistoryAsync(new HttpRequestModel { Url = "https://keep.com" }, response);
@@ -83,12 +86,12 @@ public class DatabaseIntegrationTests : IDisposable
     [Fact]
     public async Task UserSettings_DefaultsCreatedOnFirstAccess()
     {
-        var service = new SettingsService(_db);
+        var service = new SettingsService(_db, _currentUser);
 
         var settings = await service.GetSettingsAsync();
 
         settings.Should().NotBeNull();
-        settings.Id.Should().Be("default");
+        settings.UserId.Should().Be("test-user");
         settings.DarkMode.Should().BeTrue();
         settings.DefaultTimeoutSeconds.Should().Be(30);
         settings.MaxHistoryItems.Should().Be(1000);
@@ -97,7 +100,7 @@ public class DatabaseIntegrationTests : IDisposable
     [Fact]
     public async Task UserSettings_UpdatePersistsAcrossReads()
     {
-        var service = new SettingsService(_db);
+        var service = new SettingsService(_db, _currentUser);
 
         await service.GetSettingsAsync();
         await service.UpdateSettingsAsync(new UserSettings
@@ -124,7 +127,7 @@ public class DatabaseIntegrationTests : IDisposable
     [Fact]
     public async Task UserSettings_ToggleDarkMode_PersistsState()
     {
-        var service = new SettingsService(_db);
+        var service = new SettingsService(_db, _currentUser);
 
         var initial = (await service.GetSettingsAsync()).DarkMode;
         await service.ToggleDarkModeAsync();
@@ -140,7 +143,7 @@ public class DatabaseIntegrationTests : IDisposable
     [Fact]
     public async Task HistoryItem_TrimOldestWhenOverMax()
     {
-        var service = new HistoryService(_db);
+        var service = new HistoryService(_db, _currentUser);
         service.SetMaxItems(3);
 
         var response = new HttpResponseModel { StatusCode = 200 };
@@ -163,7 +166,7 @@ public class DatabaseIntegrationTests : IDisposable
     [Fact]
     public async Task HistoryItem_ClearRemovesAll()
     {
-        var service = new HistoryService(_db);
+        var service = new HistoryService(_db, _currentUser);
         var response = new HttpResponseModel { StatusCode = 200 };
 
         await service.AddToHistoryAsync(new HttpRequestModel { Url = "https://1.com" }, response);
@@ -182,7 +185,7 @@ public class DatabaseIntegrationTests : IDisposable
     [Fact]
     public async Task HistoryItem_SearchByMethod()
     {
-        var service = new HistoryService(_db);
+        var service = new HistoryService(_db, _currentUser);
         var response = new HttpResponseModel { StatusCode = 200 };
 
         await service.AddToHistoryAsync(new HttpRequestModel { Method = "GET", Url = "https://a.com" }, response);

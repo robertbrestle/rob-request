@@ -1,0 +1,114 @@
+@inject UserService UserService
+
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="3">
+            @if (!string.IsNullOrEmpty(_error))
+            {
+                <MudAlert Severity="Severity.Error" Dense="true">@_error</MudAlert>
+            }
+
+            <MudTextField T="string"
+                          @bind-Value="_username"
+                          Label="Username"
+                          Variant="Variant.Outlined"
+                          Required="true"
+                          Immediate="true"/>
+
+            <MudTextField T="string"
+                          @bind-Value="_password"
+                          Label="Password"
+                          Variant="Variant.Outlined"
+                          Required="true"
+                          InputType="InputType.Password"
+                          Immediate="true"
+                          HelperText="Minimum 8 characters"/>
+
+            <MudSelect T="string"
+                       @bind-Value="_selectedGroupId"
+                       Label="Group"
+                       Variant="Variant.Outlined"
+                       Required="true">
+                @foreach (var group in Groups)
+                {
+                    <MudSelectItem T="string" Value="@group.Id">@group.Name</MudSelectItem>
+                }
+            </MudSelect>
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   OnClick="CreateAsync"
+                   Disabled="_creating">
+            @if (_creating)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2"/>
+            }
+            Create
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public List<UserGroup> Groups { get; set; } = new();
+
+    private string _username = string.Empty;
+    private string _password = string.Empty;
+    private string _selectedGroupId = string.Empty;
+    private string? _error;
+    private bool _creating;
+
+    protected override void OnInitialized()
+    {
+        // Default to "user" group
+        _selectedGroupId = Groups.FirstOrDefault(g => g.Name == "user")?.Id
+                           ?? Groups.FirstOrDefault()?.Id
+                           ?? string.Empty;
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private async Task CreateAsync()
+    {
+        _error = null;
+
+        if (string.IsNullOrWhiteSpace(_username) || string.IsNullOrWhiteSpace(_password))
+        {
+            _error = "Username and password are required.";
+            return;
+        }
+
+        if (_password.Length < 8)
+        {
+            _error = "Password must be at least 8 characters.";
+            return;
+        }
+
+        if (string.IsNullOrEmpty(_selectedGroupId))
+        {
+            _error = "Please select a group.";
+            return;
+        }
+
+        _creating = true;
+        try
+        {
+            var (success, error) = await UserService.CreateUserAsync(_username, _password, _selectedGroupId);
+            if (!success)
+            {
+                _error = error ?? "Failed to create user.";
+                return;
+            }
+
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        finally
+        {
+            _creating = false;
+        }
+    }
+}
