@@ -142,6 +142,13 @@ app.MapPost("/api/auth/register", async (HttpContext ctx, AuthService authServic
     var form = await ctx.Request.ReadFormAsync();
     var username = form["username"].ToString();
     var password = form["password"].ToString();
+    var confirmPassword = form["confirmPassword"].ToString();
+
+    if (password != confirmPassword)
+    {
+        ctx.Response.Redirect($"/register?error={Uri.EscapeDataString("Passwords do not match.")}");
+        return;
+    }
 
     var (success, error) = await authService.RegisterAsync(username, password);
     if (!success)
