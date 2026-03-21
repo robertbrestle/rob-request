@@ -25,7 +25,8 @@
         <MudDivider Class="my-3"/>
 
         <!-- Response Tabs -->
-        <MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true" TabButtonsClass="pa-3" ActivePanelIndex="1">
+        <MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true" TabButtonsClass="pa-3" ActivePanelIndex="1"
+                 TabPanelsClass="pt-2">
             <!-- Headers Tab -->
             <MudTabPanel Text="Headers" BadgeData="@Response.Headers.Count.ToString()" BadgeColor="Color.Info">
                 <MudStack Spacing="2">
@@ -120,7 +121,7 @@
                                     Value="@GetDisplayBody()"
                                     Language="@(Response?.ContentType ?? string.Empty)"
                                     ReadOnly="true"
-                                    IsDarkMode="Layout.IsDarkMode()"
+                                    IsDarkMode="Layout.IsDarkMode"
                                     CssClass="response-body-editor"/>
                     }
                     else

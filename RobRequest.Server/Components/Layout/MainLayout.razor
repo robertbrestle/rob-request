@@ -1,10 +1,6 @@
-@using System.Security.Claims
-@inherits LayoutComponentBase
-@inject SettingsService SettingsService
-@inject CurrentUserService CurrentUser
-@implements IDisposable
+@inherits RobRequest.Server.Components.Layout.Bases.MainLayoutBase
 
-<MudThemeProvider @bind-IsDarkMode="_isDarkMode"/>
+<MudThemeProvider @bind-IsDarkMode="IsDarkMode"/>
 <MudPopoverProvider/>
 <MudDialogProvider/>
 <MudSnackbarProvider/>
@@ -13,7 +9,7 @@
 <CascadingValue Value="this">
     <MudLayout>
         <MudAppBar Elevation="1" Dense="true">
-            @if (_isDrawerEnabled)
+            @if (IsDrawerEnabled)
             {
                 <MudIconButton Icon="@Icons.Material.Filled.Menu"
                                Color="Color.Inherit"
@@ -42,7 +38,7 @@
                     Environments
                 </MudMenuItem>
                 <MudDivider/>
-                <MudMenuItem Icon="@(_isDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
+                <MudMenuItem Icon="@(IsDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
                              OnClick="ToggleDarkMode">
                     Theme
                 </MudMenuItem>
@@ -68,9 +64,9 @@
             </MudMenu>
         </MudAppBar>
 
-        @if (_isDrawerEnabled)
+        @if (IsDrawerEnabled)
         {
-            <MudDrawer @bind-Open="_isDrawerOpen" Elevation="2" ClipMode="DrawerClipMode.Always" Width="300px">
+            <MudDrawer @bind-Open="IsDrawerOpen" Elevation="2" ClipMode="DrawerClipMode.Always" Width="300px">
                 <SectionOutlet SectionName="Drawer"/>
             </MudDrawer>
         }
@@ -81,61 +77,3 @@
     </MudLayout>
 </CascadingValue>
 </UserInitializer>
-
-@code {
-
-    private bool _isDrawerOpen = true;
-    private bool _isDrawerEnabled = true;
-    private bool _isDarkMode = true;
-
-    protected override async Task OnInitializedAsync()
-    {
-        var settings = await SettingsService.GetSettingsAsync();
-        _isDarkMode = settings.DarkMode;
-        SettingsService.OnSettingsChanged += OnSettingsChanged;
-
-        await Task.CompletedTask;
-    }
-
-    private void DrawerToggle()
-    {
-        _isDrawerOpen = !_isDrawerOpen;
-    }
-
-    public async Task DrawerEnabledToggleAsync(bool enabled)
-    {
-        _isDrawerEnabled = enabled;
-        await InvokeAsync(StateHasChanged);
-    }
-
-    private async void OnSettingsChanged()
-    {
-        try
-        {
-            var settings = await SettingsService.GetSettingsAsync();
-            _isDarkMode = settings.DarkMode;
-            await InvokeAsync(StateHasChanged);
-        }
-        catch (Exception)
-        {
-            // ignored
-        }
-    }
-
-    public bool IsDarkMode() => _isDarkMode;
-    public bool IsDrawerEnabled() => _isDrawerEnabled;
-
-    private async Task ToggleDarkMode()
-    {
-        var settings = await SettingsService.GetSettingsAsync();
-        settings.DarkMode = !settings.DarkMode;
-        await SettingsService.UpdateSettingsAsync(settings);
-        await InvokeAsync(StateHasChanged);
-    }
-
-    public void Dispose()
-    {
-        SettingsService.OnSettingsChanged -= OnSettingsChanged;
-    }
-
-}
