@@ -18,7 +18,7 @@ public class ApiServiceTests
             .ReturnsAsync(new HttpResponseMessage
             {
                 StatusCode = HttpStatusCode.OK,
-                Content = new StringContent("{\"access_token\":\"test-token\"}")
+                Content = new StringContent("{\"access_token\":\"test-token\",\"expires_in\":3600}")
             });
 
         var httpClient = new HttpClient(mockHandler.Object);
@@ -31,10 +31,11 @@ public class ApiServiceTests
         };
 
         // Act
-        var token = await apiService.GetOAuth2TokenAsync(request);
+        var result = await apiService.GetOAuth2TokenAsync(request);
 
         // Assert
-        token.Should().Be("test-token");
+        result.AccessToken.Should().Be("test-token");
+        result.ExpiresIn.Should().Be(3600);
         mockHandler.Protected().Verify(
             "SendAsync",
             Times.Once(),

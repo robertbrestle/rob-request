@@ -108,6 +108,8 @@ public class HttpRequestModelTests
             OAuth2ClientId = "id",
             OAuth2ClientSecret = "secret",
             OAuth2Scope = "scope",
+            OAuth2TokenExpiresAt = DateTime.Now.AddHours(1),
+            OAuth2AutoRefresh = true,
             TimeoutSeconds = 60
         };
 

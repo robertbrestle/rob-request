@@ -23,6 +23,8 @@ public class HttpRequestModel
     public string OAuth2ClientId { get; set; } = string.Empty;
     public string OAuth2ClientSecret { get; set; } = string.Empty;
     public string OAuth2Scope { get; set; } = string.Empty;
+    public DateTime? OAuth2TokenExpiresAt { get; set; }
+    public bool OAuth2AutoRefresh { get; set; }
     public int TimeoutSeconds { get; set; } = 30;
     public DateTime CreatedAt { get; set; } = DateTime.Now;
 
@@ -88,6 +90,8 @@ public class HttpRequestModel
             OAuth2ClientId = OAuth2ClientId,
             OAuth2ClientSecret = OAuth2ClientSecret,
             OAuth2Scope = OAuth2Scope,
+            OAuth2TokenExpiresAt = OAuth2TokenExpiresAt,
+            OAuth2AutoRefresh = OAuth2AutoRefresh,
             TimeoutSeconds = TimeoutSeconds,
             CreatedAt = CreatedAt
         };

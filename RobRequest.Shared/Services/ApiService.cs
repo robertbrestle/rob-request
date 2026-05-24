@@ -176,7 +176,7 @@ public class ApiService(HttpClient httpClient)
                headerName.Equals("Content-Disposition", StringComparison.OrdinalIgnoreCase);
     }
 
-    public async Task<string> GetOAuth2TokenAsync(HttpRequestModel request, CancellationToken ct = default)
+    public async Task<OAuth2TokenResult> GetOAuth2TokenAsync(HttpRequestModel request, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(request.OAuth2TokenUrl))
             throw new ArgumentException("Token URL is required.");
@@ -204,12 +204,28 @@ public class ApiService(HttpClient httpClient)
 
         var json = await response.Content.ReadAsStringAsync(ct);
         using var doc = System.Text.Json.JsonDocument.Parse(json);
+        
+        string? accessToken = null;
+        int? expiresIn = null;
+
         if (doc.RootElement.TryGetProperty("access_token", out var tokenProp))
         {
-            return tokenProp.GetString() ?? throw new Exception("Access token is null.");
+            accessToken = tokenProp.GetString();
         }
 
-        throw new Exception("Access token not found in response.");
+        if (doc.RootElement.TryGetProperty("expires_in", out var expiresProp) && expiresProp.TryGetInt32(out var expiresVal))
+        {
+            expiresIn = expiresVal;
+        }
+
+        if (string.IsNullOrEmpty(accessToken))
+        {
+            throw new Exception("Access token not found in response.");
+        }
+
+        return new OAuth2TokenResult(accessToken, expiresIn);
     }
 }
+
+public record OAuth2TokenResult(string AccessToken, int? ExpiresIn);
 

@@ -262,6 +262,18 @@
                                       Placeholder="e.g. read write"
                                       Variant="Variant.Outlined"
                                       Margin="Margin.Dense"/>
+
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="4">
+                            <MudSwitch T="bool" @bind-Value="_request.OAuth2AutoRefresh" Color="Color.Primary" Label="Auto-token refresh" />
+                            @if (_request.OAuth2TokenExpiresAt.HasValue)
+                            {
+                                var remaining = _request.OAuth2TokenExpiresAt.Value - DateTime.Now;
+                                var isExpired = remaining.TotalSeconds <= 0;
+                                <MudText Typo="Typo.caption" Color="@(isExpired ? Color.Error : remaining.TotalSeconds < 60 ? Color.Warning : Color.Success)">
+                                    @(isExpired ? "Token expired" : $"Token valid for: {FormatTimeSpan(remaining)}")
+                                </MudText>
+                            }
+                        </MudStack>
                         
                         <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
                             <MudTextField T="string"
@@ -386,6 +398,23 @@
             substitutedRequest.OAuth2ClientSecret = await EnvironmentService.SubstituteVariablesAsync(_request.OAuth2ClientSecret);
             substitutedRequest.OAuth2Scope = await EnvironmentService.SubstituteVariablesAsync(_request.OAuth2Scope);
 
+            // Auto-refresh token if enabled and expired
+            if (_request.AuthType == AuthType.OAuth2 && _request.OAuth2AutoRefresh)
+            {
+                bool isExpired = _request.OAuth2TokenExpiresAt is null ||
+                                 string.IsNullOrEmpty(_request.AuthToken) || 
+                                 (_request.OAuth2TokenExpiresAt.HasValue && _request.OAuth2TokenExpiresAt.Value <= DateTime.Now.AddSeconds(5));
+                if (isExpired)
+                {
+                    var success = await GetOAuth2Token();
+                    if (!success)
+                    {
+                        return;
+                    }
+                    substitutedRequest.AuthToken = _request.AuthToken;
+                }
+            }
+
             // Set content type based on body type
             substitutedRequest.ContentType = _request.BodyType switch
             {
@@ -417,12 +446,12 @@
         _cts?.Cancel();
     }
 
-    private async Task GetOAuth2Token()
+    private async Task<bool> GetOAuth2Token()
     {
         if (string.IsNullOrWhiteSpace(_request.OAuth2TokenUrl))
         {
             Snackbar.Add("Token URL is required.", Severity.Error);
-            return;
+            return false;
         }
 
         _isGettingToken = true;
@@ -436,13 +465,19 @@
             substitutedRequest.OAuth2ClientSecret = await EnvironmentService.SubstituteVariablesAsync(_request.OAuth2ClientSecret);
             substitutedRequest.OAuth2Scope = await EnvironmentService.SubstituteVariablesAsync(_request.OAuth2Scope);
 
-            var token = await ApiService.GetOAuth2TokenAsync(substitutedRequest);
-            _request.AuthToken = token;
+            var result = await ApiService.GetOAuth2TokenAsync(substitutedRequest);
+            _request.AuthToken = result.AccessToken;
+            _request.OAuth2TokenExpiresAt = result.ExpiresIn.HasValue 
+                ? DateTime.Now.AddSeconds(result.ExpiresIn.Value) 
+                : null;
+            
             Snackbar.Add("Token retrieved successfully.", Severity.Success);
+            return true;
         }
         catch (Exception ex)
         {
             Snackbar.Add($"Error retrieving token: {ex.Message}", Severity.Error);
+            return false;
         }
         finally
         {
@@ -530,6 +565,15 @@
             ? count.ToString()
             : null;
 
+    private string FormatTimeSpan(TimeSpan ts)
+    {
+        if (ts.TotalHours >= 1)
+            return $"{(int)ts.TotalHours}h {ts.Minutes}m {ts.Seconds}s";
+        if (ts.TotalMinutes >= 1)
+            return $"{(int)ts.TotalMinutes}m {ts.Seconds}s";
+        return $"{ts.Seconds}s";
+    }
+
     private void OnBodyChanged(string value)
     {
         _request.Body = value;
@@ -554,9 +598,15 @@
         }
     }
 
+    private System.Threading.Timer? _uiUpdateTimer;
+
     protected override void OnInitialized()
     {
         EnvironmentService.OnEnvironmentChanged += OnEnvironmentChanged;
+        _uiUpdateTimer = new System.Threading.Timer(_ => 
+        {
+            InvokeAsync(StateHasChanged);
+        }, null, 1000, 1000);
     }
 
     private async void OnEnvironmentChanged()
@@ -587,6 +637,7 @@
     public void Dispose()
     {
         EnvironmentService.OnEnvironmentChanged -= OnEnvironmentChanged;
+        _uiUpdateTimer?.Dispose();
     }
 
 }
