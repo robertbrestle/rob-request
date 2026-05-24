@@ -4,6 +4,7 @@
 @inject CollectionService CollectionService
 @inject EnvironmentService EnvironmentService
 @inject IDialogService DialogService
+@inject ISnackbar Snackbar
 @implements IDisposable
 
 <MudHotkey Key="JsKey.Enter" KeyModifiers="[JsKeyModifier.ControlRight]" OnHotkeyPressed="SendRequest"/>
@@ -190,6 +191,7 @@
                     <MudSelectItem Value="AuthType.Bearer">Bearer Token</MudSelectItem>
                     <MudSelectItem Value="AuthType.Basic">Basic Auth</MudSelectItem>
                     <MudSelectItem Value="AuthType.ApiKey">API Key</MudSelectItem>
+                    <MudSelectItem Value="AuthType.OAuth2">OAuth 2.0</MudSelectItem>
                 </MudSelect>
 
                 @switch (_request.AuthType)
@@ -232,6 +234,56 @@
                             <MudSelectItem Value="ApiKeyLocation.QueryParam">Query Param</MudSelectItem>
                         </MudSelect>
                         break;
+
+                    case AuthType.OAuth2:
+                        <MudSelect T="OAuth2GrantType" @bind-Value="_request.OAuth2GrantType" Label="Grant Type"
+                                   Variant="Variant.Outlined" Margin="Margin.Dense">
+                            <MudSelectItem Value="OAuth2GrantType.ClientCredentials">Client Credentials</MudSelectItem>
+                        </MudSelect>
+
+                        <MudTextField T="string"
+                                      @bind-Value="_request.OAuth2TokenUrl"
+                                      Label="Token URL"
+                                      Placeholder="https://auth.example.com/oauth2/token"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"/>
+
+                        <MudTextField T="string"
+                                      @bind-Value="_request.OAuth2ClientId"
+                                      Label="Client ID"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"/>
+
+                        <MudTextPasswordField @bind-Value="_request.OAuth2ClientSecret" Label="Client Secret"/>
+
+                        <MudTextField T="string"
+                                      @bind-Value="_request.OAuth2Scope"
+                                      Label="Scope"
+                                      Placeholder="e.g. read write"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"/>
+                        
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                            <MudTextField T="string"
+                                          @bind-Value="_request.AuthToken"
+                                          Label="Access Token"
+                                          Placeholder="Access token will appear here"
+                                          Variant="Variant.Outlined"
+                                          Margin="Margin.Dense"
+                                          ReadOnly="true"
+                                          Style="flex: 1;"/>
+                            <MudButton Variant="Variant.Outlined"
+                                       Color="Color.Primary"
+                                       OnClick="GetOAuth2Token"
+                                       Disabled="_isGettingToken">
+                                @if (_isGettingToken)
+                                {
+                                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2"/>
+                                }
+                                Get Token
+                            </MudButton>
+                        </MudStack>
+                        break;
                 }
             </MudStack>
         </MudTabPanel>
@@ -246,6 +298,7 @@
 
     private HttpRequestModel _request = new();
     private bool _isSending;
+    private bool _isGettingToken;
     private CancellationTokenSource? _cts;
     private MudTextField<string>? _urlField;
     private bool _showUrlPreview;
@@ -253,25 +306,7 @@
 
     public async void LoadRequest(HttpRequestModel request)
     {
-        _request = new HttpRequestModel
-        {
-            Method = request.Method,
-            Url = request.Url,
-            Headers = request.Headers.Select(h => new HeaderItem { Key = h.Key, Value = h.Value, Enabled = h.Enabled }).ToList(),
-            QueryParams = request.QueryParams.Select(p => new QueryParamItem { Key = p.Key, Value = p.Value, Enabled = p.Enabled }).ToList(),
-            FormData = request.FormData.Select(f => new FormDataItem { Key = f.Key, Value = f.Value, Enabled = f.Enabled, IsFile = f.IsFile, FileName = f.FileName, ContentType = f.ContentType }).ToList(),
-            BodyType = request.BodyType,
-            Body = request.Body,
-            ContentType = request.ContentType,
-            AuthType = request.AuthType,
-            AuthToken = request.AuthToken,
-            AuthUsername = request.AuthUsername,
-            AuthPassword = request.AuthPassword,
-            ApiKeyName = request.ApiKeyName,
-            ApiKeyValue = request.ApiKeyValue,
-            ApiKeyLocation = request.ApiKeyLocation,
-            TimeoutSeconds = request.TimeoutSeconds
-        };
+        _request = request.Clone(newId: false);
         await UpdateUrlPreview();
         StateHasChanged();
     }
@@ -336,25 +371,20 @@
             }
 
             // Build fully substituted request
-            var substitutedRequest = new HttpRequestModel
-            {
-                Method = _request.Method,
-                Url = await EnvironmentService.SubstituteVariablesAsync(_request.Url),
-                Headers = substitutedHeaders,
-                QueryParams = substitutedQueryParams,
-                FormData = substitutedFormData,
-                BodyType = _request.BodyType,
-                Body = await EnvironmentService.SubstituteVariablesAsync(_request.Body),
-                ContentType = _request.ContentType,
-                AuthType = _request.AuthType,
-                AuthToken = await EnvironmentService.SubstituteVariablesAsync(_request.AuthToken),
-                AuthUsername = await EnvironmentService.SubstituteVariablesAsync(_request.AuthUsername),
-                AuthPassword = await EnvironmentService.SubstituteVariablesAsync(_request.AuthPassword),
-                ApiKeyName = _request.ApiKeyName,
-                ApiKeyValue = await EnvironmentService.SubstituteVariablesAsync(_request.ApiKeyValue),
-                ApiKeyLocation = _request.ApiKeyLocation,
-                TimeoutSeconds = _request.TimeoutSeconds
-            };
+            var substitutedRequest = _request.Clone(newId: false);
+            substitutedRequest.Url = await EnvironmentService.SubstituteVariablesAsync(_request.Url);
+            substitutedRequest.Headers = substitutedHeaders;
+            substitutedRequest.QueryParams = substitutedQueryParams;
+            substitutedRequest.FormData = substitutedFormData;
+            substitutedRequest.Body = await EnvironmentService.SubstituteVariablesAsync(_request.Body);
+            substitutedRequest.AuthToken = await EnvironmentService.SubstituteVariablesAsync(_request.AuthToken);
+            substitutedRequest.AuthUsername = await EnvironmentService.SubstituteVariablesAsync(_request.AuthUsername);
+            substitutedRequest.AuthPassword = await EnvironmentService.SubstituteVariablesAsync(_request.AuthPassword);
+            substitutedRequest.ApiKeyValue = await EnvironmentService.SubstituteVariablesAsync(_request.ApiKeyValue);
+            substitutedRequest.OAuth2TokenUrl = await EnvironmentService.SubstituteVariablesAsync(_request.OAuth2TokenUrl);
+            substitutedRequest.OAuth2ClientId = await EnvironmentService.SubstituteVariablesAsync(_request.OAuth2ClientId);
+            substitutedRequest.OAuth2ClientSecret = await EnvironmentService.SubstituteVariablesAsync(_request.OAuth2ClientSecret);
+            substitutedRequest.OAuth2Scope = await EnvironmentService.SubstituteVariablesAsync(_request.OAuth2Scope);
 
             // Set content type based on body type
             substitutedRequest.ContentType = _request.BodyType switch
@@ -385,6 +415,40 @@
     private void CancelRequest()
     {
         _cts?.Cancel();
+    }
+
+    private async Task GetOAuth2Token()
+    {
+        if (string.IsNullOrWhiteSpace(_request.OAuth2TokenUrl))
+        {
+            Snackbar.Add("Token URL is required.", Severity.Error);
+            return;
+        }
+
+        _isGettingToken = true;
+        StateHasChanged();
+
+        try
+        {
+            var substitutedRequest = _request.Clone(newId: false);
+            substitutedRequest.OAuth2TokenUrl = await EnvironmentService.SubstituteVariablesAsync(_request.OAuth2TokenUrl);
+            substitutedRequest.OAuth2ClientId = await EnvironmentService.SubstituteVariablesAsync(_request.OAuth2ClientId);
+            substitutedRequest.OAuth2ClientSecret = await EnvironmentService.SubstituteVariablesAsync(_request.OAuth2ClientSecret);
+            substitutedRequest.OAuth2Scope = await EnvironmentService.SubstituteVariablesAsync(_request.OAuth2Scope);
+
+            var token = await ApiService.GetOAuth2TokenAsync(substitutedRequest);
+            _request.AuthToken = token;
+            Snackbar.Add("Token retrieved successfully.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error retrieving token: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isGettingToken = false;
+            StateHasChanged();
+        }
     }
 
     private async Task OnUrlChanged()

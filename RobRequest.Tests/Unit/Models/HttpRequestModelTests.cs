@@ -86,4 +86,54 @@ public class HttpRequestModelTests
         model.Headers.Should().BeEmpty();
         model.QueryParams.Should().BeEmpty();
     }
+
+    [Fact]
+    public void Clone_ShouldCopyAllFields()
+    {
+        // Arrange
+        var model = new HttpRequestModel
+        {
+            Method = "POST",
+            Url = "https://example.com",
+            Headers = new List<HeaderItem> { new() { Key = "K1", Value = "V1" } },
+            QueryParams = new List<QueryParamItem> { new() { Key = "Q1", Value = "V1" } },
+            FormData = new List<FormDataItem> { new() { Key = "F1", Value = "V1" } },
+            BodyType = "json",
+            Body = "{}",
+            ContentType = "application/json",
+            AuthType = AuthType.OAuth2,
+            AuthToken = "token",
+            OAuth2GrantType = OAuth2GrantType.ClientCredentials,
+            OAuth2TokenUrl = "url",
+            OAuth2ClientId = "id",
+            OAuth2ClientSecret = "secret",
+            OAuth2Scope = "scope",
+            TimeoutSeconds = 60
+        };
+
+        // Act
+        var clone = model.Clone(newId: false);
+
+        // Assert
+        clone.Should().BeEquivalentTo(model);
+        clone.Id.Should().Be(model.Id);
+        
+        // Deep copy check
+        clone.Headers.Should().NotBeSameAs(model.Headers);
+        clone.Headers[0].Should().NotBeSameAs(model.Headers[0]);
+    }
+
+    [Fact]
+    public void Clone_WithNewId_ShouldGenerateNewGuid()
+    {
+        // Arrange
+        var model = new HttpRequestModel();
+
+        // Act
+        var clone = model.Clone(newId: true);
+
+        // Assert
+        clone.Id.Should().NotBe(model.Id);
+        Guid.TryParse(clone.Id, out _).Should().BeTrue();
+    }
 }

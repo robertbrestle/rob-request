@@ -335,31 +335,7 @@ public class ImportExportService
 
     private static HttpRequestModel CloneRequest(HttpRequestModel source)
     {
-        return new HttpRequestModel
-        {
-            Id = Guid.NewGuid().ToString(),
-            Method = source.Method,
-            Url = source.Url,
-            Headers = source.Headers.Select(h => new HeaderItem { Key = h.Key, Value = h.Value, Enabled = h.Enabled }).ToList(),
-            QueryParams = source.QueryParams.Select(q => new QueryParamItem { Key = q.Key, Value = q.Value, Enabled = q.Enabled }).ToList(),
-            FormData = source.FormData.Select(f => new FormDataItem
-            {
-                Key = f.Key, Value = f.Value, Enabled = f.Enabled,
-                IsFile = f.IsFile, FileName = f.FileName, ContentType = f.ContentType
-            }).ToList(),
-            BodyType = source.BodyType,
-            Body = source.Body,
-            ContentType = source.ContentType,
-            AuthType = source.AuthType,
-            AuthToken = source.AuthToken,
-            AuthUsername = source.AuthUsername,
-            AuthPassword = source.AuthPassword,
-            ApiKeyName = source.ApiKeyName,
-            ApiKeyValue = source.ApiKeyValue,
-            ApiKeyLocation = source.ApiKeyLocation,
-            TimeoutSeconds = source.TimeoutSeconds,
-            CreatedAt = source.CreatedAt
-        };
+        return source.Clone();
     }
 
     private static HttpResponseModel CloneResponse(HttpResponseModel source)

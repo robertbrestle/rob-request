@@ -18,6 +18,11 @@ public class HttpRequestModel
     public string ApiKeyName { get; set; } = string.Empty;
     public string ApiKeyValue { get; set; } = string.Empty;
     public ApiKeyLocation ApiKeyLocation { get; set; } = ApiKeyLocation.Header;
+    public OAuth2GrantType OAuth2GrantType { get; set; } = OAuth2GrantType.ClientCredentials;
+    public string OAuth2TokenUrl { get; set; } = string.Empty;
+    public string OAuth2ClientId { get; set; } = string.Empty;
+    public string OAuth2ClientSecret { get; set; } = string.Empty;
+    public string OAuth2Scope { get; set; } = string.Empty;
     public int TimeoutSeconds { get; set; } = 30;
     public DateTime CreatedAt { get; set; } = DateTime.Now;
 
@@ -49,6 +54,44 @@ public class HttpRequestModel
 
         return $"{Url}{separator}{queryString}";
     }
+
+    public HttpRequestModel Clone(bool newId = true)
+    {
+        return new HttpRequestModel
+        {
+            Id = newId ? Guid.NewGuid().ToString() : Id,
+            Method = Method,
+            Url = Url,
+            Headers = Headers.Select(h => new HeaderItem { Key = h.Key, Value = h.Value, Enabled = h.Enabled }).ToList(),
+            QueryParams = QueryParams.Select(q => new QueryParamItem { Key = q.Key, Value = q.Value, Enabled = q.Enabled }).ToList(),
+            FormData = FormData.Select(f => new FormDataItem
+            {
+                Key = f.Key,
+                Value = f.Value,
+                Enabled = f.Enabled,
+                IsFile = f.IsFile,
+                FileName = f.FileName,
+                ContentType = f.ContentType
+            }).ToList(),
+            BodyType = BodyType,
+            Body = Body,
+            ContentType = ContentType,
+            AuthType = AuthType,
+            AuthToken = AuthToken,
+            AuthUsername = AuthUsername,
+            AuthPassword = AuthPassword,
+            ApiKeyName = ApiKeyName,
+            ApiKeyValue = ApiKeyValue,
+            ApiKeyLocation = ApiKeyLocation,
+            OAuth2GrantType = OAuth2GrantType,
+            OAuth2TokenUrl = OAuth2TokenUrl,
+            OAuth2ClientId = OAuth2ClientId,
+            OAuth2ClientSecret = OAuth2ClientSecret,
+            OAuth2Scope = OAuth2Scope,
+            TimeoutSeconds = TimeoutSeconds,
+            CreatedAt = CreatedAt
+        };
+    }
 }
 
 public enum AuthType
@@ -56,7 +99,13 @@ public enum AuthType
     None,
     Bearer,
     Basic,
-    ApiKey
+    ApiKey,
+    OAuth2
+}
+
+public enum OAuth2GrantType
+{
+    ClientCredentials
 }
 
 public enum ApiKeyLocation

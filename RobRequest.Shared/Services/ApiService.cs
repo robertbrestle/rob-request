@@ -117,6 +117,7 @@ public class ApiService(HttpClient httpClient)
         switch (request.AuthType)
         {
             case AuthType.Bearer:
+            case AuthType.OAuth2:
                 if (!string.IsNullOrWhiteSpace(request.AuthToken))
                     httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", request.AuthToken);
                 break;
@@ -173,6 +174,42 @@ public class ApiService(HttpClient httpClient)
                headerName.Equals("Content-Encoding", StringComparison.OrdinalIgnoreCase) ||
                headerName.Equals("Content-Language", StringComparison.OrdinalIgnoreCase) ||
                headerName.Equals("Content-Disposition", StringComparison.OrdinalIgnoreCase);
+    }
+
+    public async Task<string> GetOAuth2TokenAsync(HttpRequestModel request, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(request.OAuth2TokenUrl))
+            throw new ArgumentException("Token URL is required.");
+
+        var data = new List<KeyValuePair<string, string>>
+        {
+            new("grant_type", "client_credentials"),
+            new("client_id", request.OAuth2ClientId),
+            new("client_secret", request.OAuth2ClientSecret)
+        };
+
+        if (!string.IsNullOrWhiteSpace(request.OAuth2Scope))
+        {
+            data.Add(new KeyValuePair<string, string>("scope", request.OAuth2Scope));
+        }
+
+        using var content = new FormUrlEncodedContent(data);
+        using var response = await httpClient.PostAsync(request.OAuth2TokenUrl, content, ct);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var error = await response.Content.ReadAsStringAsync(ct);
+            throw new HttpRequestException($"Failed to get token: {response.StatusCode} - {error}");
+        }
+
+        var json = await response.Content.ReadAsStringAsync(ct);
+        using var doc = System.Text.Json.JsonDocument.Parse(json);
+        if (doc.RootElement.TryGetProperty("access_token", out var tokenProp))
+        {
+            return tokenProp.GetString() ?? throw new Exception("Access token is null.");
+        }
+
+        throw new Exception("Access token not found in response.");
     }
 }
 

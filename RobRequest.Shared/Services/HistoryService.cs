@@ -37,27 +37,7 @@ public class HistoryService
     {
         // Snapshot request/response into fresh instances to avoid change-tracker
         // conflicts when the caller reuses the same object across multiple calls.
-        var requestSnapshot = new HttpRequestModel
-        {
-            Id = Guid.NewGuid().ToString(),
-            Method = request.Method,
-            Url = request.Url,
-            Headers = request.Headers.Select(h => new HeaderItem { Key = h.Key, Value = h.Value, Enabled = h.Enabled }).ToList(),
-            QueryParams = request.QueryParams.Select(q => new QueryParamItem { Key = q.Key, Value = q.Value, Enabled = q.Enabled }).ToList(),
-            FormData = request.FormData.Select(f => new FormDataItem { Key = f.Key, Value = f.Value, Enabled = f.Enabled, IsFile = f.IsFile, FileName = f.FileName, ContentType = f.ContentType }).ToList(),
-            BodyType = request.BodyType,
-            Body = request.Body,
-            ContentType = request.ContentType,
-            AuthType = request.AuthType,
-            AuthToken = request.AuthToken,
-            AuthUsername = request.AuthUsername,
-            AuthPassword = request.AuthPassword,
-            ApiKeyName = request.ApiKeyName,
-            ApiKeyValue = request.ApiKeyValue,
-            ApiKeyLocation = request.ApiKeyLocation,
-            TimeoutSeconds = request.TimeoutSeconds,
-            CreatedAt = request.CreatedAt
-        };
+        var requestSnapshot = request.Clone();
 
         var responseSnapshot = new HttpResponseModel
         {
