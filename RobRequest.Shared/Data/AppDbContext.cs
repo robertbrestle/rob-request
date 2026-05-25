@@ -49,6 +49,7 @@ public class AppDbContext : DbContext
             entity.OwnsOne(e => e.Request, r =>
             {
                 r.ToJson();
+                r.OwnsOne(req => req.Auth);
                 r.OwnsMany(req => req.Headers);
                 r.OwnsMany(req => req.QueryParams);
                 r.OwnsMany(req => req.FormData);
@@ -102,6 +103,7 @@ public class AppDbContext : DbContext
             entity.OwnsOne(e => e.Request, r =>
             {
                 r.ToJson();
+                r.OwnsOne(req => req.Auth);
                 r.OwnsMany(req => req.Headers);
                 r.OwnsMany(req => req.QueryParams);
                 r.OwnsMany(req => req.FormData);
@@ -118,6 +120,12 @@ public class AppDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            entity.OwnsOne(e => e.Auth, a =>
+            {
+                a.ToJson();
+            });
+
             entity.OwnsMany(e => e.Variables, v =>
             {
                 v.ToJson();

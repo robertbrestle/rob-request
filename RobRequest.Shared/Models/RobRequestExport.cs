@@ -39,6 +39,7 @@ public class ExportedEnvironment
     public string? Description { get; set; }
     public int SortOrder { get; set; }
     public List<EnvironmentVariable> Variables { get; set; } = new();
+    public AuthSettings Auth { get; set; } = new();
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }

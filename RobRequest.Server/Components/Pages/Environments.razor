@@ -1,5 +1,8 @@
 @page "/environments"
 @implements IDisposable
+@inject ApiService ApiService
+@inject ISnackbar Snackbar
+@inject IJSRuntime JS
 
 <PageTitle>RobRequest - Environments</PageTitle>
 
@@ -56,14 +59,14 @@
                             @if (isActive)
                             {
                                 <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Outlined"
-                                         Style="@(isSelected ? "color:white; border-color:white;" : "")">
+                                         Style="@(GetChipStyle(isSelected))">
                                     Active
                                 </MudChip>
                             }
                             @if (env.Variables.Count > 0)
                             {
                                 <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined"
-                                         Style="@(isSelected ? "color:white; border-color:white;" : "")">
+                                         Style="@(GetChipStyle(isSelected))">
                                     @env.Variables.Count
                                 </MudChip>
                             }
@@ -84,13 +87,29 @@
     <!-- Right: Detail Panel -->
     <MudItem xs="12" md="8">
         <MudPaper Elevation="1" Class="pa-3" Style="min-height: calc(100vh - 120px);">
-            @if (_selectedEnvironment != null)
+            @if (_selectedEnvironment != null && _editingEnvironment != null)
             {
                 <MudStack Spacing="3">
                     <MudStack Row="true" AlignItems="AlignItems.Center">
                         <MudIcon Icon="@Icons.Material.Filled.Dns" Color="Color.Primary" Size="Size.Large"/>
                         <MudText Typo="Typo.h5">@_selectedEnvironment.Name</MudText>
                         <MudSpacer/>
+                        <MudButton StartIcon="@Icons.Material.Filled.Save"
+                                   Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   Size="Size.Small"
+                                   OnClick="SaveCurrentEnvironment"
+                                   Disabled="!IsModified()">
+                            Save Changes
+                        </MudButton>
+                        <MudButton StartIcon="@Icons.Material.Filled.Undo"
+                                   Variant="Variant.Outlined"
+                                   Size="Size.Small"
+                                   OnClick="DiscardChanges"
+                                   Disabled="!IsModified()">
+                            Discard
+                        </MudButton>
+                        <MudDivider Vertical="true" FlexItem="true" Class="mx-2"/>
                         @if (EnvironmentService.ActiveEnvironmentId == _selectedEnvironment.Id)
                         {
                             <MudChip T="string" Color="Color.Success" Size="Size.Small">Active</MudChip>
@@ -115,111 +134,239 @@
 
                     <!-- Editable Fields -->
                     <MudTextField T="string"
-                                  Value="_selectedEnvironment.Name"
-                                  ValueChanged="OnNameChanged"
+                                  @bind-Value="_editingEnvironment.Name"
                                   Label="Environment Name"
                                   Variant="Variant.Outlined"
                                   Margin="Margin.Dense"
-                                  Immediate="true"
-                                  DebounceInterval="500"/>
+                                  Immediate="true"/>
 
                     <MudTextField T="string"
-                                  Value="_selectedEnvironment.Description"
-                                  ValueChanged="OnDescriptionChanged"
+                                  @bind-Value="_editingEnvironment.Description"
                                   Label="Description"
                                   Variant="Variant.Outlined"
                                   Margin="Margin.Dense"
                                   Lines="2"
-                                  Immediate="true"
-                                  DebounceInterval="500"/>
+                                  Immediate="true"/>
 
                     <MudDivider/>
 
-                    <!-- Variables Section -->
-                    <MudStack Row="true" AlignItems="AlignItems.Center">
-                        <MudText Typo="Typo.h6">Variables</MudText>
-                        <MudChip T="string" Size="Size.Small" Color="Color.Primary">
-                            @(_selectedEnvironment.Variables.Count)
-                        </MudChip>
-                    </MudStack>
+                    <MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true" TabPanelsClass="pt-3">
+                        <MudTabPanel Text="Variables" Icon="@Icons.Material.Filled.List">
+                            <MudStack Spacing="3">
+                                
+                                <MudText Typo="Typo.caption" Color="Color.Default">
+                                    Use <code>@("{{variableName}}")</code> syntax in URLs, headers, body, and auth
+                                    fields to substitute variables.
+                                </MudText>
 
-                    <MudText Typo="Typo.caption" Color="Color.Default">
-                        Use <code>@("{{variableName}}")</code> syntax in URLs, headers, body, and auth fields to substitute variables.
-                    </MudText>
-
-                    @if (_selectedEnvironment.Variables.Count == 0)
-                    {
-                        <MudAlert Severity="Severity.Info" Dense="true" Class="my-2">
-                            No variables defined. Add variables to use in your requests.
-                        </MudAlert>
-                    }
-                    else
-                    {
-                        <MudSimpleTable Dense="true" Hover="true" Elevation="0"
-                                        Style="border: 1px solid var(--mud-palette-lines-default); border-radius: 4px;">
-                            <thead>
-                                <tr>
-                                    <th style="width: 50px;">On</th>
-                                    <th>Key</th>
-                                    <th>Value</th>
-                                    <th style="width: 70px;">Secret</th>
-                                    <th style="width: 50px;"></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var variable in _selectedEnvironment.Variables)
+                                @if (_editingEnvironment.Variables.Count == 0)
                                 {
-                                    <tr>
-                                        <td>
-                                            <MudCheckBox T="bool" Value="variable.Enabled"
-                                                         ValueChanged="v => OnVariableEnabledChanged(variable, v)"
-                                                         Size="Size.Small" Dense="true"/>
-                                        </td>
-                                        <td>
-                                            <MudTextField T="string"
-                                                          Value="variable.Key"
-                                                          ValueChanged="v => OnVariableKeyChanged(variable, v)"
-                                                          Variant="Variant.Text"
-                                                          Margin="Margin.Dense"
-                                                          Placeholder="variable_name"
-                                                          Immediate="true"
-                                                          DebounceInterval="500"/>
-                                        </td>
-                                        <td>
-                                            <MudTextField T="string"
-                                                          Value="variable.Value"
-                                                          ValueChanged="v => OnVariableValueChanged(variable, v)"
-                                                          Variant="Variant.Text"
-                                                          Margin="Margin.Dense"
-                                                          Placeholder="value"
-                                                          InputType="@(variable.IsSecret ? InputType.Password : InputType.Text)"
-                                                          Immediate="true"
-                                                          DebounceInterval="500"/>
-                                        </td>
-                                        <td>
-                                            <MudCheckBox T="bool" Value="variable.IsSecret"
-                                                         ValueChanged="v => OnVariableSecretChanged(variable, v)"
-                                                         Size="Size.Small" Dense="true"/>
-                                        </td>
-                                        <td>
-                                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                                           Size="Size.Small"
-                                                           Color="Color.Error"
-                                                           OnClick="() => RemoveVariable(variable)"/>
-                                        </td>
-                                    </tr>
+                                    <MudAlert Severity="Severity.Info" Dense="true" Class="my-2">
+                                        No variables defined. Add variables to use in your requests.
+                                    </MudAlert>
                                 }
-                            </tbody>
-                        </MudSimpleTable>
-                    }
+                                else
+                                {
+                                    <MudSimpleTable Dense="true" Hover="true" Elevation="0"
+                                                    Style="border: 1px solid var(--mud-palette-lines-default); border-radius: 4px;">
+                                        <thead>
+                                        <tr>
+                                            <th style="width: 50px;">On</th>
+                                            <th>Key</th>
+                                            <th>Value</th>
+                                            <th style="width: 70px;">Secret</th>
+                                            <th style="width: 50px;"></th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        @foreach (var variable in _editingEnvironment.Variables)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <MudCheckBox T="bool" @bind-Value="variable.Enabled"
+                                                                 Size="Size.Small" Dense="true"/>
+                                                </td>
+                                                <td>
+                                                    <MudTextField T="string"
+                                                                  @bind-Value="variable.Key"
+                                                                  Variant="Variant.Text"
+                                                                  Margin="Margin.Dense"
+                                                                  Placeholder="variable_name"
+                                                                  Immediate="true"/>
+                                                </td>
+                                                <td>
+                                                    <MudTextField T="string"
+                                                                  @bind-Value="variable.Value"
+                                                                  Variant="Variant.Text"
+                                                                  Margin="Margin.Dense"
+                                                                  Placeholder="value"
+                                                                  InputType="@(variable.IsSecret ? InputType.Password : InputType.Text)"
+                                                                  Immediate="true"/>
+                                                </td>
+                                                <td>
+                                                    <MudCheckBox T="bool" @bind-Value="variable.IsSecret"
+                                                                 Size="Size.Small" Dense="true"/>
+                                                </td>
+                                                <td>
+                                                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                                   Size="Size.Small"
+                                                                   Color="Color.Error"
+                                                                   OnClick="() => RemoveVariable(variable)"/>
+                                                </td>
+                                            </tr>
+                                        }
+                                        </tbody>
+                                    </MudSimpleTable>
+                                }
 
-                    <MudButton StartIcon="@Icons.Material.Filled.Add"
-                               Size="Size.Small"
-                               Variant="Variant.Outlined"
-                               Color="Color.Primary"
-                               OnClick="AddVariable">
-                        Add Variable
-                    </MudButton>
+                                <MudButton StartIcon="@Icons.Material.Filled.Add"
+                                           Size="Size.Small"
+                                           Variant="Variant.Outlined"
+                                           Color="Color.Primary"
+                                           OnClick="AddVariable">
+                                    Add Variable
+                                </MudButton>
+                            </MudStack>
+                        </MudTabPanel>
+                        <MudTabPanel Text="Authentication" Icon="@Icons.Material.Filled.Security">
+                            <MudStack Spacing="3">
+                                <MudSelect T="AuthType" @bind-Value="_editingEnvironment.Auth.AuthType"
+                                           Label="Auth Type" Variant="Variant.Outlined"
+                                           Margin="Margin.Dense">
+                                    <MudSelectItem Value="AuthType.None">No Auth</MudSelectItem>
+                                    <MudSelectItem Value="AuthType.Bearer">Bearer Token</MudSelectItem>
+                                    <MudSelectItem Value="AuthType.Basic">Basic Auth</MudSelectItem>
+                                    <MudSelectItem Value="AuthType.ApiKey">API Key</MudSelectItem>
+                                    <MudSelectItem Value="AuthType.OAuth2">OAuth 2.0</MudSelectItem>
+                                </MudSelect>
+
+                                @switch (_editingEnvironment.Auth.AuthType)
+                                {
+                                    case AuthType.Bearer:
+                                        <MudTextField T="string"
+                                                      @bind-Value="_editingEnvironment.Auth.AuthToken"
+                                                      Label="Token"
+                                                      Placeholder="Enter bearer token"
+                                                      Variant="Variant.Outlined"
+                                                      Margin="Margin.Dense"
+                                                      InputType="InputType.Password"
+                                                      Immediate="true"/>
+                                        break;
+
+                                    case AuthType.Basic:
+                                        <MudTextField T="string"
+                                                      @bind-Value="_editingEnvironment.Auth.AuthUsername"
+                                                      Label="Username"
+                                                      Variant="Variant.Outlined"
+                                                      Margin="Margin.Dense"
+                                                      Immediate="true"/>
+                                        <MudTextField T="string"
+                                                      @bind-Value="_editingEnvironment.Auth.AuthPassword"
+                                                      Label="Password"
+                                                      Variant="Variant.Outlined"
+                                                      Margin="Margin.Dense"
+                                                      InputType="InputType.Password"
+                                                      Immediate="true"/>
+                                        break;
+
+                                    case AuthType.ApiKey:
+                                        <MudTextField T="string"
+                                                      @bind-Value="_editingEnvironment.Auth.ApiKeyName"
+                                                      Label="Key Name"
+                                                      Placeholder="e.g. X-API-Key"
+                                                      Variant="Variant.Outlined"
+                                                      Margin="Margin.Dense"
+                                                      Immediate="true"/>
+                                        <MudTextPasswordField @bind-Value="_editingEnvironment.Auth.ApiKeyValue"
+                                                              Label="Key Value"/>
+                                        <MudSelect T="ApiKeyLocation" @bind-Value="_editingEnvironment.Auth.ApiKeyLocation"
+                                                   Label="Add to"
+                                                   Variant="Variant.Outlined" Margin="Margin.Dense">
+                                            <MudSelectItem Value="ApiKeyLocation.Header">Header</MudSelectItem>
+                                            <MudSelectItem Value="ApiKeyLocation.QueryParam">Query Param</MudSelectItem>
+                                        </MudSelect>
+                                        break;
+
+                                    case AuthType.OAuth2:
+                                        <MudSelect T="OAuth2GrantType" @bind-Value="_editingEnvironment.Auth.OAuth2GrantType"
+                                                   Label="Grant Type"
+                                                   Variant="Variant.Outlined" Margin="Margin.Dense">
+                                            <MudSelectItem Value="OAuth2GrantType.ClientCredentials">Client Credentials</MudSelectItem>
+                                        </MudSelect>
+
+                                        <MudTextField T="string"
+                                                      @bind-Value="_editingEnvironment.Auth.OAuth2TokenUrl"
+                                                      Label="Token URL"
+                                                      Placeholder="https://auth.example.com/oauth2/token"
+                                                      Variant="Variant.Outlined"
+                                                      Margin="Margin.Dense"
+                                                      Immediate="true"/>
+
+                                        <MudTextField T="string"
+                                                      @bind-Value="_editingEnvironment.Auth.OAuth2ClientId"
+                                                      Label="Client ID"
+                                                      Variant="Variant.Outlined"
+                                                      Margin="Margin.Dense"
+                                                      Immediate="true"/>
+
+                                        <MudTextPasswordField @bind-Value="_editingEnvironment.Auth.OAuth2ClientSecret"
+                                                              Label="Client Secret"/>
+
+                                        <MudTextField T="string"
+                                                      @bind-Value="_editingEnvironment.Auth.OAuth2Scope"
+                                                      Label="Scope"
+                                                      Placeholder="e.g. read write"
+                                                      Variant="Variant.Outlined"
+                                                      Margin="Margin.Dense"
+                                                      Immediate="true"/>
+
+                                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="4">
+                                            <MudSwitch T="bool" @bind-Value="_editingEnvironment.Auth.OAuth2AutoRefresh"
+                                                       Color="Color.Primary" Label="Auto-token refresh"/>
+                                            @if (_editingEnvironment.Auth.OAuth2TokenExpiresAt.HasValue)
+                                            {
+                                                var remaining = _editingEnvironment.Auth.OAuth2TokenExpiresAt.Value - DateTime.Now;
+                                                var isExpired = remaining.TotalSeconds <= 0;
+                                                <MudText Typo="Typo.caption"
+                                                         Color="@(isExpired ? Color.Error : remaining.TotalSeconds < 60 ? Color.Warning : Color.Success)">
+                                                    @(isExpired ? "Token expired" : $"Token valid for: {FormatTimeSpan(remaining)}")
+                                                </MudText>
+                                            }
+                                        </MudStack>
+
+                                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                            <MudTextField T="string"
+                                                          @bind-Value="_editingEnvironment.Auth.AuthToken"
+                                                          ReadOnly="true"
+                                                          Label="Access Token"
+                                                          Variant="Variant.Outlined"
+                                                          Margin="Margin.Dense"
+                                                          Placeholder="Token will appear here after fetching"
+                                                          Adornment="Adornment.End"
+                                                          AdornmentIcon="@Icons.Material.Filled.ContentCopy"
+                                                          OnAdornmentClick="CopyToken"/>
+
+                                            <MudButton Variant="Variant.Filled"
+                                                       Color="Color.Primary"
+                                                       OnClick="GetOAuth2Token"
+                                                       Disabled="_isGettingToken">
+                                                @if (_isGettingToken)
+                                                {
+                                                    <MudProgressCircular Class="ms-n1" Size="Size.Small"
+                                                                         Indeterminate="true"/>
+                                                    <MudText Class="ms-2">Getting Token...</MudText>
+                                                }
+                                                else
+                                                {
+                                                    <MudText>Get Token</MudText>
+                                                }
+                                            </MudButton>
+                                        </MudStack>
+                                        break;
+                                }
+                            </MudStack>
+                        </MudTabPanel>
+                    </MudTabs>
 
                     <!-- Metadata -->
                     <MudDivider Class="my-2"/>
@@ -264,12 +411,88 @@
     private string _searchQuery = string.Empty;
     private string? _selectedEnvironmentId;
     private EnvironmentModel? _selectedEnvironment;
+    private EnvironmentModel? _editingEnvironment;
+
+    private bool _isGettingToken;
+
+    private async Task CopyToken()
+    {
+        if (_editingEnvironment == null || string.IsNullOrEmpty(_editingEnvironment.Auth.AuthToken)) return;
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", _editingEnvironment.Auth.AuthToken);
+        Snackbar.Add("Token copied to clipboard", Severity.Info);
+    }
+
+    private async Task<bool> GetOAuth2Token()
+    {
+        if (_editingEnvironment == null) return false;
+        if (string.IsNullOrWhiteSpace(_editingEnvironment.Auth.OAuth2TokenUrl))
+        {
+            Snackbar.Add("Token URL is required.", Severity.Error);
+            return false;
+        }
+
+        _isGettingToken = true;
+        StateHasChanged();
+
+        try
+        {
+            var tempRequest = new HttpRequestModel
+            {
+                Auth =
+                {
+                    OAuth2TokenUrl = await EnvironmentService.SubstituteVariablesAsync(_editingEnvironment.Auth.OAuth2TokenUrl),
+                    OAuth2ClientId = await EnvironmentService.SubstituteVariablesAsync(_editingEnvironment.Auth.OAuth2ClientId),
+                    OAuth2ClientSecret = await EnvironmentService.SubstituteVariablesAsync(_editingEnvironment.Auth.OAuth2ClientSecret),
+                    OAuth2Scope = await EnvironmentService.SubstituteVariablesAsync(_editingEnvironment.Auth.OAuth2Scope),
+                    OAuth2GrantType = _editingEnvironment.Auth.OAuth2GrantType
+                }
+            };
+
+            var result = await ApiService.GetOAuth2TokenAsync(tempRequest);
+            _editingEnvironment.Auth.AuthToken = result.AccessToken;
+            _editingEnvironment.Auth.OAuth2TokenExpiresAt = result.ExpiresIn.HasValue
+                ? DateTime.Now.AddSeconds(result.ExpiresIn.Value)
+                : null;
+
+            Snackbar.Add("Token retrieved. Remember to save your changes.", Severity.Info);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error retrieving token: {ex.Message}", Severity.Error);
+            return false;
+        }
+        finally
+        {
+            _isGettingToken = false;
+            StateHasChanged();
+        }
+    }
+
+    private string FormatTimeSpan(TimeSpan ts)
+    {
+        if (ts.TotalHours >= 1)
+            return $"{(int)ts.TotalHours}h {ts.Minutes}m {ts.Seconds}s";
+        if (ts.TotalMinutes >= 1)
+            return $"{(int)ts.TotalMinutes}m {ts.Seconds}s";
+        return $"{ts.Seconds}s";
+    }
+
+    private System.Threading.Timer? _uiUpdateTimer;
 
     protected override async Task OnInitializedAsync()
     {
         await Layout.DrawerEnabledToggleAsync(false);
         EnvironmentService.OnEnvironmentChanged += OnEnvironmentsChanged;
+        _uiUpdateTimer = new System.Threading.Timer(_ => { InvokeAsync(StateHasChanged); }, null, 1000, 1000);
         await LoadEnvironments();
+        
+        // load first environment
+        if (_environments.Count > 0)
+        {
+            var active = _environments.FirstOrDefault(x => x.Id == EnvironmentService.ActiveEnvironmentId);
+            await SelectEnvironment(active?.Id ?? _environments[0].Id);
+        }
     }
 
     private async void OnEnvironmentsChanged()
@@ -279,8 +502,11 @@
         {
             await LoadSelectedEnvironment();
         }
+
         await InvokeAsync(StateHasChanged);
     }
+
+    private string GetChipStyle(bool isSelected) => isSelected ? "color:white; border-color:white;" : string.Empty;
 
     private async Task LoadEnvironments()
     {
@@ -294,14 +520,25 @@
         if (_selectedEnvironmentId == null)
         {
             _selectedEnvironment = null;
+            _editingEnvironment = null;
             return;
         }
 
         _selectedEnvironment = await EnvironmentService.GetEnvironmentAsync(_selectedEnvironmentId);
+        _editingEnvironment = _selectedEnvironment?.Clone();
     }
 
     private async Task SelectEnvironment(string environmentId)
     {
+        if (IsModified())
+        {
+            var result = await DialogService.ShowMessageBoxAsync(
+                "Unsaved Changes",
+                "You have unsaved changes. Do you want to discard them?",
+                yesText: "Discard", cancelText: "Cancel");
+            if (result != true) return;
+        }
+
         _selectedEnvironmentId = environmentId;
         await LoadSelectedEnvironment();
     }
@@ -331,21 +568,6 @@
         }
     }
 
-    private async Task OnNameChanged(string? value)
-    {
-        if (_selectedEnvironment == null || string.IsNullOrWhiteSpace(value)) return;
-        _selectedEnvironment.Name = value;
-        await EnvironmentService.UpdateEnvironmentAsync(_selectedEnvironment);
-        await LoadEnvironments();
-    }
-
-    private async Task OnDescriptionChanged(string? value)
-    {
-        if (_selectedEnvironment == null) return;
-        _selectedEnvironment.Description = value;
-        await EnvironmentService.UpdateEnvironmentAsync(_selectedEnvironment);
-    }
-
     private void SetActiveEnvironment()
     {
         if (_selectedEnvironment == null) return;
@@ -366,6 +588,7 @@
             await EnvironmentService.DeleteEnvironmentAsync(_selectedEnvironment.Id);
             _selectedEnvironmentId = null;
             _selectedEnvironment = null;
+            _editingEnvironment = null;
             await LoadEnvironments();
         }
     }
@@ -383,59 +606,80 @@
             {
                 _selectedEnvironmentId = null;
                 _selectedEnvironment = null;
+                _editingEnvironment = null;
             }
+
             await EnvironmentService.DeleteEnvironmentAsync(env.Id);
             await LoadEnvironments();
         }
     }
 
-    private async Task AddVariable()
+    private void AddVariable()
     {
-        if (_selectedEnvironment == null) return;
-        _selectedEnvironment.Variables.Add(new EnvironmentVariable());
-        await EnvironmentService.UpdateEnvironmentAsync(_selectedEnvironment);
+        if (_editingEnvironment == null) return;
+        _editingEnvironment.Variables.Add(new EnvironmentVariable());
     }
 
-    private async Task RemoveVariable(EnvironmentVariable variable)
+    private void RemoveVariable(EnvironmentVariable variable)
     {
-        if (_selectedEnvironment == null) return;
-        _selectedEnvironment.Variables.Remove(variable);
-        await EnvironmentService.UpdateEnvironmentAsync(_selectedEnvironment);
+        if (_editingEnvironment == null) return;
+        _editingEnvironment.Variables.Remove(variable);
     }
 
-    private async Task OnVariableEnabledChanged(EnvironmentVariable variable, bool value)
+    private bool IsModified()
     {
-        variable.Enabled = value;
-        await SaveCurrentEnvironment();
-    }
+        if (_selectedEnvironment == null || _editingEnvironment == null) return false;
+        
+        if (_selectedEnvironment.Name != _editingEnvironment.Name) return true;
+        if (_selectedEnvironment.Description != _editingEnvironment.Description) return true;
+        
+        // Variables check
+        if (_selectedEnvironment.Variables.Count != _editingEnvironment.Variables.Count) return true;
+        for (int i = 0; i < _selectedEnvironment.Variables.Count; i++)
+        {
+            var s = _selectedEnvironment.Variables[i];
+            var e = _editingEnvironment.Variables[i];
+            if (s.Key != e.Key || s.Value != e.Value || s.Enabled != e.Enabled || s.IsSecret != e.IsSecret) return true;
+        }
 
-    private async Task OnVariableKeyChanged(EnvironmentVariable variable, string value)
-    {
-        variable.Key = value;
-        await SaveCurrentEnvironment();
-    }
+        // Auth check
+        var sa = _selectedEnvironment.Auth;
+        var ea = _editingEnvironment.Auth;
+        if (sa.AuthType != ea.AuthType) return true;
+        if (sa.AuthToken != ea.AuthToken) return true;
+        if (sa.AuthUsername != ea.AuthUsername) return true;
+        if (sa.AuthPassword != ea.AuthPassword) return true;
+        if (sa.ApiKeyName != ea.ApiKeyName) return true;
+        if (sa.ApiKeyValue != ea.ApiKeyValue) return true;
+        if (sa.ApiKeyLocation != ea.ApiKeyLocation) return true;
+        if (sa.OAuth2GrantType != ea.OAuth2GrantType) return true;
+        if (sa.OAuth2TokenUrl != ea.OAuth2TokenUrl) return true;
+        if (sa.OAuth2ClientId != ea.OAuth2ClientId) return true;
+        if (sa.OAuth2ClientSecret != ea.OAuth2ClientSecret) return true;
+        if (sa.OAuth2Scope != ea.OAuth2Scope) return true;
+        if (sa.OAuth2TokenExpiresAt != ea.OAuth2TokenExpiresAt) return true;
+        if (sa.OAuth2AutoRefresh != ea.OAuth2AutoRefresh) return true;
 
-    private async Task OnVariableValueChanged(EnvironmentVariable variable, string value)
-    {
-        variable.Value = value;
-        await SaveCurrentEnvironment();
-    }
-
-    private async Task OnVariableSecretChanged(EnvironmentVariable variable, bool value)
-    {
-        variable.IsSecret = value;
-        await SaveCurrentEnvironment();
+        return false;
     }
 
     private async Task SaveCurrentEnvironment()
     {
-        if (_selectedEnvironment == null) return;
-        await EnvironmentService.UpdateEnvironmentAsync(_selectedEnvironment);
+        if (_editingEnvironment == null) return;
+        await EnvironmentService.UpdateEnvironmentAsync(_editingEnvironment);
+        _selectedEnvironment = _editingEnvironment.Clone();
+        await LoadEnvironments();
+        Snackbar.Add("Environment saved.", Severity.Success);
+    }
+
+    private void DiscardChanges()
+    {
+        _editingEnvironment = _selectedEnvironment?.Clone();
     }
 
     public void Dispose()
     {
         EnvironmentService.OnEnvironmentChanged -= OnEnvironmentsChanged;
+        _uiUpdateTimer?.Dispose();
     }
-
 }

@@ -21,44 +21,40 @@
                       Variant="Variant.Outlined"
                       Margin="Margin.Dense"
                       Style="flex: 1;"
-                      Adornment="Adornment.End"
-                      AdornmentIcon="@Icons.Material.Filled.Air"
-                      AdornmentAriaLabel="clean query parameters"
-                      OnAdornmentClick="OnUrlChanged"
                       Immediate="true"
                       DebounceInterval="300"
                       OnKeyDown="OnSendRequest"/>
         <MudButton Variant="Variant.Filled"
-                   Color="Color.Primary"
-                   StartIcon="@Icons.Material.Filled.Send"
-                   OnClick="SendRequest"
-                   Disabled="_isSending"
+                   Color="@(!_isSending ? Color.Primary : Color.Error)"
+                   StartIcon="@(!_isSending ? Icons.Material.Filled.Send : Icons.Material.Filled.Stop)"
+                   OnClick="OnSendCancelRequest"
                    Size="Size.Large"
                    title="Send request">
             @if (_isSending)
             {
-                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2"/>
-                <span>Sending...</span>
+                <span>Stop</span>
             }
             else
             {
                 <span>Send</span>
             }
         </MudButton>
-
-        @if (_isSending)
-        {
-            <MudIconButton Icon="@Icons.Material.Filled.Cancel"
-                           Color="Color.Error"
-                           OnClick="CancelRequest"
-                           Size="Size.Medium"
-                           title="Cancel request"/>
-        }
-        <MudIconButton Icon="@Icons.Material.Filled.SaveAs"
-                       Color="Color.Secondary"
-                       OnClick="SaveToCollection"
-                       Size="Size.Medium"
-                       title="Save to collection"/>
+        <MudMenu Icon="@Icons.Material.Filled.MoreVert"
+                 AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+            <MudMenuItem Icon="@Icons.Material.Filled.Add"
+                         OnClick="ClearRequest">
+                New request
+            </MudMenuItem>
+            <MudMenuItem Icon="@Icons.Material.Filled.SaveAs"
+                         OnClick="SaveToCollection">
+                Save to collection
+            </MudMenuItem>
+            <MudDivider/>
+            <MudMenuItem Icon="@Icons.Material.Filled.Air"
+                         OnClick="OnUrlChanged">
+                Clean query parameters
+            </MudMenuItem>
+        </MudMenu>
     </MudStack>
 
     @if (_showUrlPreview && !string.IsNullOrEmpty(_resolvedUrlPreview))
@@ -72,7 +68,7 @@
     }
 
     <!-- Request Tabs -->
-    <MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true" TabButtonsClass="pa-3">
+    <MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true" TabPanelsClass="pa-3">
         <!-- Params Tab -->
         <MudTabPanel Text="Params" BadgeData="@GetParamsBadge()" BadgeColor="Color.Primary">
             <KeyValueEditor TItem="QueryParamItem"
@@ -185,8 +181,9 @@
         <!-- Auth Tab -->
         <MudTabPanel Text="Auth">
             <MudStack Spacing="3">
-                <MudSelect T="AuthType" @bind-Value="_request.AuthType" Label="Auth Type" Variant="Variant.Outlined"
+                <MudSelect T="AuthType" @bind-Value="_request.Auth.AuthType" Label="Auth Type" Variant="Variant.Outlined"
                            Margin="Margin.Dense">
+                    <MudSelectItem Value="AuthType.Inherit">Inherit from Environment</MudSelectItem>
                     <MudSelectItem Value="AuthType.None">No Auth</MudSelectItem>
                     <MudSelectItem Value="AuthType.Bearer">Bearer Token</MudSelectItem>
                     <MudSelectItem Value="AuthType.Basic">Basic Auth</MudSelectItem>
@@ -194,11 +191,17 @@
                     <MudSelectItem Value="AuthType.OAuth2">OAuth 2.0</MudSelectItem>
                 </MudSelect>
 
-                @switch (_request.AuthType)
+                @switch (_request.Auth.AuthType)
                 {
+                    case AuthType.Inherit:
+                        <MudAlert Severity="Severity.Info" Dense="true" Class="mb-2">
+                            Authentication is inherited from the active environment.
+                        </MudAlert>
+                        break;
+
                     case AuthType.Bearer:
                         <MudTextField T="string"
-                                      @bind-Value="_request.AuthToken"
+                                      @bind-Value="_request.Auth.AuthToken"
                                       Label="Token"
                                       Placeholder="Enter bearer token"
                                       Variant="Variant.Outlined"
@@ -208,12 +211,12 @@
 
                     case AuthType.Basic:
                         <MudTextField T="string"
-                                      @bind-Value="_request.AuthUsername"
+                                      @bind-Value="_request.Auth.AuthUsername"
                                       Label="Username"
                                       Variant="Variant.Outlined"
                                       Margin="Margin.Dense"/>
                         <MudTextField T="string"
-                                      @bind-Value="_request.AuthPassword"
+                                      @bind-Value="_request.Auth.AuthPassword"
                                       Label="Password"
                                       Variant="Variant.Outlined"
                                       Margin="Margin.Dense"
@@ -222,13 +225,13 @@
 
                     case AuthType.ApiKey:
                         <MudTextField T="string"
-                                      @bind-Value="_request.ApiKeyName"
+                                      @bind-Value="_request.Auth.ApiKeyName"
                                       Label="Key Name"
                                       Placeholder="e.g. X-API-Key"
                                       Variant="Variant.Outlined"
                                       Margin="Margin.Dense"/>
-                        <MudTextPasswordField @bind-Value="_request.ApiKeyValue" Label="Key Value"/>
-                        <MudSelect T="ApiKeyLocation" @bind-Value="_request.ApiKeyLocation" Label="Add to"
+                        <MudTextPasswordField @bind-Value="_request.Auth.ApiKeyValue" Label="Key Value"/>
+                        <MudSelect T="ApiKeyLocation" @bind-Value="_request.Auth.ApiKeyLocation" Label="Add to"
                                    Variant="Variant.Outlined" Margin="Margin.Dense">
                             <MudSelectItem Value="ApiKeyLocation.Header">Header</MudSelectItem>
                             <MudSelectItem Value="ApiKeyLocation.QueryParam">Query Param</MudSelectItem>
@@ -236,48 +239,50 @@
                         break;
 
                     case AuthType.OAuth2:
-                        <MudSelect T="OAuth2GrantType" @bind-Value="_request.OAuth2GrantType" Label="Grant Type"
+                        <MudSelect T="OAuth2GrantType" @bind-Value="_request.Auth.OAuth2GrantType" Label="Grant Type"
                                    Variant="Variant.Outlined" Margin="Margin.Dense">
                             <MudSelectItem Value="OAuth2GrantType.ClientCredentials">Client Credentials</MudSelectItem>
                         </MudSelect>
 
                         <MudTextField T="string"
-                                      @bind-Value="_request.OAuth2TokenUrl"
+                                      @bind-Value="_request.Auth.OAuth2TokenUrl"
                                       Label="Token URL"
                                       Placeholder="https://auth.example.com/oauth2/token"
                                       Variant="Variant.Outlined"
                                       Margin="Margin.Dense"/>
 
                         <MudTextField T="string"
-                                      @bind-Value="_request.OAuth2ClientId"
+                                      @bind-Value="_request.Auth.OAuth2ClientId"
                                       Label="Client ID"
                                       Variant="Variant.Outlined"
                                       Margin="Margin.Dense"/>
 
-                        <MudTextPasswordField @bind-Value="_request.OAuth2ClientSecret" Label="Client Secret"/>
+                        <MudTextPasswordField @bind-Value="_request.Auth.OAuth2ClientSecret" Label="Client Secret"/>
 
                         <MudTextField T="string"
-                                      @bind-Value="_request.OAuth2Scope"
+                                      @bind-Value="_request.Auth.OAuth2Scope"
                                       Label="Scope"
                                       Placeholder="e.g. read write"
                                       Variant="Variant.Outlined"
                                       Margin="Margin.Dense"/>
 
                         <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="4">
-                            <MudSwitch T="bool" @bind-Value="_request.OAuth2AutoRefresh" Color="Color.Primary" Label="Auto-token refresh" />
-                            @if (_request.OAuth2TokenExpiresAt.HasValue)
+                            <MudSwitch T="bool" @bind-Value="_request.Auth.OAuth2AutoRefresh" Color="Color.Primary"
+                                       Label="Auto-token refresh"/>
+                            @if (_request.Auth.OAuth2TokenExpiresAt.HasValue)
                             {
-                                var remaining = _request.OAuth2TokenExpiresAt.Value - DateTime.Now;
+                                var remaining = _request.Auth.OAuth2TokenExpiresAt.Value - DateTime.Now;
                                 var isExpired = remaining.TotalSeconds <= 0;
-                                <MudText Typo="Typo.caption" Color="@(isExpired ? Color.Error : remaining.TotalSeconds < 60 ? Color.Warning : Color.Success)">
+                                <MudText Typo="Typo.caption"
+                                         Color="@(isExpired ? Color.Error : remaining.TotalSeconds < 60 ? Color.Warning : Color.Success)">
                                     @(isExpired ? "Token expired" : $"Token valid for: {FormatTimeSpan(remaining)}")
                                 </MudText>
                             }
                         </MudStack>
-                        
+
                         <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
                             <MudTextField T="string"
-                                          @bind-Value="_request.AuthToken"
+                                          @bind-Value="_request.Auth.AuthToken"
                                           Label="Access Token"
                                           Placeholder="Access token will appear here"
                                           Variant="Variant.Outlined"
@@ -316,6 +321,13 @@
     private bool _showUrlPreview;
     private string? _resolvedUrlPreview;
 
+    public async void ClearRequest()
+    {
+        _request = new HttpRequestModel();
+        await UpdateUrlPreview();
+        StateHasChanged();
+    }
+
     public async void LoadRequest(HttpRequestModel request)
     {
         _request = request.Clone(newId: false);
@@ -328,6 +340,14 @@
         if (args.Key != "Enter")
             return;
         await SendRequest();
+    }
+
+    private async Task OnSendCancelRequest()
+    {
+        if (!_isSending)
+            await SendRequest();
+        else
+            CancelRequest();
     }
 
     private async Task SendRequest()
@@ -382,36 +402,70 @@
                 });
             }
 
+            // Resolve authentication if inherited
+            var authResolvedRequest = _request.Clone(newId: false);
+            if (_request.Auth.AuthType == AuthType.Inherit)
+            {
+                var activeEnv = await EnvironmentService.GetActiveEnvironmentAsync();
+                if (activeEnv != null && activeEnv.Auth.AuthType != AuthType.None)
+                {
+                    authResolvedRequest.Auth.CopyFrom(activeEnv.Auth);
+                }
+                else
+                {
+                    authResolvedRequest.Auth.AuthType = AuthType.None;
+                }
+            }
+
             // Build fully substituted request
-            var substitutedRequest = _request.Clone(newId: false);
-            substitutedRequest.Url = await EnvironmentService.SubstituteVariablesAsync(_request.Url);
+            var substitutedRequest = authResolvedRequest.Clone(newId: false);
+            substitutedRequest.Url = await EnvironmentService.SubstituteVariablesAsync(authResolvedRequest.Url);
             substitutedRequest.Headers = substitutedHeaders;
             substitutedRequest.QueryParams = substitutedQueryParams;
             substitutedRequest.FormData = substitutedFormData;
-            substitutedRequest.Body = await EnvironmentService.SubstituteVariablesAsync(_request.Body);
-            substitutedRequest.AuthToken = await EnvironmentService.SubstituteVariablesAsync(_request.AuthToken);
-            substitutedRequest.AuthUsername = await EnvironmentService.SubstituteVariablesAsync(_request.AuthUsername);
-            substitutedRequest.AuthPassword = await EnvironmentService.SubstituteVariablesAsync(_request.AuthPassword);
-            substitutedRequest.ApiKeyValue = await EnvironmentService.SubstituteVariablesAsync(_request.ApiKeyValue);
-            substitutedRequest.OAuth2TokenUrl = await EnvironmentService.SubstituteVariablesAsync(_request.OAuth2TokenUrl);
-            substitutedRequest.OAuth2ClientId = await EnvironmentService.SubstituteVariablesAsync(_request.OAuth2ClientId);
-            substitutedRequest.OAuth2ClientSecret = await EnvironmentService.SubstituteVariablesAsync(_request.OAuth2ClientSecret);
-            substitutedRequest.OAuth2Scope = await EnvironmentService.SubstituteVariablesAsync(_request.OAuth2Scope);
+            substitutedRequest.Body = await EnvironmentService.SubstituteVariablesAsync(authResolvedRequest.Body);
+            substitutedRequest.Auth.AuthToken = await EnvironmentService.SubstituteVariablesAsync(authResolvedRequest.Auth.AuthToken);
+            substitutedRequest.Auth.AuthUsername = await EnvironmentService.SubstituteVariablesAsync(authResolvedRequest.Auth.AuthUsername);
+            substitutedRequest.Auth.AuthPassword = await EnvironmentService.SubstituteVariablesAsync(authResolvedRequest.Auth.AuthPassword);
+            substitutedRequest.Auth.ApiKeyValue = await EnvironmentService.SubstituteVariablesAsync(authResolvedRequest.Auth.ApiKeyValue);
+            substitutedRequest.Auth.OAuth2TokenUrl = await EnvironmentService.SubstituteVariablesAsync(authResolvedRequest.Auth.OAuth2TokenUrl);
+            substitutedRequest.Auth.OAuth2ClientId = await EnvironmentService.SubstituteVariablesAsync(authResolvedRequest.Auth.OAuth2ClientId);
+            substitutedRequest.Auth.OAuth2ClientSecret = await EnvironmentService.SubstituteVariablesAsync(authResolvedRequest.Auth.OAuth2ClientSecret);
+            substitutedRequest.Auth.OAuth2Scope = await EnvironmentService.SubstituteVariablesAsync(authResolvedRequest.Auth.OAuth2Scope);
 
             // Auto-refresh token if enabled and expired
-            if (_request.AuthType == AuthType.OAuth2 && _request.OAuth2AutoRefresh)
+            if (substitutedRequest.Auth.AuthType == AuthType.OAuth2 && substitutedRequest.Auth.OAuth2AutoRefresh)
             {
-                bool isExpired = _request.OAuth2TokenExpiresAt is null ||
-                                 string.IsNullOrEmpty(_request.AuthToken) || 
-                                 (_request.OAuth2TokenExpiresAt.HasValue && _request.OAuth2TokenExpiresAt.Value <= DateTime.Now.AddSeconds(5));
+                bool isExpired = substitutedRequest.Auth.OAuth2TokenExpiresAt is null ||
+                                 string.IsNullOrEmpty(substitutedRequest.Auth.AuthToken) ||
+                                 (substitutedRequest.Auth.OAuth2TokenExpiresAt.HasValue && substitutedRequest.Auth.OAuth2TokenExpiresAt.Value <= DateTime.Now.AddSeconds(5));
                 if (isExpired)
                 {
-                    var success = await GetOAuth2Token();
+                    bool success;
+                    if (_request.Auth.AuthType == AuthType.Inherit)
+                    {
+                        success = await RefreshActiveEnvironmentToken();
+                        if (success)
+                        {
+                            var activeEnv = await EnvironmentService.GetActiveEnvironmentAsync();
+                            if (activeEnv != null)
+                            {
+                                substitutedRequest.Auth.AuthToken = activeEnv.Auth.AuthToken;
+                                substitutedRequest.Auth.OAuth2TokenExpiresAt = activeEnv.Auth.OAuth2TokenExpiresAt;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        success = await GetOAuth2Token();
+                        substitutedRequest.Auth.AuthToken = _request.Auth.AuthToken;
+                        substitutedRequest.Auth.OAuth2TokenExpiresAt = _request.Auth.OAuth2TokenExpiresAt;
+                    }
+
                     if (!success)
                     {
                         return;
                     }
-                    substitutedRequest.AuthToken = _request.AuthToken;
                 }
             }
 
@@ -446,9 +500,44 @@
         _cts?.Cancel();
     }
 
+    private async Task<bool> RefreshActiveEnvironmentToken()
+    {
+        var activeEnv = await EnvironmentService.GetActiveEnvironmentAsync();
+        if (activeEnv == null || activeEnv.Auth.AuthType != AuthType.OAuth2) return false;
+
+        try
+        {
+            var tempRequest = new HttpRequestModel
+            {
+                Auth =
+                {
+                    OAuth2TokenUrl = await EnvironmentService.SubstituteVariablesAsync(activeEnv.Auth.OAuth2TokenUrl),
+                    OAuth2ClientId = await EnvironmentService.SubstituteVariablesAsync(activeEnv.Auth.OAuth2ClientId),
+                    OAuth2ClientSecret = await EnvironmentService.SubstituteVariablesAsync(activeEnv.Auth.OAuth2ClientSecret),
+                    OAuth2Scope = await EnvironmentService.SubstituteVariablesAsync(activeEnv.Auth.OAuth2Scope),
+                    OAuth2GrantType = activeEnv.Auth.OAuth2GrantType
+                }
+            };
+
+            var result = await ApiService.GetOAuth2TokenAsync(tempRequest);
+            activeEnv.Auth.AuthToken = result.AccessToken;
+            activeEnv.Auth.OAuth2TokenExpiresAt = result.ExpiresIn.HasValue
+                ? DateTime.Now.AddSeconds(result.ExpiresIn.Value)
+                : null;
+
+            await EnvironmentService.UpdateEnvironmentAsync(activeEnv);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error refreshing environment token: {ex.Message}", Severity.Error);
+            return false;
+        }
+    }
+
     private async Task<bool> GetOAuth2Token()
     {
-        if (string.IsNullOrWhiteSpace(_request.OAuth2TokenUrl))
+        if (string.IsNullOrWhiteSpace(_request.Auth.OAuth2TokenUrl))
         {
             Snackbar.Add("Token URL is required.", Severity.Error);
             return false;
@@ -460,17 +549,17 @@
         try
         {
             var substitutedRequest = _request.Clone(newId: false);
-            substitutedRequest.OAuth2TokenUrl = await EnvironmentService.SubstituteVariablesAsync(_request.OAuth2TokenUrl);
-            substitutedRequest.OAuth2ClientId = await EnvironmentService.SubstituteVariablesAsync(_request.OAuth2ClientId);
-            substitutedRequest.OAuth2ClientSecret = await EnvironmentService.SubstituteVariablesAsync(_request.OAuth2ClientSecret);
-            substitutedRequest.OAuth2Scope = await EnvironmentService.SubstituteVariablesAsync(_request.OAuth2Scope);
+            substitutedRequest.Auth.OAuth2TokenUrl = await EnvironmentService.SubstituteVariablesAsync(_request.Auth.OAuth2TokenUrl);
+            substitutedRequest.Auth.OAuth2ClientId = await EnvironmentService.SubstituteVariablesAsync(_request.Auth.OAuth2ClientId);
+            substitutedRequest.Auth.OAuth2ClientSecret = await EnvironmentService.SubstituteVariablesAsync(_request.Auth.OAuth2ClientSecret);
+            substitutedRequest.Auth.OAuth2Scope = await EnvironmentService.SubstituteVariablesAsync(_request.Auth.OAuth2Scope);
 
             var result = await ApiService.GetOAuth2TokenAsync(substitutedRequest);
-            _request.AuthToken = result.AccessToken;
-            _request.OAuth2TokenExpiresAt = result.ExpiresIn.HasValue 
-                ? DateTime.Now.AddSeconds(result.ExpiresIn.Value) 
+            _request.Auth.AuthToken = result.AccessToken;
+            _request.Auth.OAuth2TokenExpiresAt = result.ExpiresIn.HasValue
+                ? DateTime.Now.AddSeconds(result.ExpiresIn.Value)
                 : null;
-            
+
             Snackbar.Add("Token retrieved successfully.", Severity.Success);
             return true;
         }
@@ -603,10 +692,7 @@
     protected override void OnInitialized()
     {
         EnvironmentService.OnEnvironmentChanged += OnEnvironmentChanged;
-        _uiUpdateTimer = new System.Threading.Timer(_ => 
-        {
-            InvokeAsync(StateHasChanged);
-        }, null, 1000, 1000);
+        _uiUpdateTimer = new System.Threading.Timer(_ => { InvokeAsync(StateHasChanged); }, null, 1000, 1000);
     }
 
     private async void OnEnvironmentChanged()

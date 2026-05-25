@@ -25,9 +25,12 @@ public class ApiServiceTests
         var apiService = new ApiService(httpClient);
         var request = new HttpRequestModel
         {
-            OAuth2TokenUrl = "https://example.com/token",
-            OAuth2ClientId = "client-id",
-            OAuth2ClientSecret = "client-secret"
+            Auth =
+            {
+                OAuth2TokenUrl = "https://example.com/token",
+                OAuth2ClientId = "client-id",
+                OAuth2ClientSecret = "client-secret"
+            }
         };
 
         // Act
@@ -51,7 +54,7 @@ public class ApiServiceTests
         // Arrange
         var httpClient = new HttpClient();
         var apiService = new ApiService(httpClient);
-        var request = new HttpRequestModel { OAuth2TokenUrl = "" };
+        var request = new HttpRequestModel { Auth = { OAuth2TokenUrl = "" } };
 
         // Act
         Func<Task> act = () => apiService.GetOAuth2TokenAsync(request);
@@ -80,9 +83,12 @@ public class ApiServiceTests
         var apiService = new ApiService(httpClient);
         var request = new HttpRequestModel
         {
-            OAuth2TokenUrl = "https://example.com/token",
-            OAuth2ClientId = "id",
-            OAuth2ClientSecret = "secret"
+            Auth =
+            {
+                OAuth2TokenUrl = "https://example.com/token",
+                OAuth2ClientId = "id",
+                OAuth2ClientSecret = "secret"
+            }
         };
 
         // Act

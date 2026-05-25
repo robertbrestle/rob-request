@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using RobRequest.Shared.Data;
 
@@ -10,9 +11,11 @@ using RobRequest.Shared.Data;
 namespace RobRequest.Shared.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260525001708_AddEnvironmentAuthAndOAuth2")]
+    partial class AddEnvironmentAuthAndOAuth2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.8");
@@ -53,7 +56,7 @@ namespace RobRequest.Shared.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Collections", (string)null);
+                    b.ToTable("Collections");
                 });
 
             modelBuilder.Entity("RobRequest.Shared.Models.CollectionRequestModel", b =>
@@ -82,12 +85,38 @@ namespace RobRequest.Shared.Migrations
 
                     b.HasIndex("CollectionId");
 
-                    b.ToTable("CollectionRequests", (string)null);
+                    b.ToTable("CollectionRequests");
                 });
 
             modelBuilder.Entity("RobRequest.Shared.Models.EnvironmentModel", b =>
                 {
                     b.Property<string>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ApiKeyLocation")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ApiKeyName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ApiKeyValue")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AuthPassword")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AuthToken")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("AuthType")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("AuthUsername")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreatedAt")
@@ -97,6 +126,31 @@ namespace RobRequest.Shared.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("OAuth2AutoRefresh")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("OAuth2ClientId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OAuth2ClientSecret")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("OAuth2GrantType")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("OAuth2Scope")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("OAuth2TokenExpiresAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OAuth2TokenUrl")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
@@ -116,7 +170,7 @@ namespace RobRequest.Shared.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Environments", (string)null);
+                    b.ToTable("Environments");
                 });
 
             modelBuilder.Entity("RobRequest.Shared.Models.HistoryItem", b =>
@@ -153,7 +207,7 @@ namespace RobRequest.Shared.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("HistoryItems", (string)null);
+                    b.ToTable("HistoryItems");
                 });
 
             modelBuilder.Entity("RobRequest.Shared.Models.User", b =>
@@ -192,7 +246,7 @@ namespace RobRequest.Shared.Migrations
                     b.HasIndex("Username")
                         .IsUnique();
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("RobRequest.Shared.Models.UserGroup", b =>
@@ -212,7 +266,7 @@ namespace RobRequest.Shared.Migrations
                     b.HasIndex("Name")
                         .IsUnique();
 
-                    b.ToTable("UserGroups", (string)null);
+                    b.ToTable("UserGroups");
                 });
 
             modelBuilder.Entity("RobRequest.Shared.Models.UserSettings", b =>
@@ -250,7 +304,7 @@ namespace RobRequest.Shared.Migrations
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.ToTable("UserSettings", (string)null);
+                    b.ToTable("UserSettings");
                 });
 
             modelBuilder.Entity("RobRequest.Shared.Models.CollectionModel", b =>
@@ -283,6 +337,25 @@ namespace RobRequest.Shared.Migrations
                         {
                             b1.Property<string>("CollectionRequestModelId");
 
+                            b1.Property<int>("ApiKeyLocation");
+
+                            b1.Property<string>("ApiKeyName")
+                                .IsRequired();
+
+                            b1.Property<string>("ApiKeyValue")
+                                .IsRequired();
+
+                            b1.Property<string>("AuthPassword")
+                                .IsRequired();
+
+                            b1.Property<string>("AuthToken")
+                                .IsRequired();
+
+                            b1.Property<int>("AuthType");
+
+                            b1.Property<string>("AuthUsername")
+                                .IsRequired();
+
                             b1.Property<string>("Body")
                                 .IsRequired();
 
@@ -300,6 +373,24 @@ namespace RobRequest.Shared.Migrations
                             b1.Property<string>("Method")
                                 .IsRequired();
 
+                            b1.Property<bool>("OAuth2AutoRefresh");
+
+                            b1.Property<string>("OAuth2ClientId")
+                                .IsRequired();
+
+                            b1.Property<string>("OAuth2ClientSecret")
+                                .IsRequired();
+
+                            b1.Property<int>("OAuth2GrantType");
+
+                            b1.Property<string>("OAuth2Scope")
+                                .IsRequired();
+
+                            b1.Property<DateTime?>("OAuth2TokenExpiresAt");
+
+                            b1.Property<string>("OAuth2TokenUrl")
+                                .IsRequired();
+
                             b1.Property<int>("TimeoutSeconds");
 
                             b1.Property<string>("Url")
@@ -307,7 +398,7 @@ namespace RobRequest.Shared.Migrations
 
                             b1.HasKey("CollectionRequestModelId");
 
-                            b1.ToTable("CollectionRequests", (string)null);
+                            b1.ToTable("CollectionRequests");
 
                             b1
                                 .ToJson("Request")
@@ -315,55 +406,6 @@ namespace RobRequest.Shared.Migrations
 
                             b1.WithOwner()
                                 .HasForeignKey("CollectionRequestModelId");
-
-                            b1.OwnsOne("RobRequest.Shared.Models.AuthSettings", "Auth", b2 =>
-                                {
-                                    b2.Property<string>("HttpRequestModelCollectionRequestModelId");
-
-                                    b2.Property<int>("ApiKeyLocation");
-
-                                    b2.Property<string>("ApiKeyName")
-                                        .IsRequired();
-
-                                    b2.Property<string>("ApiKeyValue")
-                                        .IsRequired();
-
-                                    b2.Property<string>("AuthPassword")
-                                        .IsRequired();
-
-                                    b2.Property<string>("AuthToken")
-                                        .IsRequired();
-
-                                    b2.Property<int>("AuthType");
-
-                                    b2.Property<string>("AuthUsername")
-                                        .IsRequired();
-
-                                    b2.Property<bool>("OAuth2AutoRefresh");
-
-                                    b2.Property<string>("OAuth2ClientId")
-                                        .IsRequired();
-
-                                    b2.Property<string>("OAuth2ClientSecret")
-                                        .IsRequired();
-
-                                    b2.Property<int>("OAuth2GrantType");
-
-                                    b2.Property<string>("OAuth2Scope")
-                                        .IsRequired();
-
-                                    b2.Property<DateTime?>("OAuth2TokenExpiresAt");
-
-                                    b2.Property<string>("OAuth2TokenUrl")
-                                        .IsRequired();
-
-                                    b2.HasKey("HttpRequestModelCollectionRequestModelId");
-
-                                    b2.ToTable("CollectionRequests", (string)null);
-
-                                    b2.WithOwner()
-                                        .HasForeignKey("HttpRequestModelCollectionRequestModelId");
-                                });
 
                             b1.OwnsMany("RobRequest.Shared.Models.FormDataItem", "FormData", b2 =>
                                 {
@@ -388,7 +430,7 @@ namespace RobRequest.Shared.Migrations
 
                                     b2.HasKey("HttpRequestModelCollectionRequestModelId", "__synthesizedOrdinal");
 
-                                    b2.ToTable("CollectionRequests", (string)null);
+                                    b2.ToTable("CollectionRequests");
 
                                     b2.WithOwner()
                                         .HasForeignKey("HttpRequestModelCollectionRequestModelId");
@@ -411,7 +453,7 @@ namespace RobRequest.Shared.Migrations
 
                                     b2.HasKey("HttpRequestModelCollectionRequestModelId", "__synthesizedOrdinal");
 
-                                    b2.ToTable("CollectionRequests", (string)null);
+                                    b2.ToTable("CollectionRequests");
 
                                     b2.WithOwner()
                                         .HasForeignKey("HttpRequestModelCollectionRequestModelId");
@@ -434,14 +476,11 @@ namespace RobRequest.Shared.Migrations
 
                                     b2.HasKey("HttpRequestModelCollectionRequestModelId", "__synthesizedOrdinal");
 
-                                    b2.ToTable("CollectionRequests", (string)null);
+                                    b2.ToTable("CollectionRequests");
 
                                     b2.WithOwner()
                                         .HasForeignKey("HttpRequestModelCollectionRequestModelId");
                                 });
-
-                            b1.Navigation("Auth")
-                                .IsRequired();
 
                             b1.Navigation("FormData");
 
@@ -464,9 +503,51 @@ namespace RobRequest.Shared.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.OwnsOne("RobRequest.Shared.Models.AuthSettings", "Auth", b1 =>
+                    b.OwnsMany("RobRequest.Shared.Models.EnvironmentVariable", "Variables", b1 =>
                         {
                             b1.Property<string>("EnvironmentModelId");
+
+                            b1.Property<int>("__synthesizedOrdinal")
+                                .ValueGeneratedOnAddOrUpdate();
+
+                            b1.Property<bool>("Enabled");
+
+                            b1.Property<bool>("IsSecret");
+
+                            b1.Property<string>("Key")
+                                .IsRequired();
+
+                            b1.Property<string>("Value")
+                                .IsRequired();
+
+                            b1.HasKey("EnvironmentModelId", "__synthesizedOrdinal");
+
+                            b1.ToTable("Environments");
+
+                            b1
+                                .ToJson("Variables")
+                                .HasColumnType("TEXT");
+
+                            b1.WithOwner()
+                                .HasForeignKey("EnvironmentModelId");
+                        });
+
+                    b.Navigation("User");
+
+                    b.Navigation("Variables");
+                });
+
+            modelBuilder.Entity("RobRequest.Shared.Models.HistoryItem", b =>
+                {
+                    b.HasOne("RobRequest.Shared.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.OwnsOne("RobRequest.Shared.Models.HttpRequestModel", "Request", b1 =>
+                        {
+                            b1.Property<string>("HistoryItemId");
 
                             b1.Property<int>("ApiKeyLocation");
 
@@ -487,6 +568,23 @@ namespace RobRequest.Shared.Migrations
                             b1.Property<string>("AuthUsername")
                                 .IsRequired();
 
+                            b1.Property<string>("Body")
+                                .IsRequired();
+
+                            b1.Property<string>("BodyType")
+                                .IsRequired();
+
+                            b1.Property<string>("ContentType")
+                                .IsRequired();
+
+                            b1.Property<DateTime>("CreatedAt");
+
+                            b1.Property<string>("Id")
+                                .IsRequired();
+
+                            b1.Property<string>("Method")
+                                .IsRequired();
+
                             b1.Property<bool>("OAuth2AutoRefresh");
 
                             b1.Property<string>("OAuth2ClientId")
@@ -505,84 +603,6 @@ namespace RobRequest.Shared.Migrations
                             b1.Property<string>("OAuth2TokenUrl")
                                 .IsRequired();
 
-                            b1.HasKey("EnvironmentModelId");
-
-                            b1.ToTable("Environments", (string)null);
-
-                            b1
-                                .ToJson("Auth")
-                                .HasColumnType("TEXT");
-
-                            b1.WithOwner()
-                                .HasForeignKey("EnvironmentModelId");
-                        });
-
-                    b.OwnsMany("RobRequest.Shared.Models.EnvironmentVariable", "Variables", b1 =>
-                        {
-                            b1.Property<string>("EnvironmentModelId");
-
-                            b1.Property<int>("__synthesizedOrdinal")
-                                .ValueGeneratedOnAddOrUpdate();
-
-                            b1.Property<bool>("Enabled");
-
-                            b1.Property<bool>("IsSecret");
-
-                            b1.Property<string>("Key")
-                                .IsRequired();
-
-                            b1.Property<string>("Value")
-                                .IsRequired();
-
-                            b1.HasKey("EnvironmentModelId", "__synthesizedOrdinal");
-
-                            b1.ToTable("Environments", (string)null);
-
-                            b1
-                                .ToJson("Variables")
-                                .HasColumnType("TEXT");
-
-                            b1.WithOwner()
-                                .HasForeignKey("EnvironmentModelId");
-                        });
-
-                    b.Navigation("Auth")
-                        .IsRequired();
-
-                    b.Navigation("User");
-
-                    b.Navigation("Variables");
-                });
-
-            modelBuilder.Entity("RobRequest.Shared.Models.HistoryItem", b =>
-                {
-                    b.HasOne("RobRequest.Shared.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.OwnsOne("RobRequest.Shared.Models.HttpRequestModel", "Request", b1 =>
-                        {
-                            b1.Property<string>("HistoryItemId");
-
-                            b1.Property<string>("Body")
-                                .IsRequired();
-
-                            b1.Property<string>("BodyType")
-                                .IsRequired();
-
-                            b1.Property<string>("ContentType")
-                                .IsRequired();
-
-                            b1.Property<DateTime>("CreatedAt");
-
-                            b1.Property<string>("Id")
-                                .IsRequired();
-
-                            b1.Property<string>("Method")
-                                .IsRequired();
-
                             b1.Property<int>("TimeoutSeconds");
 
                             b1.Property<string>("Url")
@@ -590,7 +610,7 @@ namespace RobRequest.Shared.Migrations
 
                             b1.HasKey("HistoryItemId");
 
-                            b1.ToTable("HistoryItems", (string)null);
+                            b1.ToTable("HistoryItems");
 
                             b1
                                 .ToJson("Request")
@@ -598,55 +618,6 @@ namespace RobRequest.Shared.Migrations
 
                             b1.WithOwner()
                                 .HasForeignKey("HistoryItemId");
-
-                            b1.OwnsOne("RobRequest.Shared.Models.AuthSettings", "Auth", b2 =>
-                                {
-                                    b2.Property<string>("HttpRequestModelHistoryItemId");
-
-                                    b2.Property<int>("ApiKeyLocation");
-
-                                    b2.Property<string>("ApiKeyName")
-                                        .IsRequired();
-
-                                    b2.Property<string>("ApiKeyValue")
-                                        .IsRequired();
-
-                                    b2.Property<string>("AuthPassword")
-                                        .IsRequired();
-
-                                    b2.Property<string>("AuthToken")
-                                        .IsRequired();
-
-                                    b2.Property<int>("AuthType");
-
-                                    b2.Property<string>("AuthUsername")
-                                        .IsRequired();
-
-                                    b2.Property<bool>("OAuth2AutoRefresh");
-
-                                    b2.Property<string>("OAuth2ClientId")
-                                        .IsRequired();
-
-                                    b2.Property<string>("OAuth2ClientSecret")
-                                        .IsRequired();
-
-                                    b2.Property<int>("OAuth2GrantType");
-
-                                    b2.Property<string>("OAuth2Scope")
-                                        .IsRequired();
-
-                                    b2.Property<DateTime?>("OAuth2TokenExpiresAt");
-
-                                    b2.Property<string>("OAuth2TokenUrl")
-                                        .IsRequired();
-
-                                    b2.HasKey("HttpRequestModelHistoryItemId");
-
-                                    b2.ToTable("HistoryItems", (string)null);
-
-                                    b2.WithOwner()
-                                        .HasForeignKey("HttpRequestModelHistoryItemId");
-                                });
 
                             b1.OwnsMany("RobRequest.Shared.Models.FormDataItem", "FormData", b2 =>
                                 {
@@ -671,7 +642,7 @@ namespace RobRequest.Shared.Migrations
 
                                     b2.HasKey("HttpRequestModelHistoryItemId", "__synthesizedOrdinal");
 
-                                    b2.ToTable("HistoryItems", (string)null);
+                                    b2.ToTable("HistoryItems");
 
                                     b2.WithOwner()
                                         .HasForeignKey("HttpRequestModelHistoryItemId");
@@ -694,7 +665,7 @@ namespace RobRequest.Shared.Migrations
 
                                     b2.HasKey("HttpRequestModelHistoryItemId", "__synthesizedOrdinal");
 
-                                    b2.ToTable("HistoryItems", (string)null);
+                                    b2.ToTable("HistoryItems");
 
                                     b2.WithOwner()
                                         .HasForeignKey("HttpRequestModelHistoryItemId");
@@ -717,14 +688,11 @@ namespace RobRequest.Shared.Migrations
 
                                     b2.HasKey("HttpRequestModelHistoryItemId", "__synthesizedOrdinal");
 
-                                    b2.ToTable("HistoryItems", (string)null);
+                                    b2.ToTable("HistoryItems");
 
                                     b2.WithOwner()
                                         .HasForeignKey("HttpRequestModelHistoryItemId");
                                 });
-
-                            b1.Navigation("Auth")
-                                .IsRequired();
 
                             b1.Navigation("FormData");
 
@@ -758,7 +726,7 @@ namespace RobRequest.Shared.Migrations
 
                             b1.HasKey("HistoryItemId");
 
-                            b1.ToTable("HistoryItems", (string)null);
+                            b1.ToTable("HistoryItems");
 
                             b1
                                 .ToJson("Response")
@@ -784,7 +752,7 @@ namespace RobRequest.Shared.Migrations
 
                                     b2.HasKey("HttpResponseModelHistoryItemId", "__synthesizedOrdinal");
 
-                                    b2.ToTable("HistoryItems", (string)null);
+                                    b2.ToTable("HistoryItems");
 
                                     b2.WithOwner()
                                         .HasForeignKey("HttpResponseModelHistoryItemId");

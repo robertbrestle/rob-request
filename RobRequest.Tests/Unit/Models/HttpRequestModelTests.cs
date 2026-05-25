@@ -61,10 +61,13 @@ public class HttpRequestModelTests
         var model = new HttpRequestModel
         {
             Url = "https://example.com",
-            AuthType = AuthType.ApiKey,
-            ApiKeyLocation = ApiKeyLocation.QueryParam,
-            ApiKeyName = "api_key",
-            ApiKeyValue = "secret123"
+            Auth =
+            {
+                AuthType = AuthType.ApiKey,
+                ApiKeyLocation = ApiKeyLocation.QueryParam,
+                ApiKeyName = "api_key",
+                ApiKeyValue = "secret123"
+            }
         };
 
         var url = model.GetFullUrl();
@@ -81,7 +84,7 @@ public class HttpRequestModelTests
         model.Url.Should().BeEmpty();
         model.BodyType.Should().Be("none");
         model.ContentType.Should().Be("application/json");
-        model.AuthType.Should().Be(AuthType.None);
+        model.Auth.AuthType.Should().Be(AuthType.Inherit);
         model.TimeoutSeconds.Should().Be(30);
         model.Headers.Should().BeEmpty();
         model.QueryParams.Should().BeEmpty();
@@ -101,15 +104,18 @@ public class HttpRequestModelTests
             BodyType = "json",
             Body = "{}",
             ContentType = "application/json",
-            AuthType = AuthType.OAuth2,
-            AuthToken = "token",
-            OAuth2GrantType = OAuth2GrantType.ClientCredentials,
-            OAuth2TokenUrl = "url",
-            OAuth2ClientId = "id",
-            OAuth2ClientSecret = "secret",
-            OAuth2Scope = "scope",
-            OAuth2TokenExpiresAt = DateTime.Now.AddHours(1),
-            OAuth2AutoRefresh = true,
+            Auth =
+            {
+                AuthType = AuthType.OAuth2,
+                AuthToken = "token",
+                OAuth2GrantType = OAuth2GrantType.ClientCredentials,
+                OAuth2TokenUrl = "url",
+                OAuth2ClientId = "id",
+                OAuth2ClientSecret = "secret",
+                OAuth2Scope = "scope",
+                OAuth2TokenExpiresAt = DateTime.Now.AddHours(1),
+                OAuth2AutoRefresh = true
+            },
             TimeoutSeconds = 60
         };
 

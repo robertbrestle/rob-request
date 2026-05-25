@@ -12,8 +12,31 @@ public class EnvironmentModel
     public string? Description { get; set; }
     public int SortOrder { get; set; }
     public List<EnvironmentVariable> Variables { get; set; } = new();
+    public AuthSettings Auth { get; set; } = new();
     public DateTime CreatedAt { get; set; } = DateTime.Now;
     public DateTime UpdatedAt { get; set; } = DateTime.Now;
+
+    public EnvironmentModel Clone()
+    {
+        return new EnvironmentModel
+        {
+            Id = Id,
+            UserId = UserId,
+            Name = Name,
+            Description = Description,
+            SortOrder = SortOrder,
+            Variables = Variables.Select(v => new EnvironmentVariable
+            {
+                Key = v.Key,
+                Value = v.Value,
+                IsSecret = v.IsSecret,
+                Enabled = v.Enabled
+            }).ToList(),
+            Auth = Auth.Clone(),
+            CreatedAt = CreatedAt,
+            UpdatedAt = UpdatedAt
+        };
+    }
 }
 
 public class EnvironmentVariable

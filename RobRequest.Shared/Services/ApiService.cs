@@ -114,29 +114,29 @@ public class ApiService(HttpClient httpClient)
 
     private static void ApplyAuthentication(HttpRequestMessage httpRequest, HttpRequestModel request)
     {
-        switch (request.AuthType)
+        switch (request.Auth.AuthType)
         {
             case AuthType.Bearer:
             case AuthType.OAuth2:
-                if (!string.IsNullOrWhiteSpace(request.AuthToken))
-                    httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", request.AuthToken);
+                if (!string.IsNullOrWhiteSpace(request.Auth.AuthToken))
+                    httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", request.Auth.AuthToken);
                 break;
 
             case AuthType.Basic:
-                if (!string.IsNullOrWhiteSpace(request.AuthUsername))
+                if (!string.IsNullOrWhiteSpace(request.Auth.AuthUsername))
                 {
                     var credentials = Convert.ToBase64String(
-                        Encoding.UTF8.GetBytes($"{request.AuthUsername}:{request.AuthPassword}"));
+                        Encoding.UTF8.GetBytes($"{request.Auth.AuthUsername}:{request.Auth.AuthPassword}"));
                     httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Basic", credentials);
                 }
                 break;
 
             case AuthType.ApiKey:
-                if (!string.IsNullOrWhiteSpace(request.ApiKeyName) && !string.IsNullOrWhiteSpace(request.ApiKeyValue))
+                if (!string.IsNullOrWhiteSpace(request.Auth.ApiKeyName) && !string.IsNullOrWhiteSpace(request.Auth.ApiKeyValue))
                 {
-                    if (request.ApiKeyLocation == ApiKeyLocation.Header)
+                    if (request.Auth.ApiKeyLocation == ApiKeyLocation.Header)
                     {
-                        httpRequest.Headers.TryAddWithoutValidation(request.ApiKeyName, request.ApiKeyValue);
+                        httpRequest.Headers.TryAddWithoutValidation(request.Auth.ApiKeyName, request.Auth.ApiKeyValue);
                     }
                     // Query param is handled in GetFullUrl() of HttpRequestModel
                 }
@@ -178,23 +178,23 @@ public class ApiService(HttpClient httpClient)
 
     public async Task<OAuth2TokenResult> GetOAuth2TokenAsync(HttpRequestModel request, CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(request.OAuth2TokenUrl))
+        if (string.IsNullOrWhiteSpace(request.Auth.OAuth2TokenUrl))
             throw new ArgumentException("Token URL is required.");
 
         var data = new List<KeyValuePair<string, string>>
         {
             new("grant_type", "client_credentials"),
-            new("client_id", request.OAuth2ClientId),
-            new("client_secret", request.OAuth2ClientSecret)
+            new("client_id", request.Auth.OAuth2ClientId),
+            new("client_secret", request.Auth.OAuth2ClientSecret)
         };
 
-        if (!string.IsNullOrWhiteSpace(request.OAuth2Scope))
+        if (!string.IsNullOrWhiteSpace(request.Auth.OAuth2Scope))
         {
-            data.Add(new KeyValuePair<string, string>("scope", request.OAuth2Scope));
+            data.Add(new KeyValuePair<string, string>("scope", request.Auth.OAuth2Scope));
         }
 
         using var content = new FormUrlEncodedContent(data);
-        using var response = await httpClient.PostAsync(request.OAuth2TokenUrl, content, ct);
+        using var response = await httpClient.PostAsync(request.Auth.OAuth2TokenUrl, content, ct);
 
         if (!response.IsSuccessStatusCode)
         {

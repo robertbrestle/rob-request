@@ -167,6 +167,7 @@ public class ImportExportService
             Description = e.Description,
             SortOrder = e.SortOrder,
             Variables = e.Variables,
+            Auth = e.Auth,
             CreatedAt = e.CreatedAt,
             UpdatedAt = e.UpdatedAt
         }).ToList();
@@ -298,6 +299,7 @@ public class ImportExportService
                     IsSecret = v.IsSecret,
                     Enabled = v.Enabled
                 }).ToList(),
+                Auth = env.Auth.Clone(),
                 CreatedAt = env.CreatedAt,
                 UpdatedAt = env.UpdatedAt
             };

@@ -109,7 +109,15 @@ public partial class EnvironmentService
         existing.Name = environment.Name;
         existing.Description = environment.Description;
         existing.SortOrder = environment.SortOrder;
-        existing.Variables = environment.Variables;
+        existing.Variables = environment.Variables.Select(v => new EnvironmentVariable
+        {
+            Key = v.Key,
+            Value = v.Value,
+            IsSecret = v.IsSecret,
+            Enabled = v.Enabled
+        }).ToList();
+        
+        existing.Auth.CopyFrom(environment.Auth);
         existing.UpdatedAt = DateTime.Now;
 
         await _db.SaveChangesAsync();

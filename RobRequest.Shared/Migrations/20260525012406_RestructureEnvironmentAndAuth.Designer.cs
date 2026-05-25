@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using RobRequest.Shared.Data;
 
@@ -10,9 +11,11 @@ using RobRequest.Shared.Data;
 namespace RobRequest.Shared.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260525012406_RestructureEnvironmentAndAuth")]
+    partial class RestructureEnvironmentAndAuth
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.8");
@@ -53,7 +56,7 @@ namespace RobRequest.Shared.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Collections", (string)null);
+                    b.ToTable("Collections");
                 });
 
             modelBuilder.Entity("RobRequest.Shared.Models.CollectionRequestModel", b =>
@@ -82,7 +85,7 @@ namespace RobRequest.Shared.Migrations
 
                     b.HasIndex("CollectionId");
 
-                    b.ToTable("CollectionRequests", (string)null);
+                    b.ToTable("CollectionRequests");
                 });
 
             modelBuilder.Entity("RobRequest.Shared.Models.EnvironmentModel", b =>
@@ -116,7 +119,7 @@ namespace RobRequest.Shared.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Environments", (string)null);
+                    b.ToTable("Environments");
                 });
 
             modelBuilder.Entity("RobRequest.Shared.Models.HistoryItem", b =>
@@ -153,7 +156,7 @@ namespace RobRequest.Shared.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("HistoryItems", (string)null);
+                    b.ToTable("HistoryItems");
                 });
 
             modelBuilder.Entity("RobRequest.Shared.Models.User", b =>
@@ -192,7 +195,7 @@ namespace RobRequest.Shared.Migrations
                     b.HasIndex("Username")
                         .IsUnique();
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("RobRequest.Shared.Models.UserGroup", b =>
@@ -212,7 +215,7 @@ namespace RobRequest.Shared.Migrations
                     b.HasIndex("Name")
                         .IsUnique();
 
-                    b.ToTable("UserGroups", (string)null);
+                    b.ToTable("UserGroups");
                 });
 
             modelBuilder.Entity("RobRequest.Shared.Models.UserSettings", b =>
@@ -250,7 +253,7 @@ namespace RobRequest.Shared.Migrations
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.ToTable("UserSettings", (string)null);
+                    b.ToTable("UserSettings");
                 });
 
             modelBuilder.Entity("RobRequest.Shared.Models.CollectionModel", b =>
@@ -307,7 +310,7 @@ namespace RobRequest.Shared.Migrations
 
                             b1.HasKey("CollectionRequestModelId");
 
-                            b1.ToTable("CollectionRequests", (string)null);
+                            b1.ToTable("CollectionRequests");
 
                             b1
                                 .ToJson("Request")
@@ -359,7 +362,7 @@ namespace RobRequest.Shared.Migrations
 
                                     b2.HasKey("HttpRequestModelCollectionRequestModelId");
 
-                                    b2.ToTable("CollectionRequests", (string)null);
+                                    b2.ToTable("CollectionRequests");
 
                                     b2.WithOwner()
                                         .HasForeignKey("HttpRequestModelCollectionRequestModelId");
@@ -388,7 +391,7 @@ namespace RobRequest.Shared.Migrations
 
                                     b2.HasKey("HttpRequestModelCollectionRequestModelId", "__synthesizedOrdinal");
 
-                                    b2.ToTable("CollectionRequests", (string)null);
+                                    b2.ToTable("CollectionRequests");
 
                                     b2.WithOwner()
                                         .HasForeignKey("HttpRequestModelCollectionRequestModelId");
@@ -411,7 +414,7 @@ namespace RobRequest.Shared.Migrations
 
                                     b2.HasKey("HttpRequestModelCollectionRequestModelId", "__synthesizedOrdinal");
 
-                                    b2.ToTable("CollectionRequests", (string)null);
+                                    b2.ToTable("CollectionRequests");
 
                                     b2.WithOwner()
                                         .HasForeignKey("HttpRequestModelCollectionRequestModelId");
@@ -434,7 +437,7 @@ namespace RobRequest.Shared.Migrations
 
                                     b2.HasKey("HttpRequestModelCollectionRequestModelId", "__synthesizedOrdinal");
 
-                                    b2.ToTable("CollectionRequests", (string)null);
+                                    b2.ToTable("CollectionRequests");
 
                                     b2.WithOwner()
                                         .HasForeignKey("HttpRequestModelCollectionRequestModelId");
@@ -507,7 +510,7 @@ namespace RobRequest.Shared.Migrations
 
                             b1.HasKey("EnvironmentModelId");
 
-                            b1.ToTable("Environments", (string)null);
+                            b1.ToTable("Environments");
 
                             b1
                                 .ToJson("Auth")
@@ -536,7 +539,7 @@ namespace RobRequest.Shared.Migrations
 
                             b1.HasKey("EnvironmentModelId", "__synthesizedOrdinal");
 
-                            b1.ToTable("Environments", (string)null);
+                            b1.ToTable("Environments");
 
                             b1
                                 .ToJson("Variables")
@@ -590,7 +593,7 @@ namespace RobRequest.Shared.Migrations
 
                             b1.HasKey("HistoryItemId");
 
-                            b1.ToTable("HistoryItems", (string)null);
+                            b1.ToTable("HistoryItems");
 
                             b1
                                 .ToJson("Request")
@@ -642,7 +645,7 @@ namespace RobRequest.Shared.Migrations
 
                                     b2.HasKey("HttpRequestModelHistoryItemId");
 
-                                    b2.ToTable("HistoryItems", (string)null);
+                                    b2.ToTable("HistoryItems");
 
                                     b2.WithOwner()
                                         .HasForeignKey("HttpRequestModelHistoryItemId");
@@ -671,7 +674,7 @@ namespace RobRequest.Shared.Migrations
 
                                     b2.HasKey("HttpRequestModelHistoryItemId", "__synthesizedOrdinal");
 
-                                    b2.ToTable("HistoryItems", (string)null);
+                                    b2.ToTable("HistoryItems");
 
                                     b2.WithOwner()
                                         .HasForeignKey("HttpRequestModelHistoryItemId");
@@ -694,7 +697,7 @@ namespace RobRequest.Shared.Migrations
 
                                     b2.HasKey("HttpRequestModelHistoryItemId", "__synthesizedOrdinal");
 
-                                    b2.ToTable("HistoryItems", (string)null);
+                                    b2.ToTable("HistoryItems");
 
                                     b2.WithOwner()
                                         .HasForeignKey("HttpRequestModelHistoryItemId");
@@ -717,7 +720,7 @@ namespace RobRequest.Shared.Migrations
 
                                     b2.HasKey("HttpRequestModelHistoryItemId", "__synthesizedOrdinal");
 
-                                    b2.ToTable("HistoryItems", (string)null);
+                                    b2.ToTable("HistoryItems");
 
                                     b2.WithOwner()
                                         .HasForeignKey("HttpRequestModelHistoryItemId");
@@ -758,7 +761,7 @@ namespace RobRequest.Shared.Migrations
 
                             b1.HasKey("HistoryItemId");
 
-                            b1.ToTable("HistoryItems", (string)null);
+                            b1.ToTable("HistoryItems");
 
                             b1
                                 .ToJson("Response")
@@ -784,7 +787,7 @@ namespace RobRequest.Shared.Migrations
 
                                     b2.HasKey("HttpResponseModelHistoryItemId", "__synthesizedOrdinal");
 
-                                    b2.ToTable("HistoryItems", (string)null);
+                                    b2.ToTable("HistoryItems");
 
                                     b2.WithOwner()
                                         .HasForeignKey("HttpResponseModelHistoryItemId");
