@@ -52,7 +52,7 @@
     </MudItem>
 
     <!-- Right: Detail Panel -->
-    <MudItem xs="12" md="8">
+    <MudItem xs="12" md="9">
         <MudPaper Elevation="1" Class="pa-3" Style="min-height: calc(100vh - 120px);">
             @if (_selectedCollection != null)
             {
@@ -86,7 +86,9 @@
                                   Label="Description"
                                   Variant="Variant.Outlined"
                                   Margin="Margin.Dense"
-                                  Lines="3"
+                                  Lines="1"
+                                  Sizing="InputSizing.Auto"
+                                  MaxLines="20"
                                   Immediate="true"
                                   DebounceInterval="500"/>
 

@@ -23,10 +23,14 @@ public class SettingsService
     public async Task<UserSettings> GetSettingsAsync()
     {
         var userId = _currentUser.UserId;
-        if (string.IsNullOrEmpty(userId))
-        {
+        if (string.IsNullOrEmpty(userId) || !_currentUser.IsAuthenticated)
             return _settings;
-        }
+
+        // if user doesn't exist, return _settings
+        // TODO: refactor for better authentication/user status detection
+        var user = await _db.Users.FindAsync(userId);
+        if (user is null)
+            return _settings;
 
         var settings = await _db.UserSettings
             .FirstOrDefaultAsync(s => s.UserId == userId);

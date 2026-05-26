@@ -85,7 +85,7 @@
     </MudItem>
 
     <!-- Right: Detail Panel -->
-    <MudItem xs="12" md="8">
+    <MudItem xs="12" md="9">
         <MudPaper Elevation="1" Class="pa-3" Style="min-height: calc(100vh - 120px);">
             @if (_selectedEnvironment != null && _editingEnvironment != null)
             {
@@ -145,7 +145,9 @@
                                   Label="Description"
                                   Variant="Variant.Outlined"
                                   Margin="Margin.Dense"
-                                  Lines="2"
+                                  Lines="1"
+                                  Sizing="InputSizing.Auto"
+                                  MaxLines="20"
                                   Immediate="true"/>
 
                     <MudDivider/>
@@ -153,7 +155,7 @@
                     <MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true" TabPanelsClass="pt-3">
                         <MudTabPanel Text="Variables" Icon="@Icons.Material.Filled.List">
                             <MudStack Spacing="3">
-                                
+
                                 <MudText Typo="Typo.caption" Color="Color.Default">
                                     Use <code>@("{{variableName}}")</code> syntax in URLs, headers, body, and auth
                                     fields to substitute variables.
@@ -279,7 +281,8 @@
                                                       Immediate="true"/>
                                         <MudTextPasswordField @bind-Value="_editingEnvironment.Auth.ApiKeyValue"
                                                               Label="Key Value"/>
-                                        <MudSelect T="ApiKeyLocation" @bind-Value="_editingEnvironment.Auth.ApiKeyLocation"
+                                        <MudSelect T="ApiKeyLocation"
+                                                   @bind-Value="_editingEnvironment.Auth.ApiKeyLocation"
                                                    Label="Add to"
                                                    Variant="Variant.Outlined" Margin="Margin.Dense">
                                             <MudSelectItem Value="ApiKeyLocation.Header">Header</MudSelectItem>
@@ -288,10 +291,13 @@
                                         break;
 
                                     case AuthType.OAuth2:
-                                        <MudSelect T="OAuth2GrantType" @bind-Value="_editingEnvironment.Auth.OAuth2GrantType"
+                                        <MudSelect T="OAuth2GrantType"
+                                                   @bind-Value="_editingEnvironment.Auth.OAuth2GrantType"
                                                    Label="Grant Type"
                                                    Variant="Variant.Outlined" Margin="Margin.Dense">
-                                            <MudSelectItem Value="OAuth2GrantType.ClientCredentials">Client Credentials</MudSelectItem>
+                                            <MudSelectItem Value="OAuth2GrantType.ClientCredentials">Client
+                                                Credentials
+                                            </MudSelectItem>
                                         </MudSelect>
 
                                         <MudTextField T="string"
@@ -486,7 +492,7 @@
         EnvironmentService.OnEnvironmentChanged += OnEnvironmentsChanged;
         _uiUpdateTimer = new System.Threading.Timer(_ => { InvokeAsync(StateHasChanged); }, null, 1000, 1000);
         await LoadEnvironments();
-        
+
         // load first environment
         if (_environments.Count > 0)
         {
@@ -629,10 +635,10 @@
     private bool IsModified()
     {
         if (_selectedEnvironment == null || _editingEnvironment == null) return false;
-        
+
         if (_selectedEnvironment.Name != _editingEnvironment.Name) return true;
         if (_selectedEnvironment.Description != _editingEnvironment.Description) return true;
-        
+
         // Variables check
         if (_selectedEnvironment.Variables.Count != _editingEnvironment.Variables.Count) return true;
         for (int i = 0; i < _selectedEnvironment.Variables.Count; i++)
@@ -682,4 +688,5 @@
         EnvironmentService.OnEnvironmentChanged -= OnEnvironmentsChanged;
         _uiUpdateTimer?.Dispose();
     }
+
 }
