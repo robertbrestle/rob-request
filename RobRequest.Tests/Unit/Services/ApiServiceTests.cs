@@ -5,6 +5,26 @@ namespace RobRequest.Tests.Unit.Services;
 
 public class ApiServiceTests
 {
+    private readonly Mock<IHttpClientFactory> _mockHttpClientFactory = new();
+    private readonly Mock<SettingsService> _mockSettingsService;
+
+    public ApiServiceTests()
+    {
+        var dbContextOptions = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite("DataSource=:memory:")
+            .Options;
+        var dbContext = new AppDbContext(dbContextOptions);
+        var currentUser = new CurrentUserService(); // Not authenticated by default
+        _mockSettingsService = new Mock<SettingsService>(dbContext, currentUser);
+        _mockSettingsService.Setup(s => s.GetSettingsAsync()).ReturnsAsync(new UserSettings());
+    }
+
+    private ApiService CreateApiService(HttpClient httpClient)
+    {
+        _mockHttpClientFactory.Setup(f => f.CreateClient(It.IsAny<string>())).Returns(httpClient);
+        return new ApiService(_mockHttpClientFactory.Object, _mockSettingsService.Object);
+    }
+
     [Fact]
     public async Task GetOAuth2TokenAsync_ShouldReturnToken_WhenSuccessful()
     {
@@ -22,7 +42,7 @@ public class ApiServiceTests
             });
 
         var httpClient = new HttpClient(mockHandler.Object);
-        var apiService = new ApiService(httpClient);
+        var apiService = CreateApiService(httpClient);
         var request = new HttpRequestModel
         {
             Auth =
@@ -53,7 +73,7 @@ public class ApiServiceTests
     {
         // Arrange
         var httpClient = new HttpClient();
-        var apiService = new ApiService(httpClient);
+        var apiService = CreateApiService(httpClient);
         var request = new HttpRequestModel { Auth = { OAuth2TokenUrl = "" } };
 
         // Act
@@ -80,7 +100,7 @@ public class ApiServiceTests
             });
 
         var httpClient = new HttpClient(mockHandler.Object);
-        var apiService = new ApiService(httpClient);
+        var apiService = CreateApiService(httpClient);
         var request = new HttpRequestModel
         {
             Auth =
@@ -96,5 +116,40 @@ public class ApiServiceTests
 
         // Assert
         await act.Should().ThrowAsync<HttpRequestException>().WithMessage("*Failed to get token*");
+    }
+
+    [Theory]
+    [InlineData(true, AuthType.None, "Default")]
+    [InlineData(false, AuthType.None, "NoSslValidation")]
+    [InlineData(false, AuthType.Basic, "Default")]
+    [InlineData(true, AuthType.Basic, "Default")]
+    public async Task SendRequestAsync_ShouldUseCorrectHttpClient_BasedOnSettingsAndAuth(bool validateSsl, AuthType authType, string expectedClientName)
+    {
+        // Arrange
+        _mockSettingsService.Setup(s => s.GetSettingsAsync()).ReturnsAsync(new UserSettings { ValidateSslCertificates = validateSsl });
+        
+        var mockHandler = new Mock<HttpMessageHandler>();
+        mockHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage { StatusCode = HttpStatusCode.OK, Content = new StringContent("") });
+
+        var httpClient = new HttpClient(mockHandler.Object);
+        _mockHttpClientFactory.Setup(f => f.CreateClient(expectedClientName)).Returns(httpClient);
+        
+        var apiService = new ApiService(_mockHttpClientFactory.Object, _mockSettingsService.Object);
+        var request = new HttpRequestModel 
+        { 
+            Url = "https://example.com",
+            Auth = { AuthType = authType } 
+        };
+
+        // Act
+        await apiService.SendRequestAsync(request);
+
+        // Assert
+        _mockHttpClientFactory.Verify(f => f.CreateClient(expectedClientName), Times.Once);
     }
 }

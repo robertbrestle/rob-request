@@ -20,7 +20,7 @@ public class SettingsService
 
     public UserSettings Settings => _settings;
 
-    public async Task<UserSettings> GetSettingsAsync()
+    public virtual async Task<UserSettings> GetSettingsAsync()
     {
         var userId = _currentUser.UserId;
         if (string.IsNullOrEmpty(userId) || !_currentUser.IsAuthenticated)

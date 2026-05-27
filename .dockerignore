@@ -1,0 +1,12 @@
+**/*.sln
+**/*.user
+**/*.suo
+**/bin
+**/obj
+**/.idea
+**/.git
+**/.vscode
+**/docker-compose*
+**/*.md
+**/azure-pipelines.yml
+**/global.json

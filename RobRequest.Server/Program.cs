@@ -40,7 +40,13 @@ builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
 
 // Register services with Scoped lifetime (one instance per SignalR circuit)
 builder.Services.AddScoped<CurrentUserService>();
-builder.Services.AddHttpClient<ApiService>();
+builder.Services.AddHttpClient("Default");
+builder.Services.AddHttpClient("NoSslValidation")
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+    {
+        ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
+    });
+builder.Services.AddScoped<ApiService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<HistoryService>();

@@ -210,6 +210,6 @@ public partial class EnvironmentService
         return !string.IsNullOrEmpty(input) && VariablePattern().IsMatch(input);
     }
 
-    [GeneratedRegex(@"\{\{(\w+)\}\}")]
+    [GeneratedRegex(@"\{\{([\w\-]+)\}\}")]
     private static partial Regex VariablePattern();
 }

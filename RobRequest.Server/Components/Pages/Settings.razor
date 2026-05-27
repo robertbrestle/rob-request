@@ -9,7 +9,7 @@
 <PageTitle>Settings - RobRequest</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4">
-    <MudText Typo="Typo.h4" GutterBottom="true">Settings</MudText>
+    <MudText Typo="Typo.h4" GutterBottom="true">Your Settings</MudText>
 
     <MudPaper Elevation="1" Class="pa-4 mb-4">
         <MudText Typo="Typo.h6" GutterBottom="true">General</MudText>
@@ -43,6 +43,11 @@
             <MudSwitch T="bool"
                        @bind-Value="_settings.FollowRedirects"
                        Label="Follow Redirects"
+                       Color="Color.Primary"/>
+
+            <MudSwitch T="bool"
+                       @bind-Value="_settings.ValidateSslCertificates"
+                       Label="Validate SSL Certificates"
                        Color="Color.Primary"/>
 
             <MudButton Variant="Variant.Filled"

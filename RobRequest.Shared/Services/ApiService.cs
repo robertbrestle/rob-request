@@ -5,8 +5,13 @@ using RobRequest.Shared.Models;
 
 namespace RobRequest.Shared.Services;
 
-public class ApiService(HttpClient httpClient)
+public class ApiService(IHttpClientFactory httpClientFactory, SettingsService settingsService)
 {
+    private HttpClient GetHttpClient(bool validateSsl)
+    {
+        return httpClientFactory.CreateClient(validateSsl ? "Default" : "NoSslValidation");
+    }
+
     public async Task<HttpResponseModel> SendRequestAsync(HttpRequestModel request, CancellationToken ct = default)
     {
         var response = new HttpResponseModel();
@@ -26,6 +31,14 @@ public class ApiService(HttpClient httpClient)
                 response.ErrorMessage = "Invalid URL format.";
                 return response;
             }
+
+            var settings = await settingsService.GetSettingsAsync();
+            var validateSsl = settings.ValidateSslCertificates;
+
+            // Should not affect authenticated API requests
+            var isAuthenticated = request.Auth.AuthType != AuthType.None && request.Auth.AuthType != AuthType.Inherit;
+
+            var httpClient = GetHttpClient(validateSsl || isAuthenticated);
 
             using var httpRequest = new HttpRequestMessage(new HttpMethod(request.Method), uri);
 
@@ -66,11 +79,15 @@ public class ApiService(HttpClient httpClient)
 
             // Read content type
             response.ContentType = httpResponse.Content.Headers.ContentType?.MediaType ?? string.Empty;
-
+            
             // Read body
             var bodyBytes = await httpResponse.Content.ReadAsByteArrayAsync(cts.Token);
             response.ResponseSizeBytes = bodyBytes.Length;
             response.Body = Encoding.UTF8.GetString(bodyBytes);
+            
+            // TEST
+            //response.Body = await httpResponse.Content.ReadAsStringAsync(cts.Token);
+            //response.ResponseSizeBytes = Encoding.UTF8.GetByteCount(response.Body);
         }
         catch (TaskCanceledException) when (!ct.IsCancellationRequested)
         {
@@ -129,10 +146,12 @@ public class ApiService(HttpClient httpClient)
                         Encoding.UTF8.GetBytes($"{request.Auth.AuthUsername}:{request.Auth.AuthPassword}"));
                     httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Basic", credentials);
                 }
+
                 break;
 
             case AuthType.ApiKey:
-                if (!string.IsNullOrWhiteSpace(request.Auth.ApiKeyName) && !string.IsNullOrWhiteSpace(request.Auth.ApiKeyValue))
+                if (!string.IsNullOrWhiteSpace(request.Auth.ApiKeyName) &&
+                    !string.IsNullOrWhiteSpace(request.Auth.ApiKeyValue))
                 {
                     if (request.Auth.ApiKeyLocation == ApiKeyLocation.Header)
                     {
@@ -140,6 +159,7 @@ public class ApiService(HttpClient httpClient)
                     }
                     // Query param is handled in GetFullUrl() of HttpRequestModel
                 }
+
                 break;
         }
     }
@@ -152,13 +172,15 @@ public class ApiService(HttpClient httpClient)
         if (request.Method is "GET" or "HEAD")
             return;
 
-        if (request.BodyType == "form-data" && request.FormData.Any(f => f.Enabled && !string.IsNullOrWhiteSpace(f.Key)))
+        if (request.BodyType == "form-data" &&
+            request.FormData.Any(f => f.Enabled && !string.IsNullOrWhiteSpace(f.Key)))
         {
             var content = new MultipartFormDataContent();
             foreach (var item in request.FormData.Where(f => f.Enabled && !string.IsNullOrWhiteSpace(f.Key)))
             {
                 content.Add(new StringContent(item.Value), item.Key);
             }
+
             httpRequest.Content = content;
         }
         else
@@ -194,6 +216,7 @@ public class ApiService(HttpClient httpClient)
         }
 
         using var content = new FormUrlEncodedContent(data);
+        var httpClient = GetHttpClient(true); // Token requests should usually validate SSL
         using var response = await httpClient.PostAsync(request.Auth.OAuth2TokenUrl, content, ct);
 
         if (!response.IsSuccessStatusCode)
@@ -204,7 +227,7 @@ public class ApiService(HttpClient httpClient)
 
         var json = await response.Content.ReadAsStringAsync(ct);
         using var doc = System.Text.Json.JsonDocument.Parse(json);
-        
+
         string? accessToken = null;
         int? expiresIn = null;
 
@@ -213,7 +236,8 @@ public class ApiService(HttpClient httpClient)
             accessToken = tokenProp.GetString();
         }
 
-        if (doc.RootElement.TryGetProperty("expires_in", out var expiresProp) && expiresProp.TryGetInt32(out var expiresVal))
+        if (doc.RootElement.TryGetProperty("expires_in", out var expiresProp) &&
+            expiresProp.TryGetInt32(out var expiresVal))
         {
             expiresIn = expiresVal;
         }
@@ -228,4 +252,3 @@ public class ApiService(HttpClient httpClient)
 }
 
 public record OAuth2TokenResult(string AccessToken, int? ExpiresIn);
-
