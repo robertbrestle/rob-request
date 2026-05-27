@@ -81,13 +81,8 @@ public class ApiService(IHttpClientFactory httpClientFactory, SettingsService se
             response.ContentType = httpResponse.Content.Headers.ContentType?.MediaType ?? string.Empty;
             
             // Read body
-            var bodyBytes = await httpResponse.Content.ReadAsByteArrayAsync(cts.Token);
-            response.ResponseSizeBytes = bodyBytes.Length;
-            response.Body = Encoding.UTF8.GetString(bodyBytes);
-            
-            // TEST
-            //response.Body = await httpResponse.Content.ReadAsStringAsync(cts.Token);
-            //response.ResponseSizeBytes = Encoding.UTF8.GetByteCount(response.Body);
+            response.Body = await httpResponse.Content.ReadAsStringAsync(cts.Token);
+            response.ResponseSizeBytes = Encoding.UTF8.GetByteCount(response.Body);
         }
         catch (TaskCanceledException) when (!ct.IsCancellationRequested)
         {

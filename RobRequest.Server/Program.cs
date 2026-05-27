@@ -1,3 +1,4 @@
+using System.Net;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -40,11 +41,16 @@ builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
 
 // Register services with Scoped lifetime (one instance per SignalR circuit)
 builder.Services.AddScoped<CurrentUserService>();
-builder.Services.AddHttpClient("Default");
+builder.Services.AddHttpClient("Default")
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+    {
+        AutomaticDecompression = DecompressionMethods.All
+    });
 builder.Services.AddHttpClient("NoSslValidation")
     .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
     {
-        ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
+        ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true,
+        AutomaticDecompression = DecompressionMethods.All
     });
 builder.Services.AddScoped<ApiService>();
 builder.Services.AddScoped<AuthService>();

@@ -1,4 +1,6 @@
 using System.Net;
+using System.Net.Http.Headers;
+using System.Text;
 using Moq.Protected;
 
 namespace RobRequest.Tests.Unit.Services;
@@ -123,11 +125,13 @@ public class ApiServiceTests
     [InlineData(false, AuthType.None, "NoSslValidation")]
     [InlineData(false, AuthType.Basic, "Default")]
     [InlineData(true, AuthType.Basic, "Default")]
-    public async Task SendRequestAsync_ShouldUseCorrectHttpClient_BasedOnSettingsAndAuth(bool validateSsl, AuthType authType, string expectedClientName)
+    public async Task SendRequestAsync_ShouldUseCorrectHttpClient_BasedOnSettingsAndAuth(bool validateSsl,
+        AuthType authType, string expectedClientName)
     {
         // Arrange
-        _mockSettingsService.Setup(s => s.GetSettingsAsync()).ReturnsAsync(new UserSettings { ValidateSslCertificates = validateSsl });
-        
+        _mockSettingsService.Setup(s => s.GetSettingsAsync())
+            .ReturnsAsync(new UserSettings { ValidateSslCertificates = validateSsl });
+
         var mockHandler = new Mock<HttpMessageHandler>();
         mockHandler.Protected()
             .Setup<Task<HttpResponseMessage>>(
@@ -138,12 +142,12 @@ public class ApiServiceTests
 
         var httpClient = new HttpClient(mockHandler.Object);
         _mockHttpClientFactory.Setup(f => f.CreateClient(expectedClientName)).Returns(httpClient);
-        
+
         var apiService = new ApiService(_mockHttpClientFactory.Object, _mockSettingsService.Object);
-        var request = new HttpRequestModel 
-        { 
+        var request = new HttpRequestModel
+        {
             Url = "https://example.com",
-            Auth = { AuthType = authType } 
+            Auth = { AuthType = authType }
         };
 
         // Act
@@ -151,5 +155,71 @@ public class ApiServiceTests
 
         // Assert
         _mockHttpClientFactory.Verify(f => f.CreateClient(expectedClientName), Times.Once);
+    }
+
+    [Fact]
+    public async Task SendRequestAsync_ShouldHandleGzipContent()
+    {
+        // Arrange
+        var originalContent = "<html><body>Hello Gzip!</body></html>";
+
+        var mockHandler = new Mock<HttpMessageHandler>();
+        mockHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.OK,
+                Content = new StringContent(originalContent, Encoding.UTF8, "text/html")
+            });
+
+        var httpClient = new HttpClient(mockHandler.Object);
+        var apiService = CreateApiService(httpClient);
+        var request = new HttpRequestModel { Url = "https://example.com" };
+
+        // Act
+        var response = await apiService.SendRequestAsync(request);
+
+        // Assert
+        response.Body.Should().Be(originalContent);
+    }
+
+    [Fact]
+    public async Task SendRequestAsync_ShouldHandleIso88591Encoding()
+    {
+        // Arrange
+        var originalContent = "<html><body>Hello ISO-8859-1: \u00e9\u00e0\u00f4</body></html>"; // éàô
+        var encoding = Encoding.GetEncoding("ISO-8859-1");
+        var contentBytes = encoding.GetBytes(originalContent);
+
+        var mockHandler = new Mock<HttpMessageHandler>();
+        mockHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.OK,
+                Content = new ByteArrayContent(contentBytes)
+                {
+                    Headers =
+                    {
+                        ContentType = new MediaTypeHeaderValue("text/html") { CharSet = "iso-8859-1" }
+                    }
+                }
+            });
+
+        var httpClient = new HttpClient(mockHandler.Object);
+        var apiService = CreateApiService(httpClient);
+        var request = new HttpRequestModel { Url = "https://example.com" };
+
+        // Act
+        var response = await apiService.SendRequestAsync(request);
+
+        // Assert
+        response.Body.Should().Be(originalContent);
     }
 }
