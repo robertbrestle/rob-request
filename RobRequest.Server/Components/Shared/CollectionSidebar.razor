@@ -3,7 +3,7 @@
 @implements IDisposable
 
 <MudStack Spacing="2" Class="pa-2">
-    <!-- Search -->
+    @* Search *@
     <MudTextField T="string"
                   @bind-Value="_searchQuery"
                   Placeholder="Search collections..."
@@ -16,7 +16,7 @@
                   DebounceInterval="300"
                   OnDebounceIntervalElapsed="SearchCollections"/>
 
-    <!-- Header -->
+    @* Header *@
     <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-1">
         <MudSpacer/>
         <MudIconButton Icon="@Icons.Material.Filled.CreateNewFolder"
