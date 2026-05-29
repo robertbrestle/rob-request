@@ -8,9 +8,12 @@
 <PageTitle>RobRequest - Collections</PageTitle>
 
 <MudGrid Spacing="2">
-    <!-- Left: Collection Tree -->
+    @* Left: Collection Tree *@
     <MudItem xs="12" md="3">
-        <MudPaper Elevation="1" Class="pa-3" Style="min-height: calc(100vh - 120px);">
+        
+        <SimpleNav/>
+        
+        <MudPaper Elevation="1" Class="pa-3 h-100">
             <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-3">
                 <MudText Typo="Typo.h6">Collections</MudText>
                 <MudSpacer/>
@@ -51,12 +54,12 @@
         </MudPaper>
     </MudItem>
 
-    <!-- Right: Detail Panel -->
+    @* Right: Detail Panel *@
     <MudItem xs="12" md="9">
         <MudPaper Elevation="1" Class="pa-3" Style="min-height: calc(100vh - 120px);">
             @if (_selectedCollection != null)
             {
-                <!-- Collection Detail View -->
+                @* Collection Detail View *@
                 <MudStack Spacing="3">
                     <MudStack Row="true" AlignItems="AlignItems.Center">
                         <MudIcon Icon="@Icons.Material.Filled.Folder" Color="Color.Warning" Size="Size.Large"/>
@@ -70,7 +73,7 @@
 
                     <MudDivider/>
 
-                    <!-- Editable Fields -->
+                    @* Editable Fields *@
                     <MudTextField T="string"
                                   Value="_selectedCollection.Name"
                                   ValueChanged="OnNameChanged"
@@ -92,7 +95,7 @@
                                   Immediate="true"
                                   DebounceInterval="500"/>
 
-                    <!-- Parent Collection -->
+                    @* Parent Collection *@
                     <MudSelect T="string"
                                Value="_selectedCollection.ParentId"
                                ValueChanged="OnParentChanged"
@@ -109,7 +112,7 @@
 
                     <MudDivider/>
 
-                    <!-- Requests in this Collection -->
+                    @* Requests in this Collection *@
                     <MudStack Row="true" AlignItems="AlignItems.Center">
                         <MudText Typo="Typo.h6">Requests</MudText>
                         <MudChip T="string" Size="Size.Small" Color="Color.Primary">
@@ -175,7 +178,7 @@
                         </MudTable>
                     }
 
-                    <!-- Sub-collections -->
+                    @* Sub-collections *@
                     @if (_selectedCollection.Children.Count > 0)
                     {
                         <MudDivider Class="my-2"/>
@@ -207,7 +210,7 @@
                         </MudSimpleTable>
                     }
 
-                    <!-- Metadata -->
+                    @* Metadata *@
                     <MudDivider Class="my-2"/>
                     <MudStack Row="true" Spacing="4">
                         <MudText Typo="Typo.caption" Color="Color.Default">
@@ -221,7 +224,7 @@
             }
             else
             {
-                <!-- No selection -->
+                @* No selection *@
                 <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center"
                           Style="min-height: calc(100vh - 160px);">
                     <MudIcon Icon="@Icons.Material.Filled.FolderOpen" Size="Size.Large"

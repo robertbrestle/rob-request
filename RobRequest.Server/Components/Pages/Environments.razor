@@ -7,9 +7,12 @@
 <PageTitle>RobRequest - Environments</PageTitle>
 
 <MudGrid Spacing="2">
-    <!-- Left: Environment List -->
+    @* Left: Environment List *@
     <MudItem xs="12" md="3">
-        <MudPaper Elevation="1" Class="pa-3" Style="min-height: calc(100vh - 120px);">
+
+        <SimpleNav/>
+
+        <MudPaper Elevation="1" Class="pa-3 h-100">
             <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-3">
                 <MudText Typo="Typo.h6">Environments</MudText>
                 <MudSpacer/>
@@ -84,7 +87,7 @@
         </MudPaper>
     </MudItem>
 
-    <!-- Right: Detail Panel -->
+    @* Right: Detail Panel *@
     <MudItem xs="12" md="9">
         <MudPaper Elevation="1" Class="pa-3" Style="min-height: calc(100vh - 120px);">
             @if (_selectedEnvironment != null)
@@ -116,10 +119,14 @@
 
                     <MudDivider/>
 
-                    <!-- Editable Fields -->
+                    @* Editable Fields *@
                     <MudTextField T="string"
                                   Value="_selectedEnvironment.Name"
-                                  ValueChanged="@(async v => { _selectedEnvironment.Name = v; await SaveAsync(); })"
+                                  ValueChanged="@(async v =>
+                                                {
+                                                    _selectedEnvironment.Name = v;
+                                                    await SaveAsync();
+                                                })"
                                   Label="Environment Name"
                                   Variant="Variant.Outlined"
                                   Margin="Margin.Dense"
@@ -128,7 +135,11 @@
 
                     <MudTextField T="string"
                                   Value="_selectedEnvironment.Description"
-                                  ValueChanged="@(async v => { _selectedEnvironment.Description = v; await SaveAsync(); })"
+                                  ValueChanged="@(async v =>
+                                                {
+                                                    _selectedEnvironment.Description = v;
+                                                    await SaveAsync();
+                                                })"
                                   Label="Description"
                                   Variant="Variant.Outlined"
                                   Margin="Margin.Dense"
@@ -175,13 +186,21 @@
                                                 <td>
                                                     <MudCheckBox T="bool"
                                                                  Value="variable.Enabled"
-                                                                 ValueChanged="@(async v => { variable.Enabled = v; await SaveAsync(); })"
+                                                                 ValueChanged="@(async v =>
+                                                                               {
+                                                                                   variable.Enabled = v;
+                                                                                   await SaveAsync();
+                                                                               })"
                                                                  Size="Size.Small" Dense="true"/>
                                                 </td>
                                                 <td>
                                                     <MudTextField T="string"
                                                                   Value="variable.Key"
-                                                                  ValueChanged="@(async v => { variable.Key = v; await SaveAsync(); })"
+                                                                  ValueChanged="@(async v =>
+                                                                                {
+                                                                                    variable.Key = v;
+                                                                                    await SaveAsync();
+                                                                                })"
                                                                   Variant="Variant.Text"
                                                                   Margin="Margin.Dense"
                                                                   Placeholder="variable_name"
@@ -191,7 +210,11 @@
                                                 <td>
                                                     <MudTextField T="string"
                                                                   Value="variable.Value"
-                                                                  ValueChanged="@(async v => { variable.Value = v; await SaveAsync(); })"
+                                                                  ValueChanged="@(async v =>
+                                                                                {
+                                                                                    variable.Value = v;
+                                                                                    await SaveAsync();
+                                                                                })"
                                                                   Variant="Variant.Text"
                                                                   Margin="Margin.Dense"
                                                                   Placeholder="value"
@@ -202,7 +225,11 @@
                                                 <td>
                                                     <MudCheckBox T="bool"
                                                                  Value="variable.IsSecret"
-                                                                 ValueChanged="@(async v => { variable.IsSecret = v; await SaveAsync(); })"
+                                                                 ValueChanged="@(async v =>
+                                                                               {
+                                                                                   variable.IsSecret = v;
+                                                                                   await SaveAsync();
+                                                                               })"
                                                                  Size="Size.Small" Dense="true"/>
                                                 </td>
                                                 <td>
@@ -230,7 +257,11 @@
                             <MudStack Spacing="3">
                                 <MudSelect T="AuthType"
                                            Value="_selectedEnvironment.Auth.AuthType"
-                                           ValueChanged="@(async v => { _selectedEnvironment.Auth.AuthType = v; await SaveAsync(); })"
+                                           ValueChanged="@(async v =>
+                                                         {
+                                                             _selectedEnvironment.Auth.AuthType = v;
+                                                             await SaveAsync();
+                                                         })"
                                            Label="Auth Type" Variant="Variant.Outlined"
                                            Margin="Margin.Dense">
                                     <MudSelectItem Value="AuthType.None">No Auth</MudSelectItem>
@@ -392,7 +423,7 @@
                         </MudTabPanel>
                     </MudTabs>
 
-                    <!-- Metadata -->
+                    @* Metadata *@
                     <MudDivider Class="my-2"/>
                     <MudStack Row="true" Spacing="4">
                         <MudText Typo="Typo.caption" Color="Color.Default">
@@ -406,7 +437,7 @@
             }
             else
             {
-                <!-- No selection -->
+                @* No selection *@
                 <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center"
                           Style="min-height: calc(100vh - 160px);">
                     <MudIcon Icon="@Icons.Material.Filled.Dns" Size="Size.Large"
