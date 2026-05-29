@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Authorization;
 using RobRequest.Shared.Services;
 
 namespace RobRequest.Server.Components.Layout.Bases;
@@ -55,17 +56,39 @@ public class MainLayoutBase : LayoutComponentBase, IDisposable
     
     #region Overrides
     
+    [CascadingParameter]
+    protected Task<AuthenticationState>? AuthStateTask { get; set; }
+
     protected override async Task OnInitializedAsync()
     {
+        if (AuthStateTask != null)
+        {
+            var authState = await AuthStateTask;
+            var user = authState.User;
+
+            if (user.Identity?.IsAuthenticated == true)
+            {
+                var userId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                var username = user.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
+                var groupName = user.FindFirst("group")?.Value;
+                CurrentUser.SetUser(userId, username, groupName);
+            }
+        }
+
+        CurrentUser.OnUserChanged += OnUserChanged;
         var settings = await SettingsService.GetSettingsAsync();
         IsDarkMode = settings.DarkMode;
         SettingsService.OnSettingsChanged += OnSettingsChanged;
+    }
 
-        await Task.CompletedTask;
+    private void OnUserChanged()
+    {
+        OnSettingsChanged();
     }
 
     public void Dispose()
     {
+        CurrentUser.OnUserChanged -= OnUserChanged;
         SettingsService.OnSettingsChanged -= OnSettingsChanged;
     }
     

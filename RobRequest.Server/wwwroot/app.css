@@ -52,10 +52,6 @@ h1:focus {
     flex-grow: unset;
 }
 
-.environment-selector * {
-    color: white !important;
-}
-
 .floating-container {
     min-height: 100vh;
     margin-top: calc(var(--mud-appbar-height) * -1);

@@ -1,11 +1,16 @@
 @using System.Security.Claims
 @inject CurrentUserService CurrentUser
 
-<CascadingValue Value="CurrentUser">
-    @ChildContent
-</CascadingValue>
+@if (_initialized)
+{
+    <CascadingValue Value="CurrentUser">
+        @ChildContent
+    </CascadingValue>
+}
 
 @code {
+    private bool _initialized;
+
     [CascadingParameter]
     private Task<AuthenticationState>? AuthStateTask { get; set; }
 
@@ -21,10 +26,12 @@
 
             if (user.Identity?.IsAuthenticated == true)
             {
-                CurrentUser.UserId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                CurrentUser.Username = user.FindFirst(ClaimTypes.Name)?.Value;
-                CurrentUser.GroupName = user.FindFirst("group")?.Value;
+                var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                var username = user.FindFirst(ClaimTypes.Name)?.Value;
+                var groupName = user.FindFirst("group")?.Value;
+                CurrentUser.SetUser(userId, username, groupName);
             }
         }
+        _initialized = true;
     }
 }
