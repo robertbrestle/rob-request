@@ -30,7 +30,7 @@
             <!-- Headers Tab -->
             <MudTabPanel Text="Headers" BadgeData="@Response.Headers.Count.ToString()" BadgeColor="Color.Info">
                 <MudStack Spacing="2">
-                    <MudStack Row="true" Spacing="1" Class="mb-2">
+                    <MudStack Row="true" Spacing="1" Class="mb-2" AlignItems="AlignItems.Center">
                         <MudTextField T="string"
                                       @bind-Value="_headerSearch"
                                       Placeholder="Filter headers..."
@@ -41,12 +41,14 @@
                                       Style="max-width: 300px;"
                                       Immediate="true"/>
                         <MudSpacer/>
-                        <MudButton Size="Size.Small"
-                                   Variant="Variant.Outlined"
-                                   StartIcon="@Icons.Material.Filled.ContentCopy"
-                                   OnClick="CopyHeaders">
-                            Copy as JSON
-                        </MudButton>
+                        <div>
+                            <MudButton Size="Size.Small"
+                                       Variant="Variant.Outlined"
+                                       StartIcon="@Icons.Material.Filled.ContentCopy"
+                                       OnClick="CopyHeaders">
+                                Copy as JSON
+                            </MudButton>
+                        </div>
                     </MudStack>
 
                     <MudSimpleTable Dense="true" Hover="true" Striped="true" Elevation="0">
@@ -116,13 +118,13 @@
                                 }
                             </MudStack>
                         </MudStack>
-                        
+
                         <MonacoEditor Id="response-body-editor"
-                                    Value="@GetDisplayBody()"
-                                    Language="@(Response?.ContentType ?? string.Empty)"
-                                    ReadOnly="true"
-                                    IsDarkMode="Layout.IsDarkMode"
-                                    CssClass="response-body-editor"/>
+                                      Value="@GetDisplayBody()"
+                                      Language="@(Response?.ContentType ?? string.Empty)"
+                                      ReadOnly="true"
+                                      IsDarkMode="Layout.IsDarkMode"
+                                      CssClass="response-body-editor"/>
                     }
                     else
                     {
@@ -146,6 +148,7 @@
     private string _headerSearch = string.Empty;
     private string _headerSortField = "key";
     private bool _headerSortAsc = true;
+
     private bool IsJsonResponse()
     {
         if (Response == null) return false;

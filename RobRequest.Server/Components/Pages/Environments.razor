@@ -1,4 +1,6 @@
 @page "/environments"
+@using RobRequest.Server.Components.Shared.Environments
+@using RobRequest.Server.Components.Shared.Navigation
 @implements IDisposable
 @inject ApiService ApiService
 @inject ISnackbar Snackbar
@@ -6,22 +8,18 @@
 
 <PageTitle>RobRequest - Environments</PageTitle>
 
-<MudGrid Spacing="2">
-    @* Left: Environment List *@
-    <MudItem xs="12" md="3">
+<SectionContent SectionName="Drawer">
+    <MudStack Spacing="0">
+        <MudStack Row="true" AlignItems="AlignItems.Center" Class="px-2">
+            <MudText Typo="Typo.h6">Environments</MudText>
+            <MudSpacer/>
+            <MudIconButton Icon="@Icons.Material.Filled.Add"
+                           Color="Color.Primary"
+                           OnClick="CreateEnvironment"
+                           title="New environment"/>
+        </MudStack>
 
-        <SimpleNav/>
-
-        <MudPaper Elevation="1" Class="pa-3 h-100">
-            <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-3">
-                <MudText Typo="Typo.h6">Environments</MudText>
-                <MudSpacer/>
-                <MudIconButton Icon="@Icons.Material.Filled.Add"
-                               Color="Color.Primary"
-                               OnClick="CreateEnvironment"
-                               title="New environment"/>
-            </MudStack>
-
+        <MudStack Spacing="2" Class="pa-2">
             <MudTextField T="string"
                           @bind-Value="_searchQuery"
                           Placeholder="Search..."
@@ -33,63 +31,65 @@
                           Immediate="true"
                           DebounceInterval="300"
                           OnDebounceIntervalElapsed="SearchEnvironments"
-                          Class="mb-3"/>
+                          Class="mb-2"/>
+        </MudStack>
 
-            @if (_environments.Count == 0)
-            {
-                <MudText Typo="Typo.body2" Color="Color.Default" Align="Align.Center" Class="pa-4">
-                    No environments yet. Create one to get started.
-                </MudText>
-            }
-            else
-            {
-                <MudStack Spacing="0" Style="max-height: calc(100vh - 280px); overflow-y: auto;">
-                    @foreach (var env in _environments)
-                    {
-                        var isSelected = _selectedEnvironmentId == env.Id;
-                        var isActive = EnvironmentService.ActiveEnvironmentId == env.Id;
+        @if (_environments.Count == 0)
+        {
+            <MudText Typo="Typo.body2" Color="Color.Default" Align="Align.Center" Class="pa-4">
+                No environments yet. Create one to get started.
+            </MudText>
+        }
+        else
+        {
+            <MudStack Spacing="0" Style="max-height: calc(100vh - 280px); overflow-y: auto;">
+                @foreach (var env in _environments)
+                {
+                    var isSelected = _selectedEnvironmentId == env.Id;
+                    var isActive = EnvironmentService.ActiveEnvironmentId == env.Id;
 
-                        <MudStack Row="true" AlignItems="AlignItems.Center"
-                                  Class="@($"pr-1 pt-1 pb-1 {(isSelected ? "mud-theme-primary" : "")}")"
-                                  Style="padding-left: 8px; cursor: pointer; border-radius: 4px;"
-                                  @onclick="() => SelectEnvironment(env.Id)">
-                            <MudIcon Icon="@Icons.Material.Filled.Dns" Size="Size.Small"
-                                     Color="@(isActive ? Color.Success : Color.Default)"/>
-                            <MudText Typo="Typo.body2"
-                                     Style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">
-                                @env.Name
-                            </MudText>
-                            @if (isActive)
-                            {
-                                <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Outlined"
-                                         Style="@(GetChipStyle(isSelected))">
-                                    Active
-                                </MudChip>
-                            }
-                            @if (env.Variables.Count > 0)
-                            {
-                                <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined"
-                                         Style="@(GetChipStyle(isSelected))">
-                                    @env.Variables.Count
-                                </MudChip>
-                            }
-                            <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small" Dense="true"
-                                     AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
-                                <MudMenuItem Icon="@Icons.Material.Filled.Delete" IconColor="Color.Error"
-                                             OnClick="() => DeleteEnvironmentFromList(env)">
-                                    Delete
-                                </MudMenuItem>
-                            </MudMenu>
-                        </MudStack>
-                    }
-                </MudStack>
-            }
-        </MudPaper>
-    </MudItem>
+                    <MudStack Row="true" AlignItems="AlignItems.Center"
+                              Class="@($"pr-1 pt-1 pb-1 {(isSelected ? "mud-theme-primary" : "")}")"
+                              Style="padding-left: 8px; cursor: pointer; border-radius: 4px;"
+                              @onclick="() => SelectEnvironment(env.Id)">
+                        <MudIcon Icon="@Icons.Material.Filled.Dns" Size="Size.Small"
+                                 Color="@(isActive ? Color.Success : Color.Default)"/>
+                        <MudText Typo="Typo.body2"
+                                 Style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">
+                            @env.Name
+                        </MudText>
+                        @if (isActive)
+                        {
+                            <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Outlined"
+                                     Style="@(GetChipStyle(isSelected))">
+                                Active
+                            </MudChip>
+                        }
+                        @if (env.Variables.Count > 0)
+                        {
+                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined"
+                                     Style="@(GetChipStyle(isSelected))">
+                                @env.Variables.Count
+                            </MudChip>
+                        }
+                        <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small" Dense="true"
+                                 AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                            <MudMenuItem Icon="@Icons.Material.Filled.Delete" IconColor="Color.Error"
+                                         OnClick="() => DeleteEnvironmentFromList(env)">
+                                Delete
+                            </MudMenuItem>
+                        </MudMenu>
+                    </MudStack>
+                }
+            </MudStack>
+        }
+    </MudStack>
+</SectionContent>
 
+<MudGrid Spacing="2">
     @* Right: Detail Panel *@
-    <MudItem xs="12" md="9">
-        <MudPaper Elevation="1" Class="pa-3" Style="min-height: calc(100vh - 120px);">
+    <MudItem xs="12">
+        <MudPaper Elevation="1" Class="pa-4" Style="min-height: 100%;">
             @if (_selectedEnvironment != null)
             {
                 <MudStack Spacing="3">
@@ -439,7 +439,7 @@
             {
                 @* No selection *@
                 <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center"
-                          Style="min-height: calc(100vh - 160px);">
+                          Class="pa-8">
                     <MudIcon Icon="@Icons.Material.Filled.Dns" Size="Size.Large"
                              Color="Color.Default" Style="font-size: 64px; opacity: 0.3;"/>
                     <MudText Typo="Typo.h6" Color="Color.Default" Align="Align.Center">
@@ -453,10 +453,6 @@
         </MudPaper>
     </MudItem>
 </MudGrid>
-
-<SectionContent SectionName="EnvironmentSelector">
-    <EnvironmentSelector/>
-</SectionContent>
 
 @code {
 
@@ -543,7 +539,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await Layout.DrawerEnabledToggleAsync(false);
+        await Layout.DrawerEnabledToggleAsync(true);
         EnvironmentService.OnEnvironmentChanged += OnEnvironmentsChanged;
         _uiUpdateTimer = new System.Threading.Timer(_ => { InvokeAsync(StateHasChanged); }, null, 1000, 1000);
         await LoadEnvironments();
@@ -553,6 +549,7 @@
         {
             var active = _environments.FirstOrDefault(x => x.Id == EnvironmentService.ActiveEnvironmentId);
             await SelectEnvironment(active?.Id ?? _environments[0].Id);
+            SetActiveEnvironment();
         }
     }
 

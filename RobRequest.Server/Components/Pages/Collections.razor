@@ -3,26 +3,23 @@
 @inject CollectionService CollectionService
 @inject IDialogService DialogService
 @inject NavigationManager NavigationManager
+@using RobRequest.Server.Components.Shared.Collections
 @implements IDisposable
 
 <PageTitle>RobRequest - Collections</PageTitle>
 
-<MudGrid Spacing="2">
-    @* Left: Collection Tree *@
-    <MudItem xs="12" md="3">
-        
-        <SimpleNav/>
-        
-        <MudPaper Elevation="1" Class="pa-3 h-100">
-            <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-3">
-                <MudText Typo="Typo.h6">Collections</MudText>
-                <MudSpacer/>
-                <MudIconButton Icon="@Icons.Material.Filled.CreateNewFolder"
-                               Color="Color.Primary"
-                               OnClick="CreateRootCollection"
-                               title="New collection"/>
-            </MudStack>
+<SectionContent SectionName="Drawer">
+    <MudStack Spacing="0">
+        <MudStack Row="true" AlignItems="AlignItems.Center" Class="px-2">
+            <MudText Typo="Typo.h6">Collections</MudText>
+            <MudSpacer/>
+            <MudIconButton Icon="@Icons.Material.Filled.CreateNewFolder"
+                           Color="Color.Primary"
+                           OnClick="CreateRootCollection"
+                           title="New collection"/>
+        </MudStack>
 
+        <MudStack Spacing="2" Class="pa-2">
             <MudTextField T="string"
                           @bind-Value="_searchQuery"
                           Placeholder="Search..."
@@ -34,29 +31,31 @@
                           Immediate="true"
                           DebounceInterval="300"
                           OnDebounceIntervalElapsed="SearchCollections"
-                          Class="mb-3"/>
+                          Class="mb-2"/>
+        </MudStack>
 
-            @if (_collections.Count == 0)
-            {
-                <MudText Typo="Typo.body2" Color="Color.Default" Align="Align.Center" Class="pa-4">
-                    No collections yet. Create one to get started.
-                </MudText>
-            }
-            else
-            {
-                <MudStack Spacing="0" Style="max-height: calc(100vh - 280px); overflow-y: auto;">
-                    @foreach (var collection in _collections)
-                    {
-                        @TreeNode(collection, 0)
-                    }
-                </MudStack>
-            }
-        </MudPaper>
-    </MudItem>
+        @if (_collections.Count == 0)
+        {
+            <MudText Typo="Typo.body2" Color="Color.Default" Align="Align.Center" Class="pa-4">
+                No collections yet. Create one to get started.
+            </MudText>
+        }
+        else
+        {
+            <MudStack Spacing="0" Class="pb-2" Style="max-height: 100vh; overflow-y: auto;">
+                @foreach (var collection in _collections)
+                {
+                    @TreeNode(collection, 0)
+                }
+            </MudStack>
+        }
+    </MudStack>
+</SectionContent>
 
+<MudGrid Spacing="2">
     @* Right: Detail Panel *@
-    <MudItem xs="12" md="9">
-        <MudPaper Elevation="1" Class="pa-3" Style="min-height: calc(100vh - 120px);">
+    <MudItem xs="12">
+        <MudPaper Elevation="1" Class="pa-4" Style="min-height: 100%;">
             @if (_selectedCollection != null)
             {
                 @* Collection Detail View *@
@@ -186,26 +185,27 @@
                         <MudSimpleTable Dense="true" Hover="true" Elevation="0"
                                         Style="border: 1px solid var(--mud-palette-lines-default); border-radius: 4px;">
                             <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Requests</th>
-                                    <th>Created</th>
-                                </tr>
+                            <tr>
+                                <th>Name</th>
+                                <th>Requests</th>
+                                <th>Created</th>
+                            </tr>
                             </thead>
                             <tbody>
-                                @foreach (var child in _selectedCollection.Children)
-                                {
-                                    <tr style="cursor: pointer;" @onclick="() => SelectCollection(child.Id)">
-                                        <td>
-                                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                                                <MudIcon Icon="@Icons.Material.Filled.Folder" Size="Size.Small" Color="Color.Warning"/>
-                                                <MudText>@child.Name</MudText>
-                                            </MudStack>
-                                        </td>
-                                        <td>@child.Requests.Count</td>
-                                        <td>@child.CreatedAt.ToString("yyyy-MM-dd")</td>
-                                    </tr>
-                                }
+                            @foreach (var child in _selectedCollection.Children)
+                            {
+                                <tr style="cursor: pointer;" @onclick="() => SelectCollection(child.Id)">
+                                    <td>
+                                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                            <MudIcon Icon="@Icons.Material.Filled.Folder" Size="Size.Small"
+                                                     Color="Color.Warning"/>
+                                            <MudText>@child.Name</MudText>
+                                        </MudStack>
+                                    </td>
+                                    <td>@child.Requests.Count</td>
+                                    <td>@child.CreatedAt.ToString("yyyy-MM-dd")</td>
+                                </tr>
+                            }
                             </tbody>
                         </MudSimpleTable>
                     }
@@ -226,7 +226,7 @@
             {
                 @* No selection *@
                 <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center"
-                          Style="min-height: calc(100vh - 160px);">
+                          Class="pa-8">
                     <MudIcon Icon="@Icons.Material.Filled.FolderOpen" Size="Size.Large"
                              Color="Color.Default" Style="font-size: 64px; opacity: 0.3;"/>
                     <MudText Typo="Typo.h6" Color="Color.Default" Align="Align.Center">
@@ -241,12 +241,8 @@
     </MudItem>
 </MudGrid>
 
-<SectionContent SectionName="EnvironmentSelector">
-    <EnvironmentSelector/>
-</SectionContent>
-
 @code {
-    
+
     [CascadingParameter] public required MainLayout Layout { get; set; }
 
     private List<CollectionModel> _collections = new();
@@ -259,7 +255,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await Layout.DrawerEnabledToggleAsync(false);
+        await Layout.DrawerEnabledToggleAsync(true);
         CollectionService.OnCollectionsChanged += OnCollectionsChanged;
         await LoadCollections();
     }
@@ -271,6 +267,7 @@
         {
             await LoadSelectedCollection();
         }
+
         await InvokeAsync(StateHasChanged);
     }
 
@@ -450,15 +447,16 @@
                   @onclick="() => SelectCollection(collection.Id)">
             @if (hasChildren)
             {
-                <MudIconButton Icon="@(isExpanded ? Icons.Material.Filled.ExpandMore : Icons.Material.Filled.ChevronRight)"
-                               Size="Size.Small"
-                               OnClick="() => ToggleExpanded(collection.Id)"
-                               ClickPropagation="false"/>
+                <MudIconButton
+                    Icon="@(isExpanded ? Icons.Material.Filled.ExpandMore : Icons.Material.Filled.ChevronRight)"
+                    Size="Size.Small"
+                    OnClick="() => ToggleExpanded(collection.Id)"
+                    ClickPropagation="false"/>
             }
             else
             {
                 <MudIconButton Icon="@Icons.Material.Filled.ChevronRight" Size="Size.Small"
-                         Style="visibility: hidden;"/>
+                               Style="visibility: hidden;"/>
             }
             <MudIcon Icon="@(isExpanded ? Icons.Material.Filled.FolderOpen : Icons.Material.Filled.Folder)"
                      Size="Size.Small" Color="Color.Warning"/>
@@ -468,7 +466,8 @@
             </MudText>
             @if (collection.Requests.Count > 0)
             {
-                <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Style="@(isSelected ? "color:white;" : "")">
+                <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined"
+                         Style="@(isSelected ? "color:white;" : "")">
                     @collection.Requests.Count
                 </MudChip>
             }
@@ -509,6 +508,7 @@
                 _selectedCollection = null;
                 _selectedCollectionRequests = new();
             }
+
             await CollectionService.DeleteCollectionAsync(collection.Id);
             await LoadCollections();
         }

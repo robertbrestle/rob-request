@@ -19,13 +19,6 @@
                 </MudAlert>
             }
 
-            @if (!string.IsNullOrEmpty(_clientError))
-            {
-                <MudAlert Severity="Severity.Warning" Dense="true" Class="w-100">
-                    @_clientError
-                </MudAlert>
-            }
-
             <form method="post" action="/api/auth/register" id="registerForm" style="width: 100%;">
                 <MudStack Spacing="3">
                     <MudTextField T="string"
@@ -71,7 +64,6 @@
     private string _password = string.Empty;
     private string _confirmPassword = string.Empty;
     private string? _error;
-    private string? _clientError;
 
     protected override void OnInitialized()
     {

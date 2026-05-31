@@ -262,10 +262,9 @@ To create a responsive, feature-rich API testing tool that leverages modern web 
 - **`UserManagement.razor`** (`/admin/users`): Admin user management page with pending approvals, user table, and create dialog
 - **`MinimalLayout.razor`**: Minimal layout for auth pages (MudThemeProvider + MudLayout only)
 - **`RedirectToLogin.razor`**: Redirects unauthenticated users to `/login`
-- **`UserInitializer.razor`**: Populates `CurrentUserService` from `CascadingAuthenticationState` on each render
+- **`MainLayout.razor`**: Provides core application layout, themes, and user initialization; populates `CurrentUserService` from `CascadingAuthenticationState` and provides cascading values for `CurrentUser` and itself
 - **`CreateUserDialog.razor`**: MudDialog for admin user creation
 - **`Routes.razor`**: Uses `AuthorizeRouteView` instead of `RouteView`; unauthenticated users see `RedirectToLogin`
-- **`MainLayout.razor`**: Wrapped in `UserInitializer`; AppBar menu includes admin-only "User Management" link and logout button showing current username
 
 ---
 
@@ -368,14 +367,14 @@ The solution uses a **three-project layout**. Because InteractiveServer runs all
 - **Auth Components**:
   - `MinimalLayout.razor`: Minimal layout for login/register pages
   - `RedirectToLogin.razor`: Redirects unauthenticated users to `/login`
-  - `UserInitializer.razor`: Populates `CurrentUserService` from authentication state
+  - `MainLayout.razor`: Provides core application layout, themes, and user initialization
   - `CreateUserDialog.razor`: Dialog for admin user creation
 
 #### Business Services (`RobRequest.Shared/Services/`)
 - **ApiService**: HTTP request execution and response handling (server-side `HttpClient`)
 - **AuthService**: User registration, login, and password management with `IPasswordHasher<User>`
 - **UserService**: Admin user management — CRUD, enable/disable, approve, reset password, change group
-- **CurrentUserService**: Scoped service holding the authenticated user's ID, username, and group name; populated from `CascadingAuthenticationState` by `UserInitializer`
+- **CurrentUserService**: Scoped service holding the authenticated user's ID, username, and group name; populated from `CascadingAuthenticationState` by `MainLayout`
 - **HistoryService**: Request history management and persistence (EF Core); filtered by `CurrentUserService.UserId`
 - **CollectionService**: Collection CRUD operations (EF Core); filtered by `CurrentUserService.UserId`
 - **EnvironmentService**: Environment CRUD, variable management, `{{variable}}` substitution, and active environment persistence (EF Core); filtered by `CurrentUserService.UserId`

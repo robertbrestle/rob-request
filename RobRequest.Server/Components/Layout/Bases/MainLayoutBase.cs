@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
+using MudBlazor;
 using RobRequest.Shared.Services;
 
 namespace RobRequest.Server.Components.Layout.Bases;
@@ -11,10 +12,24 @@ public class MainLayoutBase : LayoutComponentBase, IDisposable
 
     public bool IsDrawerOpen { get; protected set; } = true;
     public bool IsDarkMode { get; protected set; } = true;
+    protected bool IsInitialized { get; set; }
     protected bool IsDrawerEnabled { get; private set; }
 
+    public MudTheme Theme { get; } = new()
+    {
+        PaletteLight = new PaletteLight(),
+        PaletteDark = new PaletteDark(),
+        Typography = new Typography
+        {
+            Default = new DefaultTypography
+            {
+                FontFamily = new[] { "Inter", "Helvetica", "Arial", "sans-serif" }
+            }
+        }
+    };
+
     #region UI
-    
+
     protected void DrawerToggle()
     {
         IsDrawerOpen = !IsDrawerOpen;
@@ -33,11 +48,11 @@ public class MainLayoutBase : LayoutComponentBase, IDisposable
         await SettingsService.UpdateSettingsAsync(settings);
         await InvokeAsync(StateHasChanged);
     }
-    
+
     #endregion
-    
+
     #region Settings
-    
+
     private async void OnSettingsChanged()
     {
         try
@@ -51,13 +66,12 @@ public class MainLayoutBase : LayoutComponentBase, IDisposable
             // ignored
         }
     }
-    
+
     #endregion
-    
+
     #region Overrides
-    
-    [CascadingParameter]
-    protected Task<AuthenticationState>? AuthStateTask { get; set; }
+
+    [CascadingParameter] protected Task<AuthenticationState>? AuthStateTask { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -79,6 +93,7 @@ public class MainLayoutBase : LayoutComponentBase, IDisposable
         var settings = await SettingsService.GetSettingsAsync();
         IsDarkMode = settings.DarkMode;
         SettingsService.OnSettingsChanged += OnSettingsChanged;
+        IsInitialized = true;
     }
 
     private void OnUserChanged()
@@ -91,6 +106,6 @@ public class MainLayoutBase : LayoutComponentBase, IDisposable
         CurrentUser.OnUserChanged -= OnUserChanged;
         SettingsService.OnSettingsChanged -= OnSettingsChanged;
     }
-    
+
     #endregion
 }

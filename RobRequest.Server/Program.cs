@@ -34,7 +34,7 @@ builder.Services.AddCascadingAuthenticationState();
 // Register EF Core with SQLite
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")
-        ?? "Data Source=robrequest.db"));
+                      ?? "Data Source=robrequest.db"));
 
 // Password hasher
 builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();

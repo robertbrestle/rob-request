@@ -1,11 +1,13 @@
+@using RobRequest.Server.Components.Shared.Navigation
 @inherits RobRequest.Server.Components.Layout.Bases.MainLayoutBase
 
-<MudThemeProvider @bind-IsDarkMode="IsDarkMode"/>
+<MudThemeProvider Theme="Theme" @bind-IsDarkMode="IsDarkMode"/>
 <MudPopoverProvider/>
 <MudDialogProvider/>
 <MudSnackbarProvider/>
 
-<UserInitializer>
+@if (IsInitialized)
+{
     <CascadingValue Value="this">
         <MudLayout>
             <NavDrawer IsEnabled="IsDrawerEnabled"
@@ -19,4 +21,4 @@
             </MudMainContent>
         </MudLayout>
     </CascadingValue>
-</UserInitializer>
+}
