@@ -139,6 +139,10 @@
                                              OnClick="() => ResetPasswordAsync(context.Id, context.Username)">
                                     Reset Password
                                 </MudMenuItem>
+                                <MudMenuItem Icon="@Icons.Material.Filled.Group"
+                                             OnClick="() => ChangeGroupAsync(context.Id, context.Username, context.GroupId)">
+                                    Change Group
+                                </MudMenuItem>
                                 <MudDivider/>
                                 <MudMenuItem Icon="@Icons.Material.Filled.Delete"
                                              IconColor="Color.Error"
@@ -368,6 +372,27 @@
                     (MarkupString)$"The new password for <strong>{username}</strong> is:<br/><br/><code>{newPassword}</code><br/><br/>Please share this securely with the user.",
                     yesText: "OK");
             }
+        }
+    }
+
+    private async Task ChangeGroupAsync(string userId, string username, string currentGroupId)
+    {
+        var parameters = new DialogParameters<ChangeGroupDialog>
+        {
+            { x => x.UserId, userId },
+            { x => x.Username, username },
+            { x => x.CurrentGroupId, currentGroupId },
+            { x => x.Groups, _groups }
+        };
+
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<ChangeGroupDialog>("Change User Group", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
+        {
+            await RefreshUsersAsync();
+            Snackbar.Add("User group updated successfully.", Severity.Success);
         }
     }
 

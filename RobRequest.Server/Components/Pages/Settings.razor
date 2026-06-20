@@ -3,8 +3,13 @@
 @inject ImportExportService ImportExportService
 @inject CollectionService CollectionService
 @inject HistoryService HistoryService
+@inject AuthService AuthService
+@inject CurrentUserService CurrentUser
 @inject IJSRuntime Js
 @inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject SettingsService SettingsService
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
 
 <PageTitle>RobRequest - Settings</PageTitle>
 
@@ -24,12 +29,60 @@
         <MudPaper Elevation="1" Class="pa-4 mb-4">
             <MudText Typo="Typo.h6" GutterBottom="true">General</MudText>
             <MudStack Spacing="3">
-                <MudSwitch T="bool"
-                           Value="_settings.DarkMode"
-                           ValueChanged="OnDarkModeChanged"
-                           Label="Dark Mode"
-                           Color="Color.Primary"/>
+                <MudStack Row="true">
+                    <MudSwitch T="bool"
+                               Value="_settings.DarkMode"
+                               ValueChanged="OnDarkModeChanged"
+                               Label="Dark Mode"
+                               Color="Color.Primary"/>
+                </MudStack>
 
+                <MudText Typo="Typo.body2">
+                    Update your account password.
+                </MudText>
+                <MudStack Row="true" Spacing="3">
+                    <MudTextField @bind-Value="_newPassword"
+                                  Label="New Password"
+                                  Variant="Variant.Outlined"
+                                  InputType="@_passwordInputType"
+                                  Adornment="Adornment.End"
+                                  AdornmentIcon="@_passwordInputIcon"
+                                  OnAdornmentClick="TogglePasswordVisibility"
+                                  HelperText="Minimum 8 characters"/>
+
+                    <MudTextField @bind-Value="_confirmPassword"
+                                  Label="Confirm New Password"
+                                  Variant="Variant.Outlined"
+                                  InputType="@_passwordInputType"
+                                  Adornment="Adornment.End"
+                                  AdornmentIcon="@_passwordInputIcon"
+                                  OnAdornmentClick="TogglePasswordVisibility"/>
+
+                    <MudStack Class="pt-4">
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   Size="Size.Large"
+                                   OnClick="ChangePasswordAsync"
+                                   StartIcon="@Icons.Material.Filled.LockReset"
+                                   Disabled="@_changingPassword">
+                            @if (_changingPassword)
+                            {
+                                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2"/>
+                                <span>Updating…</span>
+                            }
+                            else
+                            {
+                                <span>Change Password</span>
+                            }
+                        </MudButton>
+                    </MudStack>
+                </MudStack>
+            </MudStack>
+        </MudPaper>
+
+        <MudPaper Elevation="1" Class="pa-4 mb-4">
+            <MudText Typo="Typo.h6" GutterBottom="true">Requests</MudText>
+            <MudStack Spacing="3">
                 <MudStack Row="true" Justify="Justify.SpaceBetween">
                     <MudNumericField T="int"
                                      @bind-Value="_settings.DefaultTimeoutSeconds"
@@ -275,6 +328,14 @@
     private bool HasExportSelection =>
         _selectedCollectionIds.Any() || _selectedEnvironmentIds.Any() || _exportAllHistory;
 
+    // Security state
+    private string _newPassword = string.Empty;
+    private string _confirmPassword = string.Empty;
+    private bool _changingPassword;
+    private bool _showPassword;
+    private InputType _passwordInputType => _showPassword ? InputType.Text : InputType.Password;
+    private string _passwordInputIcon => _showPassword ? Icons.Material.Filled.Visibility : Icons.Material.Filled.VisibilityOff;
+
     // Import state
     private RobRequestExport? _importPreview;
     private string? _importFileName;
@@ -301,6 +362,62 @@
     private async Task SaveSettings()
     {
         await SettingsService.UpdateSettingsAsync(_settings);
+    }
+
+    private void TogglePasswordVisibility()
+    {
+        _showPassword = !_showPassword;
+    }
+
+    private async Task ChangePasswordAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_newPassword))
+        {
+            Snackbar.Add("Password cannot be empty.", Severity.Error);
+            return;
+        }
+
+        if (_newPassword.Length < 8)
+        {
+            Snackbar.Add("Password must be at least 8 characters.", Severity.Error);
+            return;
+        }
+
+        if (_newPassword != _confirmPassword)
+        {
+            Snackbar.Add("Passwords do not match.", Severity.Error);
+            return;
+        }
+
+        if (CurrentUser.UserId == null)
+        {
+            Snackbar.Add("User not authenticated.", Severity.Error);
+            return;
+        }
+
+        _changingPassword = true;
+        try
+        {
+            var success = await AuthService.ChangePasswordAsync(CurrentUser.UserId, _newPassword);
+            if (success)
+            {
+                Snackbar.Add("Password changed successfully.", Severity.Success);
+                _newPassword = string.Empty;
+                _confirmPassword = string.Empty;
+            }
+            else
+            {
+                Snackbar.Add("Failed to change password. Please try again.", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _changingPassword = false;
+        }
     }
 
     private async Task ExportAsync()

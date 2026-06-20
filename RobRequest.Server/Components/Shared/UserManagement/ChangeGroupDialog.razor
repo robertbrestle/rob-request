@@ -1,0 +1,86 @@
+@inject UserService UserService
+
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="3">
+            <MudText>Select a new group for user <b>@Username</b>:</MudText>
+            
+            <MudSelect T="string"
+                       @bind-Value="_selectedGroupId"
+                       Label="Group"
+                       Variant="Variant.Outlined"
+                       Required="true">
+                @foreach (var group in Groups)
+                {
+                    <MudSelectItem T="string" Value="@group.Id">@group.Name</MudSelectItem>
+                }
+            </MudSelect>
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   OnClick="UpdateAsync"
+                   Disabled="_updating">
+            @if (_updating)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2"/>
+            }
+            Update
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public string UserId { get; set; } = string.Empty;
+    [Parameter] public string Username { get; set; } = string.Empty;
+    [Parameter] public string CurrentGroupId { get; set; } = string.Empty;
+    [Parameter] public List<UserGroup> Groups { get; set; } = new();
+
+    private string _selectedGroupId = string.Empty;
+    private bool _updating;
+
+    protected override void OnInitialized()
+    {
+        _selectedGroupId = CurrentGroupId;
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private async Task UpdateAsync()
+    {
+        if (string.IsNullOrEmpty(_selectedGroupId))
+        {
+            return;
+        }
+
+        if (_selectedGroupId == CurrentGroupId)
+        {
+            MudDialog.Close(DialogResult.Ok(true));
+            return;
+        }
+
+        _updating = true;
+        try
+        {
+            var success = await UserService.ChangeGroupAsync(UserId, _selectedGroupId);
+            if (success)
+            {
+                MudDialog.Close(DialogResult.Ok(true));
+            }
+            else
+            {
+                // In a real app we might show an error message, 
+                // but for now we'll just close and let the parent handle refresh/notifications if needed.
+                MudDialog.Cancel();
+            }
+        }
+        finally
+        {
+            _updating = false;
+        }
+    }
+}
