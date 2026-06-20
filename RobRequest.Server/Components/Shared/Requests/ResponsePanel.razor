@@ -92,6 +92,16 @@
                     @if (!string.IsNullOrEmpty(Response.ErrorMessage))
                     {
                         <MudAlert Severity="Severity.Error">@Response.ErrorMessage</MudAlert>
+
+                        @if (!string.IsNullOrEmpty(Response.StackTrace))
+                        {
+                            <MonacoEditor Id="response-body-editor"
+                                          Value="@Response.StackTrace"
+                                          Language="@(Response?.ContentType ?? string.Empty)"
+                                          ReadOnly="true"
+                                          IsDarkMode="Layout.IsDarkMode"
+                                          CssClass="response-body-editor"/>
+                        }
                     }
                     else if (!string.IsNullOrEmpty(Response.Body))
                     {

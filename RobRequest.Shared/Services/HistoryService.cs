@@ -49,7 +49,8 @@ public class HistoryService
             ResponseTimeMs = response.ResponseTimeMs,
             ResponseSizeBytes = response.ResponseSizeBytes,
             ReceivedAt = response.ReceivedAt,
-            ErrorMessage = response.ErrorMessage
+            ErrorMessage = response.ErrorMessage,
+            StackTrace = response.StackTrace
         };
 
         var item = new HistoryItem

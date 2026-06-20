@@ -33,12 +33,7 @@ public class ApiService(IHttpClientFactory httpClientFactory, SettingsService se
             }
 
             var settings = await settingsService.GetSettingsAsync();
-            var validateSsl = settings.ValidateSslCertificates;
-
-            // Should not affect authenticated API requests
-            var isAuthenticated = request.Auth.AuthType != AuthType.None && request.Auth.AuthType != AuthType.Inherit;
-
-            var httpClient = GetHttpClient(validateSsl || isAuthenticated);
+            var httpClient = GetHttpClient(settings.ValidateSslCertificates);
 
             using var httpRequest = new HttpRequestMessage(new HttpMethod(request.Method), uri);
 
@@ -101,12 +96,14 @@ public class ApiService(IHttpClientFactory httpClientFactory, SettingsService se
             stopwatch.Stop();
             response.ResponseTimeMs = stopwatch.ElapsedMilliseconds;
             response.ErrorMessage = $"Request failed: {ex.Message}";
+            response.StackTrace = ex.ToString();
         }
         catch (Exception ex)
         {
             stopwatch.Stop();
             response.ResponseTimeMs = stopwatch.ElapsedMilliseconds;
             response.ErrorMessage = $"Unexpected error: {ex.Message}";
+            response.StackTrace = ex.ToString();
         }
 
         return response;
@@ -211,7 +208,8 @@ public class ApiService(IHttpClientFactory httpClientFactory, SettingsService se
         }
 
         using var content = new FormUrlEncodedContent(data);
-        var httpClient = GetHttpClient(true); // Token requests should usually validate SSL
+        var settings = await settingsService.GetSettingsAsync();
+        var httpClient = GetHttpClient(settings.ValidateSslCertificates);
         using var response = await httpClient.PostAsync(request.Auth.OAuth2TokenUrl, content, ct);
 
         if (!response.IsSuccessStatusCode)

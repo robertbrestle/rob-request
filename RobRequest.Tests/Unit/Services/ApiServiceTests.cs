@@ -123,7 +123,7 @@ public class ApiServiceTests
     [Theory]
     [InlineData(true, AuthType.None, "Default")]
     [InlineData(false, AuthType.None, "NoSslValidation")]
-    [InlineData(false, AuthType.Basic, "Default")]
+    [InlineData(false, AuthType.Basic, "NoSslValidation")]
     [InlineData(true, AuthType.Basic, "Default")]
     public async Task SendRequestAsync_ShouldUseCorrectHttpClient_BasedOnSettingsAndAuth(bool validateSsl,
         AuthType authType, string expectedClientName)
@@ -221,5 +221,31 @@ public class ApiServiceTests
 
         // Assert
         response.Body.Should().Be(originalContent);
+    }
+
+    [Fact]
+    public async Task SendRequestAsync_ShouldCaptureStackTrace_OnException()
+    {
+        // Arrange
+        var mockHandler = new Mock<HttpMessageHandler>();
+        mockHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ThrowsAsync(new HttpRequestException("Connection refused"));
+
+        var httpClient = new HttpClient(mockHandler.Object);
+        var apiService = CreateApiService(httpClient);
+        var request = new HttpRequestModel { Url = "https://example.com" };
+
+        // Act
+        var response = await apiService.SendRequestAsync(request);
+
+        // Assert
+        response.ErrorMessage.Should().Contain("Connection refused");
+        response.StackTrace.Should().NotBeNullOrEmpty();
+        response.StackTrace.Should().Contain("Connection refused");
+        response.StackTrace.Should().Contain("SendAsync");
     }
 }

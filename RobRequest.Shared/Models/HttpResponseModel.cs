@@ -11,6 +11,7 @@ public class HttpResponseModel
     public long ResponseSizeBytes { get; set; }
     public DateTime ReceivedAt { get; set; } = DateTime.Now;
     public string? ErrorMessage { get; set; }
+    public string? StackTrace { get; set; }
     public bool IsSuccess => StatusCode >= 200 && StatusCode < 300;
 
     public string StatusColor => StatusCode switch
