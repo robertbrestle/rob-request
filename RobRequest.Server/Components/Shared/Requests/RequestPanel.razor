@@ -11,7 +11,7 @@
 <MudHotkey Key="JsKey.Enter" KeyModifiers="[JsKeyModifier.ControlRight]" OnHotkeyPressed="SendRequest"/>
 
 <MudPaper Elevation="1" Class="pa-4 mb-4">
-    <!-- Request URL Bar -->
+    @* Request URL Bar *@
     <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mb-3">
         <MethodSelector @bind-Value="_request.Method" IsDarkMode="Layout.IsDarkMode"/>
         <MudTextField T="string"
@@ -68,9 +68,9 @@
         </MudText>
     }
 
-    <!-- Request Tabs -->
+    @* Request Tabs *@
     <MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true" TabPanelsClass="pa-3">
-        <!-- Params Tab -->
+        @* Params Tab *@
         <MudTabPanel Text="Params" BadgeData="@GetParamsBadge()" BadgeColor="Color.Primary">
             <KeyValueEditor TItem="QueryParamItem"
                             Items="_request.QueryParams"
@@ -86,7 +86,7 @@
                             Style="max-height: calc(40vh); overflow-y: auto;"/>
         </MudTabPanel>
 
-        <!-- Headers Tab -->
+        @* Headers Tab *@
         <MudTabPanel Text="Headers" BadgeData="@GetHeadersBadge()" BadgeColor="Color.Primary">
             <MudStack Spacing="2">
                 <MudStack Row="true" Spacing="1">
@@ -118,7 +118,7 @@
             </MudStack>
         </MudTabPanel>
 
-        <!-- Body Tab -->
+        @* Body Tab *@
         <MudTabPanel Text="Body">
             <MudStack Spacing="2">
                 <MudRadioGroup T="string" @bind-Value="_request.BodyType">
@@ -179,7 +179,7 @@
             </MudStack>
         </MudTabPanel>
 
-        <!-- Auth Tab -->
+        @* Auth Tab *@
         <MudTabPanel Text="Auth">
             <MudStack Spacing="3">
                 <MudSelect T="AuthType" @bind-Value="_request.Auth.AuthType" Label="Auth Type" Variant="Variant.Outlined"

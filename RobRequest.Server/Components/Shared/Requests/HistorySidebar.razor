@@ -1,29 +1,30 @@
 @inject HistoryService HistoryService
+@inject IDialogService DialogService
 @implements IDisposable
 
 <MudStack Spacing="2" Class="pa-2">
-    <!-- Search -->
-    <MudTextField T="string"
-                  @bind-Value="_searchQuery"
-                  Placeholder="Search history..."
-                  Variant="Variant.Outlined"
-                  Margin="Margin.Dense"
-                  Adornment="Adornment.Start"
-                  AdornmentIcon="@Icons.Material.Filled.Search"
-                  Clearable="true"
-                  Immediate="true"
-                  DebounceInterval="300"
-                  OnDebounceIntervalElapsed="SearchHistory"/>
-
+    @* Header *@
     <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-1">
-        <MudSpacer/>
+        @* Search *@
+        <MudTextField T="string"
+                      @bind-Value="_searchQuery"
+                      Placeholder="Search history..."
+                      Variant="Variant.Outlined"
+                      Margin="Margin.Dense"
+                      Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Search"
+                      Clearable="true"
+                      Immediate="true"
+                      DebounceInterval="300"
+                      OnDebounceIntervalElapsed="SearchHistory"/>
         @if (_history.Count > 0)
         {
-            <MudIconButton Icon="@Icons.Material.Filled.DeleteSweep"
+            <MudIconButton Icon="@Icons.Material.Filled.Delete"
                            Size="Size.Small"
                            Color="Color.Error"
                            OnClick="ClearHistory"
-                           title="Clear all history"/>
+                           title="Clear all history"
+                           aria-label="clear request history"/>
         }
     </MudStack>
 
@@ -97,7 +98,15 @@
 
     private async Task ClearHistory()
     {
-        await HistoryService.ClearHistoryAsync();
+        var result = await DialogService.ShowMessageBoxAsync(
+            "Delete History",
+            $"Are you sure you want to delete all request history?",
+            yesText: "Delete", cancelText: "Cancel");
+
+        if (result == true)
+        {
+            await HistoryService.ClearHistoryAsync();
+        }
     }
 
     private string TruncateUrl(string url)

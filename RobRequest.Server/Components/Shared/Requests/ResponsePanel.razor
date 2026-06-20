@@ -19,15 +19,15 @@
     }
     else if (Response != null)
     {
-        <!-- Status Bar -->
+        @* Status Bar *@
         <StatusIndicator Response="Response"/>
 
         <MudDivider Class="my-3"/>
 
-        <!-- Response Tabs -->
+        @* Response Tabs *@
         <MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true" TabButtonsClass="pa-3" ActivePanelIndex="1"
                  TabPanelsClass="pt-2">
-            <!-- Headers Tab -->
+            @* Headers Tab *@
             <MudTabPanel Text="Headers" BadgeData="@Response.Headers.Count.ToString()" BadgeColor="Color.Info">
                 <MudStack Spacing="2">
                     <MudStack Row="true" Spacing="1" Class="mb-2" AlignItems="AlignItems.Center">
@@ -86,7 +86,7 @@
                     </MudSimpleTable>
                 </MudStack>
             </MudTabPanel>
-            <!-- Body Tab -->
+            @* Body Tab *@
             <MudTabPanel Text="Body">
                 <MudStack Spacing="2">
                     @if (!string.IsNullOrEmpty(Response.ErrorMessage))

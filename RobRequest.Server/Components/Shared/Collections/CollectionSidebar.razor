@@ -3,34 +3,26 @@
 @implements IDisposable
 
 <MudStack Spacing="2" Class="pa-2">
-    @* Search *@
-    <MudTextField T="string"
-                  @bind-Value="_searchQuery"
-                  Placeholder="Search collections..."
-                  Variant="Variant.Outlined"
-                  Margin="Margin.Dense"
-                  Adornment="Adornment.Start"
-                  AdornmentIcon="@Icons.Material.Filled.Search"
-                  Clearable="true"
-                  Immediate="true"
-                  DebounceInterval="300"
-                  OnDebounceIntervalElapsed="SearchCollections"/>
-
     @* Header *@
     <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-1">
-        <MudSpacer/>
+        @* Search *@
+        <MudTextField T="string"
+                      @bind-Value="_searchQuery"
+                      Placeholder="Search collections..."
+                      Variant="Variant.Outlined"
+                      Margin="Margin.Dense"
+                      Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Search"
+                      Clearable="true"
+                      Immediate="true"
+                      DebounceInterval="300"
+                      OnDebounceIntervalElapsed="SearchCollections"/>
         <MudIconButton Icon="@Icons.Material.Filled.CreateNewFolder"
                        Size="Size.Small"
-                       Color="Color.Primary"
+                       Color="Color.Warning"
                        OnClick="CreateRootCollection"
                        title="New Collection"
                        aria-label="new collection"/>
-        <MudIconButton Icon="@Icons.Material.Filled.Settings"
-                       Size="Size.Small"
-                       Color="Color.Inherit"
-                       Href="/collections"
-                       title="Collection settings"
-                       aria-label="collection settings"/>
     </MudStack>
 
     @if (_collections.Count == 0)

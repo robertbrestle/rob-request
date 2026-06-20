@@ -6,139 +6,290 @@
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
 
-<PageTitle>User Management - RobRequest</PageTitle>
+<PageTitle>RobRequest - User Management</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
-    <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-4">
-        <MudText Typo="Typo.h4">User Management</MudText>
-        <MudSpacer/>
-        <MudButton Variant="Variant.Filled"
-                   Color="Color.Primary"
-                   StartIcon="@Icons.Material.Filled.PersonAdd"
-                   OnClick="OpenCreateDialog">
-            Create User
-        </MudButton>
-    </MudStack>
-
-    @if (_pendingApprovals.Any())
-    {
+<MudGrid Spacing="2">
+    <MudItem xs="12">
         <MudPaper Elevation="1" Class="pa-4 mb-4">
-            <MudText Typo="Typo.h6" GutterBottom="true" Color="Color.Warning">
-                <MudIcon Icon="@Icons.Material.Filled.PendingActions" Class="mr-1"/>
-                Pending Approvals (@_pendingApprovals.Count)
-            </MudText>
-            <MudTable Items="_pendingApprovals" Dense="true" Hover="true" Elevation="0">
-                <HeaderContent>
-                    <MudTh>Username</MudTh>
-                    <MudTh>Group</MudTh>
-                    <MudTh>Registered</MudTh>
-                    <MudTh Style="text-align: right">Actions</MudTh>
-                </HeaderContent>
-                <RowTemplate>
-                    <MudTd>@context.Username</MudTd>
-                    <MudTd>
-                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">
-                            @(context.Group?.Name ?? "unknown")
-                        </MudChip>
-                    </MudTd>
-                    <MudTd>@context.CreatedAt.ToString("g")</MudTd>
-                    <MudTd Style="text-align: right">
-                        <MudButton Size="Size.Small"
-                                   Variant="Variant.Filled"
-                                   Color="Color.Success"
-                                   StartIcon="@Icons.Material.Filled.Check"
-                                   OnClick="() => ApproveUserAsync(context.Id)">
-                            Approve
-                        </MudButton>
-                        <MudButton Size="Size.Small"
-                                   Variant="Variant.Outlined"
-                                   Color="Color.Error"
-                                   StartIcon="@Icons.Material.Filled.Delete"
-                                   Class="ml-2"
-                                   OnClick="() => DeleteUserAsync(context.Id, context.Username)">
-                            Delete
-                        </MudButton>
-                    </MudTd>
-                </RowTemplate>
-            </MudTable>
+            <MudStack Spacing="3">
+                <MudStack Row="true" AlignItems="AlignItems.Center">
+                    <MudIcon Icon="@Icons.Material.Filled.AssuredWorkload" Color="Color.Primary" Size="Size.Large"/>
+                    <MudText Typo="Typo.h5">User Management</MudText>
+                    <MudSpacer/>
+                    <MudIconButton Icon="@Icons.Custom.Uncategorized.Empty" Disabled="true" Ripple="false"/>
+                </MudStack>
+            </MudStack>
         </MudPaper>
-    }
 
-    <MudPaper Elevation="1" Class="pa-4">
-        <MudText Typo="Typo.h6" GutterBottom="true">All Users</MudText>
-        <MudTable Items="_users" Dense="true" Hover="true" Elevation="0" Loading="_loading">
-            <HeaderContent>
-                <MudTh>Username</MudTh>
-                <MudTh>Group</MudTh>
-                <MudTh>Status</MudTh>
-                <MudTh>Approved</MudTh>
-                <MudTh>Created</MudTh>
-                <MudTh>Updated</MudTh>
-                <MudTh Style="text-align: right">Actions</MudTh>
-            </HeaderContent>
-            <RowTemplate>
-                <MudTd>
-                    <MudText Typo="Typo.body2"><b>@context.Username</b></MudText>
-                </MudTd>
-                <MudTd>
-                    <MudChip T="string" Size="Size.Small"
-                             Color="@(context.Group?.Name == "admin" ? Color.Primary : Color.Default)"
-                             Variant="Variant.Outlined">
-                        @(context.Group?.Name ?? "unknown")
-                    </MudChip>
-                </MudTd>
-                <MudTd>
-                    <MudChip T="string" Size="Size.Small"
-                             Color="@(context.IsEnabled ? Color.Success : Color.Error)"
-                             Variant="Variant.Filled">
-                        @(context.IsEnabled ? "Enabled" : "Disabled")
-                    </MudChip>
-                </MudTd>
-                <MudTd>
-                    @if (context.IsApproved)
-                    {
-                        <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Small"/>
-                    }
-                    else
-                    {
-                        <MudIcon Icon="@Icons.Material.Filled.HourglassEmpty" Color="Color.Warning" Size="Size.Small"/>
-                    }
-                </MudTd>
-                <MudTd>@context.CreatedAt.ToString("g")</MudTd>
-                <MudTd>@context.UpdatedAt.ToString("g")</MudTd>
-                <MudTd Style="text-align: right">
-                    <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small"
-                             AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
-                        @if (!context.IsApproved)
-                        {
-                            <MudMenuItem Icon="@Icons.Material.Filled.Check"
-                                         OnClick="() => ApproveUserAsync(context.Id)">
-                                Approve
-                            </MudMenuItem>
-                        }
-                        <MudMenuItem Icon="@(context.IsEnabled ? Icons.Material.Filled.Block : Icons.Material.Filled.CheckCircle)"
-                                     OnClick="() => ToggleEnabledAsync(context.Id)">
-                            @(context.IsEnabled ? "Disable" : "Enable")
-                        </MudMenuItem>
-                        <MudMenuItem Icon="@Icons.Material.Filled.LockReset"
-                                     OnClick="() => ResetPasswordAsync(context.Id, context.Username)">
-                            Reset Password
-                        </MudMenuItem>
-                        <MudDivider/>
-                        <MudMenuItem Icon="@Icons.Material.Filled.Delete"
-                                     IconColor="Color.Error"
-                                     OnClick="() => DeleteUserAsync(context.Id, context.Username)">
-                            Delete
-                        </MudMenuItem>
-                    </MudMenu>
-                </MudTd>
-            </RowTemplate>
-            <NoRecordsContent>
-                <MudText>No users found.</MudText>
-            </NoRecordsContent>
-        </MudTable>
-    </MudPaper>
-</MudContainer>
+        <MudPaper Elevation="1" Class="pa-4 mb-4">
+
+            @if (_pendingApprovals.Any())
+            {
+                <MudPaper Elevation="1" Class="pa-4 mb-4">
+                    <MudText Typo="Typo.h6" GutterBottom="true" Color="Color.Warning">
+                        <MudIcon Icon="@Icons.Material.Filled.PendingActions" Class="mr-1"/>
+                        Pending Approvals (@_pendingApprovals.Count)
+                    </MudText>
+                    <MudTable Items="_pendingApprovals" Dense="true" Hover="true" Elevation="0">
+                        <HeaderContent>
+                            <MudTh>Username</MudTh>
+                            <MudTh>Group</MudTh>
+                            <MudTh>Registered</MudTh>
+                            <MudTh Style="text-align: right">Actions</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd>@context.Username</MudTd>
+                            <MudTd>
+                                <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">
+                                    @(context.Group?.Name ?? "unknown")
+                                </MudChip>
+                            </MudTd>
+                            <MudTd>@context.CreatedAt.ToString("g")</MudTd>
+                            <MudTd Style="text-align: right">
+                                <MudButton Size="Size.Small"
+                                           Variant="Variant.Filled"
+                                           Color="Color.Success"
+                                           StartIcon="@Icons.Material.Filled.Check"
+                                           OnClick="() => ApproveUserAsync(context.Id)">
+                                    Approve
+                                </MudButton>
+                                <MudButton Size="Size.Small"
+                                           Variant="Variant.Outlined"
+                                           Color="Color.Error"
+                                           StartIcon="@Icons.Material.Filled.Delete"
+                                           Class="ml-2"
+                                           OnClick="() => DeleteUserAsync(context.Id, context.Username)">
+                                    Delete
+                                </MudButton>
+                            </MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                </MudPaper>
+            }
+
+            <MudPaper Elevation="1" Class="pa-4">
+                <MudStack Row="true" Justify="Justify.SpaceBetween" Class="mb-2">
+                    <MudText Typo="Typo.h6" GutterBottom="true">All Users</MudText>
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.PersonAdd"
+                               OnClick="OpenCreateDialog">
+                        Create User
+                    </MudButton>
+                </MudStack>
+                
+                <MudTable Items="_users" Dense="true" Hover="true" Elevation="0" Loading="_loading">
+                    <HeaderContent>
+                        <MudTh>Username</MudTh>
+                        <MudTh>Group</MudTh>
+                        <MudTh>Status</MudTh>
+                        <MudTh>Approved</MudTh>
+                        <MudTh>Created</MudTh>
+                        <MudTh>Updated</MudTh>
+                        <MudTh Style="text-align: right">Actions</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>
+                            <MudText Typo="Typo.body2"><b>@context.Username</b></MudText>
+                        </MudTd>
+                        <MudTd>
+                            <MudChip T="string" Size="Size.Small"
+                                     Color="@(context.Group?.Name == "admin" ? Color.Primary : Color.Default)"
+                                     Variant="Variant.Outlined">
+                                @(context.Group?.Name ?? "unknown")
+                            </MudChip>
+                        </MudTd>
+                        <MudTd>
+                            <MudChip T="string" Size="Size.Small"
+                                     Color="@(context.IsEnabled ? Color.Success : Color.Error)"
+                                     Variant="Variant.Filled">
+                                @(context.IsEnabled ? "Enabled" : "Disabled")
+                            </MudChip>
+                        </MudTd>
+                        <MudTd>
+                            @if (context.IsApproved)
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success"
+                                         Size="Size.Small"/>
+                            }
+                            else
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.HourglassEmpty" Color="Color.Warning"
+                                         Size="Size.Small"/>
+                            }
+                        </MudTd>
+                        <MudTd>@context.CreatedAt.ToString("g")</MudTd>
+                        <MudTd>@context.UpdatedAt.ToString("g")</MudTd>
+                        <MudTd Style="text-align: right">
+                            <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small"
+                                     AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                                @if (!context.IsApproved)
+                                {
+                                    <MudMenuItem Icon="@Icons.Material.Filled.Check"
+                                                 OnClick="() => ApproveUserAsync(context.Id)">
+                                        Approve
+                                    </MudMenuItem>
+                                }
+                                <MudMenuItem
+                                    Icon="@(context.IsEnabled ? Icons.Material.Filled.Block : Icons.Material.Filled.CheckCircle)"
+                                    OnClick="() => ToggleEnabledAsync(context.Id)">
+                                    @(context.IsEnabled ? "Disable" : "Enable")
+                                </MudMenuItem>
+                                <MudMenuItem Icon="@Icons.Material.Filled.LockReset"
+                                             OnClick="() => ResetPasswordAsync(context.Id, context.Username)">
+                                    Reset Password
+                                </MudMenuItem>
+                                <MudDivider/>
+                                <MudMenuItem Icon="@Icons.Material.Filled.Delete"
+                                             IconColor="Color.Error"
+                                             OnClick="() => DeleteUserAsync(context.Id, context.Username)">
+                                    Delete
+                                </MudMenuItem>
+                            </MudMenu>
+                        </MudTd>
+                    </RowTemplate>
+                    <NoRecordsContent>
+                        <MudText>No users found.</MudText>
+                    </NoRecordsContent>
+                </MudTable>
+            </MudPaper>
+        </MudPaper>
+
+    </MudItem>
+</MudGrid>
+
+@* <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4"> *@
+@*     <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-4"> *@
+@*         <MudText Typo="Typo.h4">User Management</MudText> *@
+@*         <MudSpacer/> *@
+@*         <MudButton Variant="Variant.Filled" *@
+@*                    Color="Color.Primary" *@
+@*                    StartIcon="@Icons.Material.Filled.PersonAdd" *@
+@*                    OnClick="OpenCreateDialog"> *@
+@*             Create User *@
+@*         </MudButton> *@
+@*     </MudStack> *@
+@* *@
+@*     @if (_pendingApprovals.Any()) *@
+@*     { *@
+@*         <MudPaper Elevation="1" Class="pa-4 mb-4"> *@
+@*             <MudText Typo="Typo.h6" GutterBottom="true" Color="Color.Warning"> *@
+@*                 <MudIcon Icon="@Icons.Material.Filled.PendingActions" Class="mr-1"/> *@
+@*                 Pending Approvals (@_pendingApprovals.Count) *@
+@*             </MudText> *@
+@*             <MudTable Items="_pendingApprovals" Dense="true" Hover="true" Elevation="0"> *@
+@*                 <HeaderContent> *@
+@*                     <MudTh>Username</MudTh> *@
+@*                     <MudTh>Group</MudTh> *@
+@*                     <MudTh>Registered</MudTh> *@
+@*                     <MudTh Style="text-align: right">Actions</MudTh> *@
+@*                 </HeaderContent> *@
+@*                 <RowTemplate> *@
+@*                     <MudTd>@context.Username</MudTd> *@
+@*                     <MudTd> *@
+@*                         <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined"> *@
+@*                             @(context.Group?.Name ?? "unknown") *@
+@*                         </MudChip> *@
+@*                     </MudTd> *@
+@*                     <MudTd>@context.CreatedAt.ToString("g")</MudTd> *@
+@*                     <MudTd Style="text-align: right"> *@
+@*                         <MudButton Size="Size.Small" *@
+@*                                    Variant="Variant.Filled" *@
+@*                                    Color="Color.Success" *@
+@*                                    StartIcon="@Icons.Material.Filled.Check" *@
+@*                                    OnClick="() => ApproveUserAsync(context.Id)"> *@
+@*                             Approve *@
+@*                         </MudButton> *@
+@*                         <MudButton Size="Size.Small" *@
+@*                                    Variant="Variant.Outlined" *@
+@*                                    Color="Color.Error" *@
+@*                                    StartIcon="@Icons.Material.Filled.Delete" *@
+@*                                    Class="ml-2" *@
+@*                                    OnClick="() => DeleteUserAsync(context.Id, context.Username)"> *@
+@*                             Delete *@
+@*                         </MudButton> *@
+@*                     </MudTd> *@
+@*                 </RowTemplate> *@
+@*             </MudTable> *@
+@*         </MudPaper> *@
+@*     } *@
+@* *@
+@*     <MudPaper Elevation="1" Class="pa-4"> *@
+@*         <MudText Typo="Typo.h6" GutterBottom="true">All Users</MudText> *@
+@*         <MudTable Items="_users" Dense="true" Hover="true" Elevation="0" Loading="_loading"> *@
+@*             <HeaderContent> *@
+@*                 <MudTh>Username</MudTh> *@
+@*                 <MudTh>Group</MudTh> *@
+@*                 <MudTh>Status</MudTh> *@
+@*                 <MudTh>Approved</MudTh> *@
+@*                 <MudTh>Created</MudTh> *@
+@*                 <MudTh>Updated</MudTh> *@
+@*                 <MudTh Style="text-align: right">Actions</MudTh> *@
+@*             </HeaderContent> *@
+@*             <RowTemplate> *@
+@*                 <MudTd> *@
+@*                     <MudText Typo="Typo.body2"><b>@context.Username</b></MudText> *@
+@*                 </MudTd> *@
+@*                 <MudTd> *@
+@*                     <MudChip T="string" Size="Size.Small" *@
+@*                              Color="@(context.Group?.Name == "admin" ? Color.Primary : Color.Default)" *@
+@*                              Variant="Variant.Outlined"> *@
+@*                         @(context.Group?.Name ?? "unknown") *@
+@*                     </MudChip> *@
+@*                 </MudTd> *@
+@*                 <MudTd> *@
+@*                     <MudChip T="string" Size="Size.Small" *@
+@*                              Color="@(context.IsEnabled ? Color.Success : Color.Error)" *@
+@*                              Variant="Variant.Filled"> *@
+@*                         @(context.IsEnabled ? "Enabled" : "Disabled") *@
+@*                     </MudChip> *@
+@*                 </MudTd> *@
+@*                 <MudTd> *@
+@*                     @if (context.IsApproved) *@
+@*                     { *@
+@*                         <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Small"/> *@
+@*                     } *@
+@*                     else *@
+@*                     { *@
+@*                         <MudIcon Icon="@Icons.Material.Filled.HourglassEmpty" Color="Color.Warning" Size="Size.Small"/> *@
+@*                     } *@
+@*                 </MudTd> *@
+@*                 <MudTd>@context.CreatedAt.ToString("g")</MudTd> *@
+@*                 <MudTd>@context.UpdatedAt.ToString("g")</MudTd> *@
+@*                 <MudTd Style="text-align: right"> *@
+@*                     <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small" *@
+@*                              AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight"> *@
+@*                         @if (!context.IsApproved) *@
+@*                         { *@
+@*                             <MudMenuItem Icon="@Icons.Material.Filled.Check" *@
+@*                                          OnClick="() => ApproveUserAsync(context.Id)"> *@
+@*                                 Approve *@
+@*                             </MudMenuItem> *@
+@*                         } *@
+@*                         <MudMenuItem *@
+@*                             Icon="@(context.IsEnabled ? Icons.Material.Filled.Block : Icons.Material.Filled.CheckCircle)" *@
+@*                             OnClick="() => ToggleEnabledAsync(context.Id)"> *@
+@*                             @(context.IsEnabled ? "Disable" : "Enable") *@
+@*                         </MudMenuItem> *@
+@*                         <MudMenuItem Icon="@Icons.Material.Filled.LockReset" *@
+@*                                      OnClick="() => ResetPasswordAsync(context.Id, context.Username)"> *@
+@*                             Reset Password *@
+@*                         </MudMenuItem> *@
+@*                         <MudDivider/> *@
+@*                         <MudMenuItem Icon="@Icons.Material.Filled.Delete" *@
+@*                                      IconColor="Color.Error" *@
+@*                                      OnClick="() => DeleteUserAsync(context.Id, context.Username)"> *@
+@*                             Delete *@
+@*                         </MudMenuItem> *@
+@*                     </MudMenu> *@
+@*                 </MudTd> *@
+@*             </RowTemplate> *@
+@*             <NoRecordsContent> *@
+@*                 <MudText>No users found.</MudText> *@
+@*             </NoRecordsContent> *@
+@*         </MudTable> *@
+@*     </MudPaper> *@
+@* </MudContainer> *@
 
 @code {
     [CascadingParameter] public required MainLayout Layout { get; set; }
@@ -150,7 +301,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await Layout.DrawerEnabledToggleAsync(false);
+        await Layout.DrawerEnabledToggleAsync(true);
         _groups = await UserService.GetAllGroupsAsync();
         await RefreshUsersAsync();
     }
@@ -237,4 +388,5 @@
             }
         }
     }
+
 }

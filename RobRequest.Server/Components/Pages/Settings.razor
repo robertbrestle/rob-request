@@ -6,229 +6,255 @@
 @inject IJSRuntime Js
 @inject ISnackbar Snackbar
 
-<PageTitle>Settings - RobRequest</PageTitle>
+<PageTitle>RobRequest - Settings</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4">
-    <MudText Typo="Typo.h4" GutterBottom="true">Your Settings</MudText>
-
-    <MudPaper Elevation="1" Class="pa-4 mb-4">
-        <MudText Typo="Typo.h6" GutterBottom="true">General</MudText>
-
-        <MudStack Spacing="3">
-            <MudSwitch T="bool"
-                       Value="_settings.DarkMode"
-                       ValueChanged="OnDarkModeChanged"
-                       Label="Dark Mode"
-                       Color="Color.Primary"/>
-
-            <MudNumericField T="int"
-                             @bind-Value="_settings.DefaultTimeoutSeconds"
-                             Label="Default Request Timeout (seconds)"
-                             Variant="Variant.Outlined"
-                             Min="1"
-                             Max="300"/>
-
-            <MudNumericField T="int"
-                             @bind-Value="_settings.MaxHistoryItems"
-                             Label="Max History Items"
-                             Variant="Variant.Outlined"
-                             Min="10"
-                             Max="10000"/>
-
-            <MudSwitch T="bool"
-                       @bind-Value="_settings.AutoFormatJson"
-                       Label="Auto-format JSON responses"
-                       Color="Color.Primary"/>
-
-            <MudSwitch T="bool"
-                       @bind-Value="_settings.FollowRedirects"
-                       Label="Follow Redirects"
-                       Color="Color.Primary"/>
-
-            <MudSwitch T="bool"
-                       @bind-Value="_settings.ValidateSslCertificates"
-                       Label="Validate SSL Certificates"
-                       Color="Color.Primary"/>
-
-            <MudButton Variant="Variant.Filled"
-                       Color="Color.Primary"
-                       OnClick="SaveSettings"
-                       StartIcon="@Icons.Material.Filled.Save">
-                Save Settings
-            </MudButton>
-
-            <MudDivider Class="my-2"/>
-
-            <MudText Typo="Typo.h6" GutterBottom="true">Clear Your Data</MudText>
-            <MudText Typo="Typo.body2" Color="Color.Default" Class="mb-2">
-                Permanently delete your saved data. These actions cannot be undone.
-            </MudText>
-
-            <MudStack Row="true" Spacing="2">
-                <MudButton Variant="Variant.Outlined"
-                           Color="Color.Error"
-                           OnClick="ClearCollectionsAsync"
-                           StartIcon="@Icons.Material.Filled.Folder">
-                    Clear Collections
-                </MudButton>
-                <MudButton Variant="Variant.Outlined"
-                           Color="Color.Error"
-                           OnClick="ClearEnvironmentsAsync"
-                           StartIcon="@Icons.Material.Filled.Dns">
-                    Clear Environments
-                </MudButton>
-                <MudButton Variant="Variant.Outlined"
-                           Color="Color.Error"
-                           OnClick="ClearHistoryAsync"
-                           StartIcon="@Icons.Material.Filled.History">
-                    Clear History
-                </MudButton>
+<MudGrid Spacing="2">
+    <MudItem xs="12">
+        <MudPaper Elevation="1" Class="pa-4 mb-4">
+            <MudStack Spacing="3">
+                <MudStack Row="true" AlignItems="AlignItems.Center">
+                    <MudIcon Icon="@Icons.Material.Filled.Settings" Color="Color.Primary" Size="Size.Large"/>
+                    <MudText Typo="Typo.h5">Your Settings</MudText>
+                    <MudSpacer/>
+                    <MudIconButton Icon="@Icons.Custom.Uncategorized.Empty" Disabled="true" Ripple="false"/>
+                </MudStack>
             </MudStack>
-        </MudStack>
-    </MudPaper>
+        </MudPaper>
 
-    <MudPaper Elevation="1" Class="pa-4 mb-4">
-        <MudText Typo="Typo.h6" GutterBottom="true">Export</MudText>
-        <MudStack>
-            <MudText Typo="Typo.body2" Class="mb-3">
-                Select collections, environments, and/or history items to export as a JSON file.
-            </MudText>
-            <MudSelect T="string" Label="Collections" MultiSelection="true"
-                       @bind-SelectedValues="_selectedCollectionIds"
-                       MultiSelectionTextFunc="@(ids => string.Join(", ", ids.Select(id => _collections.FirstOrDefault(c => c.Id == id)?.Name ?? id)))"
-                       Variant="Variant.Outlined" Dense="true"
-                       Disabled="@(!_collections.Any())">
-                @foreach (var col in _collections)
-                {
-                    <MudSelectItem T="string" Value="@col.Id">@col.Name</MudSelectItem>
-                }
-            </MudSelect>
+        <MudPaper Elevation="1" Class="pa-4 mb-4">
+            <MudText Typo="Typo.h6" GutterBottom="true">General</MudText>
+            <MudStack Spacing="3">
+                <MudSwitch T="bool"
+                           Value="_settings.DarkMode"
+                           ValueChanged="OnDarkModeChanged"
+                           Label="Dark Mode"
+                           Color="Color.Primary"/>
 
-            <MudSelect T="string" Label="Environments" MultiSelection="true"
-                       @bind-SelectedValues="_selectedEnvironmentIds"
-                       MultiSelectionTextFunc="@(ids => string.Join(", ", ids.Select(id => _environments.FirstOrDefault(e => e.Id == id)?.Name ?? id)))"
-                       Variant="Variant.Outlined" Dense="true"
-                       Disabled="@(!_environments.Any())">
-                @foreach (var env in _environments)
-                {
-                    <MudSelectItem T="string" Value="@env.Id">@env.Name</MudSelectItem>
-                }
-            </MudSelect>
+                <MudStack Row="true" Justify="Justify.SpaceBetween">
+                    <MudNumericField T="int"
+                                     @bind-Value="_settings.DefaultTimeoutSeconds"
+                                     Label="Default Request Timeout (seconds)"
+                                     Variant="Variant.Outlined"
+                                     Min="1"
+                                     Max="300"/>
 
-            <MudCheckBox T="bool"
-                         @bind-Value="_exportAllHistory"
-                         Label="@($"Export all history ({_historyItems.Count} items)")"
-                         Color="Color.Primary"
-                         Disabled="@(!_historyItems.Any())"/>
-
-            <MudButton Variant="Variant.Filled"
-                       Color="Color.Primary"
-                       OnClick="ExportAsync"
-                       StartIcon="@Icons.Material.Filled.FileDownload"
-                       Disabled="@(!HasExportSelection || _exporting)">
-                @if (_exporting)
-                {
-                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2"/>
-                    <span>Exporting…</span>
-                }
-                else
-                {
-                    <span>Export to JSON</span>
-                }
-            </MudButton>
-        </MudStack>
-    </MudPaper>
-
-    <MudPaper Elevation="1" Class="pa-4 mb-4">
-        <MudText Typo="Typo.h6" GutterBottom="true">Import</MudText>
-        <MudStack>
-            <MudText Typo="Typo.body2" Class="mb-3">
-                Upload a previously exported RobRequest JSON file to import collections, environments, and history.
-            </MudText>
-            <MudAlert Severity="Severity.Normal" Variant="Variant.Outlined" Dense="true" Class="mb-3">
-                If an imported collection or environment has the same name as an existing one, a timestamp will be
-                appended to avoid conflicts.
-            </MudAlert>
-
-            <MudFileUpload T="IBrowserFile" Accept=".json" OnFilesChanged="OnImportFileChanged">
-                <CustomContent>
-                    <MudButton Variant="Variant.Filled"
-                               Color="Color.Primary"
-                               StartIcon="@Icons.Material.Filled.UploadFile"
-                               OnClick="@context.OpenFilePickerAsync">
-                        Select JSON File
-                    </MudButton>
-                </CustomContent>
-                <SelectedTemplate>
-                    @if (context == null)
-                    {
-                        <MudText>No file selected</MudText>
-                    }
-                </SelectedTemplate>
-            </MudFileUpload>
-
-            @if (_importPreview != null)
-            {
-                <MudAlert Severity="Severity.Normal" Dense="true">
-                    <strong>@_importFileName</strong> (format v@(_importPreview.FormatVersion),
-                    exported @_importPreview.ExportedAt.ToString("g") UTC)
-                </MudAlert>
-
-                <MudStack Row="true">
-                    @if (_importPreview.Collections is { Count: > 0 })
-                    {
-                        <MudChip T="string" Icon="@Icons.Material.Filled.Folder" Variant="Variant.Outlined">
-                            @_importPreview.Collections.Count collection@(_importPreview.Collections.Count == 1 ? "" : "s")
-                        </MudChip>
-                    }
-                    @if (_importPreview.Environments is { Count: > 0 })
-                    {
-                        <MudChip T="string" Icon="@Icons.Material.Filled.Dns" Variant="Variant.Outlined">
-                            @_importPreview.Environments.Count environment@(_importPreview.Environments.Count == 1 ? "" : "s")
-                        </MudChip>
-                    }
-                    @if (_importPreview.History is { Count: > 0 })
-                    {
-                        <MudChip T="string" Icon="@Icons.Material.Filled.History" Variant="Variant.Outlined">
-                            @_importPreview.History.Count histor@(_importPreview.History.Count == 1 ? "y" : "ies")
-                        </MudChip>
-                    }
+                    <MudNumericField T="int"
+                                     @bind-Value="_settings.MaxHistoryItems"
+                                     Label="Max History Items"
+                                     Variant="Variant.Outlined"
+                                     Min="10"
+                                     Max="10000"/>
                 </MudStack>
 
-                <MudButton Variant="Variant.Filled"
-                           Color="Color.Success"
-                           OnClick="ImportAsync"
-                           StartIcon="@Icons.Material.Filled.FileUpload"
-                           Disabled="@_importing">
-                    @if (_importing)
-                    {
-                        <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2"/>
-                        <span>Importing…</span>
-                    }
-                    else
-                    {
-                        <span>Import</span>
-                    }
-                </MudButton>
-            }
+                <MudStack Row="true" Justify="Justify.SpaceBetween">
+                    <MudSwitch T="bool"
+                               @bind-Value="_settings.AutoFormatJson"
+                               Label="Auto-format JSON responses"
+                               Color="Color.Primary"/>
 
-            @if (_importError != null)
-            {
-                <MudAlert Severity="Severity.Error" Dense="true">@_importError</MudAlert>
-            }
-        </MudStack>
-    </MudPaper>
+                    <MudSwitch T="bool"
+                               @bind-Value="_settings.FollowRedirects"
+                               Label="Follow Redirects"
+                               Color="Color.Primary"/>
 
-    <MudPaper Elevation="1" Class="pa-4 mb-4">
-        <MudText Typo="Typo.h6" GutterBottom="true">About</MudText>
-        <MudText Typo="Typo.body1">
-            <strong>RobRequest</strong> — A lightweight REST API client built with .NET 10 Blazor and the MudBlazor component library.
-        </MudText>
-        <MudText Typo="Typo.body2" Color="Color.Default" Class="mt-2">
-            Version @RobRequest.Shared.AppInfo.Version
-        </MudText>
-    </MudPaper>
-</MudContainer>
+                    <MudSwitch T="bool"
+                               @bind-Value="_settings.ValidateSslCertificates"
+                               Label="Validate SSL Certificates"
+                               Color="Color.Primary"/>
+                </MudStack>
+
+                <MudStack Row="true" Spacing="2" Justify="Justify.FlexStart">
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               OnClick="SaveSettings"
+                               StartIcon="@Icons.Material.Filled.Save">
+                        Save Settings
+                    </MudButton>
+                </MudStack>
+
+                <MudDivider Class="my-2"/>
+
+                <MudText Typo="Typo.h6" GutterBottom="true">Clear Your Data</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Default" Class="mb-2">
+                    Permanently delete your saved data. These actions cannot be undone.
+                </MudText>
+
+                <MudStack Row="true" Spacing="4">
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Error"
+                               OnClick="ClearCollectionsAsync"
+                               StartIcon="@Icons.Material.Filled.Folder">
+                        Clear Collections
+                    </MudButton>
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Error"
+                               OnClick="ClearEnvironmentsAsync"
+                               StartIcon="@Icons.Material.Filled.Dns">
+                        Clear Environments
+                    </MudButton>
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Error"
+                               OnClick="ClearHistoryAsync"
+                               StartIcon="@Icons.Material.Filled.History">
+                        Clear History
+                    </MudButton>
+                </MudStack>
+            </MudStack>
+        </MudPaper>
+
+        <MudPaper Elevation="1" Class="pa-4 mb-4">
+            <MudText Typo="Typo.h6" GutterBottom="true">Export</MudText>
+            <MudStack>
+                <MudText Typo="Typo.body2" Class="mb-3">
+                    Select collections, environments, and/or history items to export as a JSON file.
+                </MudText>
+
+                <MudStack Row="true" Justify="Justify.SpaceBetween">
+                    <MudSelect T="string" Label="Collections" MultiSelection="true"
+                               @bind-SelectedValues="_selectedCollectionIds"
+                               MultiSelectionTextFunc="@(ids => string.Join(", ", ids.Select(id => _collections.FirstOrDefault(c => c.Id == id)?.Name ?? id)))"
+                               Variant="Variant.Outlined" Dense="true"
+                               Disabled="@(!_collections.Any())">
+                        @foreach (var col in _collections)
+                        {
+                            <MudSelectItem T="string" Value="@col.Id">@col.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+
+                    <MudSelect T="string" Label="Environments" MultiSelection="true"
+                               @bind-SelectedValues="_selectedEnvironmentIds"
+                               MultiSelectionTextFunc="@(ids => string.Join(", ", ids.Select(id => _environments.FirstOrDefault(e => e.Id == id)?.Name ?? id)))"
+                               Variant="Variant.Outlined" Dense="true"
+                               Disabled="@(!_environments.Any())">
+                        @foreach (var env in _environments)
+                        {
+                            <MudSelectItem T="string" Value="@env.Id">@env.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudStack>
+
+                <MudCheckBox T="bool"
+                             @bind-Value="_exportAllHistory"
+                             Label="@($"Export all history ({_historyItems.Count} items)")"
+                             Color="Color.Primary"
+                             Disabled="@(!_historyItems.Any())"/>
+
+                <MudStack Row="true" Spacing="2" Justify="Justify.FlexStart">
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               OnClick="ExportAsync"
+                               StartIcon="@Icons.Material.Filled.FileDownload"
+                               Disabled="@(!HasExportSelection || _exporting)">
+                        @if (_exporting)
+                        {
+                            <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2"/>
+                            <span>Exporting…</span>
+                        }
+                        else
+                        {
+                            <span>Export to JSON</span>
+                        }
+                    </MudButton>
+                </MudStack>
+            </MudStack>
+        </MudPaper>
+
+        <MudPaper Elevation="1" Class="pa-4 mb-4">
+            <MudText Typo="Typo.h6" GutterBottom="true">Import</MudText>
+            <MudStack>
+                <MudText Typo="Typo.body2" Class="mb-3">
+                    Upload a previously exported RobRequest JSON file to import collections, environments, and history.
+                </MudText>
+                <MudAlert Severity="Severity.Normal" Variant="Variant.Outlined" Dense="true" Class="mb-3">
+                    If an imported collection or environment has the same name as an existing one, a timestamp will be
+                    appended to avoid conflicts.
+                </MudAlert>
+
+                <MudStack Row="true" Spacing="2" Justify="Justify.FlexStart">
+                    <MudFileUpload T="IBrowserFile" Accept=".json" OnFilesChanged="OnImportFileChanged">
+                        <CustomContent>
+                            <MudButton Variant="Variant.Filled"
+                                       Color="Color.Primary"
+                                       StartIcon="@Icons.Material.Filled.UploadFile"
+                                       OnClick="@context.OpenFilePickerAsync">
+                                Select JSON File
+                            </MudButton>
+                        </CustomContent>
+                        <SelectedTemplate>
+                            @if (context == null)
+                            {
+                                <MudText>No file selected</MudText>
+                            }
+                        </SelectedTemplate>
+                    </MudFileUpload>
+                </MudStack>
+
+                @if (_importPreview != null)
+                {
+                    <MudAlert Severity="Severity.Normal" Dense="true">
+                        <strong>@_importFileName</strong> (format v@(_importPreview.FormatVersion),
+                        exported @_importPreview.ExportedAt.ToString("g") UTC)
+                    </MudAlert>
+
+                    <MudStack Row="true">
+                        @if (_importPreview.Collections is { Count: > 0 })
+                        {
+                            <MudChip T="string" Icon="@Icons.Material.Filled.Folder" Variant="Variant.Outlined">
+                                @_importPreview.Collections.Count collection@(_importPreview.Collections.Count == 1 ? "" : "s")
+                            </MudChip>
+                        }
+                        @if (_importPreview.Environments is { Count: > 0 })
+                        {
+                            <MudChip T="string" Icon="@Icons.Material.Filled.Dns" Variant="Variant.Outlined">
+                                @_importPreview.Environments.Count environment@(_importPreview.Environments.Count == 1 ? "" : "s")
+                            </MudChip>
+                        }
+                        @if (_importPreview.History is { Count: > 0 })
+                        {
+                            <MudChip T="string" Icon="@Icons.Material.Filled.History" Variant="Variant.Outlined">
+                                @_importPreview.History.Count histor@(_importPreview.History.Count == 1 ? "y" : "ies")
+                            </MudChip>
+                        }
+                    </MudStack>
+
+                    <MudStack Row="true" Spacing="2" Justify="Justify.FlexStart">
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Success"
+                                   OnClick="ImportAsync"
+                                   StartIcon="@Icons.Material.Filled.FileUpload"
+                                   Disabled="@_importing">
+                            @if (_importing)
+                            {
+                                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2"/>
+                                <span>Importing…</span>
+                            }
+                            else
+                            {
+                                <span>Import</span>
+                            }
+                        </MudButton>
+                    </MudStack>
+                }
+
+                @if (_importError != null)
+                {
+                    <MudAlert Severity="Severity.Error" Dense="true">@_importError</MudAlert>
+                }
+            </MudStack>
+        </MudPaper>
+
+        <MudPaper Elevation="1" Class="pa-4 mb-4">
+            <MudText Typo="Typo.h6" GutterBottom="true">About</MudText>
+            <MudText Typo="Typo.body1">
+                <strong>RobRequest</strong> — A lightweight REST API client built with .NET 10 Blazor and the MudBlazor
+                component library.
+            </MudText>
+            <MudText Typo="Typo.body2" Color="Color.Default" Class="mt-2">
+                Version @RobRequest.Shared.AppInfo.Version
+            </MudText>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
 
 @code {
 
@@ -258,7 +284,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await Layout.DrawerEnabledToggleAsync(false);
+        await Layout.DrawerEnabledToggleAsync(true);
         _settings = await SettingsService.GetSettingsAsync();
 
         _collections = await CollectionService.GetCollectionTreeAsync();
