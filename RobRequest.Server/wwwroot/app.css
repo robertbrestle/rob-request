@@ -57,12 +57,6 @@ h1:focus {
     margin-top: calc(var(--mud-appbar-height) * -1);
 }
 
-.toggle-drawer-button {
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 9000;
-}
 .drawer-container {
     top: 0 !important;
     height: 100% !important;

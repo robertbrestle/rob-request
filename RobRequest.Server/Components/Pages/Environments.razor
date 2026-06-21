@@ -1,8 +1,8 @@
 @page "/environments"
-@implements IDisposable
 @inject ApiService ApiService
 @inject ISnackbar Snackbar
-@inject IJSRuntime JS
+@inject IJSRuntime Js
+@implements IDisposable
 
 <PageTitle>RobRequest - Environments</PageTitle>
 
@@ -472,7 +472,7 @@
     private async Task CopyToken()
     {
         if (_selectedEnvironment == null || string.IsNullOrEmpty(_selectedEnvironment.Auth.AuthToken)) return;
-        await JS.InvokeVoidAsync("navigator.clipboard.writeText", _selectedEnvironment.Auth.AuthToken);
+        await Js.InvokeVoidAsync("navigator.clipboard.writeText", _selectedEnvironment.Auth.AuthToken);
         Snackbar.Add("Token copied to clipboard", Severity.Info);
     }
 

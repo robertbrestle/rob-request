@@ -1,3 +1,5 @@
+@implements IDisposable
+
 <MudPaper Elevation="1" Class="pa-4">
     @if (Response == null && !IsSending)
     {
@@ -105,30 +107,6 @@
                     }
                     else if (!string.IsNullOrEmpty(Response.Body))
                     {
-                        <MudStack Row="true" Spacing="1" Class="mb-2" Justify="Justify.SpaceBetween">
-                            <MudStack Row="true">
-                                <MudStack Justify="Justify.Center">
-                                    <MudButton Size="Size.Small"
-                                               Variant="Variant.Outlined"
-                                               StartIcon="@Icons.Material.Filled.ContentCopy"
-                                               OnClick="CopyBody">
-                                        Copy
-                                    </MudButton>
-                                </MudStack>
-                                @if (IsJsonResponse())
-                                {
-                                    <MudStack Justify="Justify.Center">
-                                        <MudButton Size="Size.Small"
-                                                   Variant="Variant.Outlined"
-                                                   StartIcon="@Icons.Material.Filled.FormatAlignLeft"
-                                                   OnClick="ToggleFormatted">
-                                            @(_showFormatted ? "Raw" : "Formatted")
-                                        </MudButton>
-                                    </MudStack>
-                                }
-                            </MudStack>
-                        </MudStack>
-
                         <MonacoEditor Id="response-body-editor"
                                       Value="@GetDisplayBody()"
                                       Language="@(Response?.ContentType ?? string.Empty)"
@@ -150,47 +128,20 @@
 
 @code {
 
+    [Inject] private IJSRuntime Js { get; set; } = default!;
+    [Inject] private ISnackbar Snackbar { get; set; } = default!;
+
+    [CascadingParameter] public required MainLayout Layout { get; set; }
     [Parameter] public HttpResponseModel? Response { get; set; }
     [Parameter] public bool IsSending { get; set; }
-    [CascadingParameter] public required MainLayout Layout { get; set; }
 
-    private bool _showFormatted = true;
     private string _headerSearch = string.Empty;
     private string _headerSortField = "key";
     private bool _headerSortAsc = true;
 
-    private bool IsJsonResponse()
-    {
-        if (Response == null) return false;
-        return Response.ContentType.Contains("json", StringComparison.OrdinalIgnoreCase) ||
-               (Response.Body.TrimStart().StartsWith('{') || Response.Body.TrimStart().StartsWith('['));
-    }
-
     private string GetDisplayBody()
     {
-        if (Response == null) return string.Empty;
-
-        var body = Response.Body;
-
-        if (_showFormatted && IsJsonResponse())
-        {
-            try
-            {
-                var parsed = System.Text.Json.JsonDocument.Parse(body);
-                body = System.Text.Json.JsonSerializer.Serialize(parsed, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
-            }
-            catch
-            {
-                // Not valid JSON, show raw
-            }
-        }
-
-        return body;
-    }
-
-    private void ToggleFormatted()
-    {
-        _showFormatted = !_showFormatted;
+        return Response == null ? string.Empty : Response.Body;
     }
 
     private IEnumerable<HeaderItem> GetFilteredHeaders()
@@ -227,16 +178,6 @@
         }
     }
 
-    [Inject] private IJSRuntime Js { get; set; } = default!;
-
-    private async Task CopyBody()
-    {
-        if (Response != null)
-        {
-            await Js.InvokeVoidAsync("navigator.clipboard.writeText", GetDisplayBody());
-        }
-    }
-
     private async Task CopyHeaders()
     {
         if (Response != null)
@@ -244,7 +185,14 @@
             var dict = Response.Headers.ToDictionary(h => h.Key, h => h.Value);
             var json = System.Text.Json.JsonSerializer.Serialize(dict, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
             await Js.InvokeVoidAsync("navigator.clipboard.writeText", json);
+            Snackbar.Add("Copied to clipboard", Severity.Success);
         }
+    }
+
+    public void Dispose()
+    {
+        Snackbar.Dispose();
+        Layout.Dispose();
     }
 
 }

@@ -51,8 +51,10 @@ public class HttpRequestModel
             Id = newId ? Guid.NewGuid().ToString() : Id,
             Method = Method,
             Url = Url,
-            Headers = Headers.Select(h => new HeaderItem { Key = h.Key, Value = h.Value, Enabled = h.Enabled }).ToList(),
-            QueryParams = QueryParams.Select(q => new QueryParamItem { Key = q.Key, Value = q.Value, Enabled = q.Enabled }).ToList(),
+            Headers =
+                Headers.Select(h => new HeaderItem { Key = h.Key, Value = h.Value, Enabled = h.Enabled }).ToList(),
+            QueryParams = QueryParams
+                .Select(q => new QueryParamItem { Key = q.Key, Value = q.Value, Enabled = q.Enabled }).ToList(),
             FormData = FormData.Select(f => new FormDataItem
             {
                 Key = f.Key,
@@ -71,4 +73,3 @@ public class HttpRequestModel
         };
     }
 }
-

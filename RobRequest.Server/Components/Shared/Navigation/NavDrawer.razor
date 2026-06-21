@@ -2,65 +2,131 @@
 
 @if (IsEnabled)
 {
-    <div class="toggle-drawer-button">
-        <MudIconButton Icon="@Icons.Material.Filled.Menu"
-                       Color="Color.Inherit"
-                       Size="Size.Small"
-                       Class="mt-2"
-                       OnClick="OnDrawerToggle"
-                       aria-label="toggle drawer"/>
-    </div>
-
-    <MudDrawer Open="IsDrawerOpen" OpenChanged="IsDrawerOpenChanged" Elevation="2" ClipMode="DrawerClipMode.Always" Width="300px"
-               Class="drawer-container">
-        <MudStack Row="true" Justify="Justify.Center" AlignItems="AlignItems.Center">
-            <MudLink Href="/" Color="Color.Inherit">
-                <MudStack Row="true" AlignItems="AlignItems.Center" Class="pl-8">
-                    <MudImage Src="/favicon.png" Height="24"/>
-                    <MudText Typo="Typo.h6" Class="mr-4">
-                        RobRequest
-                    </MudText>
-                </MudStack>
-            </MudLink>
-            <MudSpacer/>
-            <MudMenu Icon="@Icons.Material.Filled.MoreVert"
-                     AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
-                <MudMenuItem Icon="@Icons.Material.Filled.Folder"
-                             Href="/collections">
-                    Collections
-                </MudMenuItem>
-                <MudMenuItem Icon="@Icons.Material.Filled.Dns"
-                             Href="/environments">
-                    Environments
-                </MudMenuItem>
+    <MudDrawer Open="IsDrawerOpen" OpenChanged="IsDrawerOpenChanged" Elevation="2" ClipMode="DrawerClipMode.Always"
+               Width="300px" Class="drawer-container" Variant="DrawerVariant.Mini">
+        @* mini drawer menu *@
+        @if (!IsDrawerOpen)
+        {
+            <MudStack Spacing="3" Class="pt-3">
+                <MudIconButton Icon="@Icons.Material.Filled.Menu"
+                               Size="Size.Small"
+                               OnClick="OnDrawerToggle"
+                               aria-label="toggle drawer"/>
                 <MudDivider/>
-                <MudMenuItem
-                    Icon="@(IsDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
-                    OnClick="OnToggleDarkMode">
-                    Theme
-                </MudMenuItem>
-                <MudMenuItem Icon="@Icons.Material.Filled.Settings"
-                             Href="/settings">
-                    Settings
-                </MudMenuItem>
+                <MudIconButton Icon="@Icons.Material.Filled.Home"
+                               Size="Size.Small"
+                               Href="/"
+                               aria-label="go home"
+                               title="Home"/>
+                <MudIconButton Icon="@Icons.Material.Filled.Folder"
+                               Size="Size.Small"
+                               Href="/collections"
+                               aria-label="open collections"
+                               title="Collections"/>
+                <MudIconButton Icon="@Icons.Material.Filled.Dns"
+                               Size="Size.Small"
+                               Href="/environments"
+                               aria-label="open environments"
+                               title="Environments"/>
+                <MudDivider/>
+                <MudIconButton Icon="@Icons.Material.Filled.Info"
+                               Size="Size.Small"
+                               OnClick="OnAboutDialog"
+                               aria-label="open about dialog"
+                               title="About"/>
+                <MudIconButton Icon="@(IsDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
+                               Size="Size.Small"
+                               OnClick="OnToggleDarkMode"
+                               aria-label="change theme"
+                               title="Theme"/>
+                <MudIconButton Icon="@Icons.Material.Filled.Settings"
+                               Size="Size.Small"
+                               Href="/settings"
+                               aria-label="open settings"
+                               title="Settings"/>
                 <AuthorizeView Policy="Admin">
                     <Authorized>
                         <MudDivider/>
-                        <MudMenuItem Icon="@Icons.Material.Filled.AdminPanelSettings"
-                                     Href="/admin/users">
-                            User Management
-                        </MudMenuItem>
+                        <MudIconButton Icon="@Icons.Material.Filled.AdminPanelSettings"
+                                       Size="Size.Small"
+                                       Href="/admin/users"
+                                       aria-label="open user management"
+                                       title="User Management"/>
                     </Authorized>
                 </AuthorizeView>
                 <MudDivider/>
-                <MudMenuItem Icon="@Icons.Material.Filled.Logout"
-                             Href="/api/auth/logout"
-                             ForceLoad="true">
-                    Logout (@CurrentUser.Username)
-                </MudMenuItem>
-            </MudMenu>
-        </MudStack>
-        <SectionOutlet SectionName="Drawer"/>
+                <MudIconButton Icon="@Icons.Material.Filled.Logout"
+                               Size="Size.Small"
+                               Href="/api/auth/logout"
+                               aria-label="logout"
+                               title="Logout"/>
+            </MudStack>
+        }
+        else
+        {
+            @* expanded drawer *@
+            <MudStack Row="true" Justify="Justify.Center" AlignItems="AlignItems.Center">
+                <MudIconButton Icon="@Icons.Material.Filled.Menu"
+                               Size="Size.Small"
+                               Class="pl-3"
+                               OnClick="OnDrawerToggle"
+                               aria-label="toggle drawer"/>
+                <MudLink Href="/" Color="Color.Inherit">
+                    <MudStack Row="true" AlignItems="AlignItems.Center">
+                        <MudImage Src="/favicon.png" Height="24"/>
+                        <MudText Typo="Typo.h6" Class="mr-4">
+                            <b>RobRequest</b>
+                        </MudText>
+                    </MudStack>
+                </MudLink>
+                <MudSpacer/>
+                <MudMenu Icon="@Icons.Material.Filled.MoreVert"
+                         AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                    <MudMenuItem Icon="@Icons.Material.Filled.Home"
+                                 Href="/">
+                        Home
+                    </MudMenuItem>
+                    <MudMenuItem Icon="@Icons.Material.Filled.Folder"
+                                 Href="/collections">
+                        Collections
+                    </MudMenuItem>
+                    <MudMenuItem Icon="@Icons.Material.Filled.Dns"
+                                 Href="/environments">
+                        Environments
+                    </MudMenuItem>
+                    <MudDivider/>
+                    <MudMenuItem Icon="@Icons.Material.Filled.Info"
+                                 OnClick="OnAboutDialog">
+                        About
+                    </MudMenuItem>
+                    <MudMenuItem
+                        Icon="@(IsDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
+                        OnClick="OnToggleDarkMode">
+                        Theme
+                    </MudMenuItem>
+                    <MudMenuItem Icon="@Icons.Material.Filled.Settings"
+                                 Href="/settings">
+                        Settings
+                    </MudMenuItem>
+                    <AuthorizeView Policy="Admin">
+                        <Authorized>
+                            <MudDivider/>
+                            <MudMenuItem Icon="@Icons.Material.Filled.AdminPanelSettings"
+                                         Href="/admin/users">
+                                User Management
+                            </MudMenuItem>
+                        </Authorized>
+                    </AuthorizeView>
+                    <MudDivider/>
+                    <MudMenuItem Icon="@Icons.Material.Filled.Logout"
+                                 Href="/api/auth/logout"
+                                 ForceLoad="true">
+                        Logout (@CurrentUser.Username)
+                    </MudMenuItem>
+                </MudMenu>
+            </MudStack>
+            <SectionOutlet SectionName="Drawer"/>
+        }
     </MudDrawer>
 }
 
@@ -71,4 +137,5 @@
     [Parameter] public EventCallback<bool> IsDrawerOpenChanged { get; set; }
     [Parameter] public EventCallback OnToggleDarkMode { get; set; }
     [Parameter] public EventCallback OnDrawerToggle { get; set; }
+    [Parameter] public EventCallback OnAboutDialog { get; set; }
 }

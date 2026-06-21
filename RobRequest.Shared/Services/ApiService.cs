@@ -74,7 +74,7 @@ public class ApiService(IHttpClientFactory httpClientFactory, SettingsService se
 
             // Read content type
             response.ContentType = httpResponse.Content.Headers.ContentType?.MediaType ?? string.Empty;
-            
+
             // Read body
             response.Body = await httpResponse.Content.ReadAsStringAsync(cts.Token);
             response.ResponseSizeBytes = Encoding.UTF8.GetByteCount(response.Body);

@@ -78,7 +78,8 @@ public class CollectionService
             .FirstOrDefaultAsync(c => c.Id == id);
     }
 
-    public async Task<CollectionModel> CreateCollectionAsync(string name, string? parentId = null, string? description = null)
+    public async Task<CollectionModel> CreateCollectionAsync(string name, string? parentId = null,
+        string? description = null)
     {
         var maxSort = await _db.Collections
             .Where(c => c.ParentId == parentId)
@@ -126,7 +127,8 @@ public class CollectionService
         OnCollectionsChanged?.Invoke();
     }
 
-    public async Task<CollectionRequestModel> AddRequestToCollectionAsync(string collectionId, string name, HttpRequestModel request)
+    public async Task<CollectionRequestModel> AddRequestToCollectionAsync(string collectionId, string name,
+        HttpRequestModel request)
     {
         var maxSort = await _db.CollectionRequests
             .Where(r => r.CollectionId == collectionId)

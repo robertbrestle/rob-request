@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using RobRequest.Shared.Data;
+using RobRequest.Shared.Extensions;
 using RobRequest.Shared.Models;
 
 namespace RobRequest.Shared.Services;
@@ -40,7 +41,7 @@ public class ImportExportService
         var export = new RobRequestExport
         {
             FormatVersion = "1",
-            AppVersion = AppInfo.Version,
+            AppVersion = AppInfoExtensions.GetAppVersion,
             ExportedAt = DateTime.UtcNow
         };
 
@@ -347,7 +348,8 @@ public class ImportExportService
             StatusCode = source.StatusCode,
             StatusText = source.StatusText,
             Body = source.Body,
-            Headers = source.Headers.Select(h => new HeaderItem { Key = h.Key, Value = h.Value, Enabled = h.Enabled }).ToList(),
+            Headers = source.Headers.Select(h => new HeaderItem { Key = h.Key, Value = h.Value, Enabled = h.Enabled })
+                .ToList(),
             ContentType = source.ContentType,
             ResponseTimeMs = source.ResponseTimeMs,
             ResponseSizeBytes = source.ResponseSizeBytes,

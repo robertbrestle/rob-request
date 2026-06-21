@@ -33,7 +33,7 @@ public class UserServiceTests : IDisposable
         var group1 = new UserGroup { Id = "group-1", Name = "user" };
         var group2 = new UserGroup { Id = "group-2", Name = "admin" };
         _db.UserGroups.AddRange(group1, group2);
-        
+
         var user = new User
         {
             Id = "user-1",

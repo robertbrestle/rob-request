@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using MudBlazor;
+using RobRequest.Server.Components.Shared.Navigation;
 using RobRequest.Shared.Services;
 
 namespace RobRequest.Server.Components.Layout.Bases;
@@ -9,6 +10,7 @@ public class MainLayoutBase : LayoutComponentBase, IDisposable
 {
     [Inject] public required SettingsService SettingsService { get; set; }
     [Inject] public required CurrentUserService CurrentUser { get; set; }
+    [Inject] public required IDialogService DialogService { get; set; }
 
     public bool IsDrawerOpen { get; protected set; } = true;
     public bool IsDarkMode { get; protected set; } = true;
@@ -47,6 +49,12 @@ public class MainLayoutBase : LayoutComponentBase, IDisposable
         settings.DarkMode = !settings.DarkMode;
         await SettingsService.UpdateSettingsAsync(settings);
         await InvokeAsync(StateHasChanged);
+    }
+    
+    protected async Task AboutDialog()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        await DialogService.ShowAsync<AboutDialog>(null, options);
     }
 
     #endregion

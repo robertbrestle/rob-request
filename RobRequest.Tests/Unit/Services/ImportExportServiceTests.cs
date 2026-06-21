@@ -77,8 +77,10 @@ public class ImportExportServiceTests : IDisposable
     public async Task BuildExportAsync_IncludesSubtree()
     {
         _db.Collections.Add(new CollectionModel { Id = "parent", Name = "Parent", UserId = TestUserId });
-        _db.Collections.Add(new CollectionModel { Id = "child", Name = "Child", ParentId = "parent", UserId = TestUserId });
-        _db.Collections.Add(new CollectionModel { Id = "grandchild", Name = "Grandchild", ParentId = "child", UserId = TestUserId });
+        _db.Collections.Add(new CollectionModel
+            { Id = "child", Name = "Child", ParentId = "parent", UserId = TestUserId });
+        _db.Collections.Add(new CollectionModel
+            { Id = "grandchild", Name = "Grandchild", ParentId = "child", UserId = TestUserId });
         _db.Collections.Add(new CollectionModel { Id = "other", Name = "Other", UserId = TestUserId });
         await _db.SaveChangesAsync();
 
@@ -126,7 +128,8 @@ public class ImportExportServiceTests : IDisposable
             UserId = TestUserId,
             Timestamp = DateTime.Now
         });
-        _db.HistoryItems.Add(new HistoryItem { Id = "h-2", Method = "POST", Url = "https://other.com", UserId = TestUserId });
+        _db.HistoryItems.Add(new HistoryItem
+            { Id = "h-2", Method = "POST", Url = "https://other.com", UserId = TestUserId });
         await _db.SaveChangesAsync();
 
         var export = await _sut.BuildExportAsync(historyIds: new List<string> { "h-1" });

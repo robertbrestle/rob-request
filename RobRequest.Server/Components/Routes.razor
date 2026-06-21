@@ -2,9 +2,6 @@
     <Found Context="routeData">
         <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(MainLayout)">
             <NotAuthorized>
-                @{
-                    var nav = new NavigationManager[] { };
-                }
                 <RedirectToLogin />
             </NotAuthorized>
         </AuthorizeRouteView>

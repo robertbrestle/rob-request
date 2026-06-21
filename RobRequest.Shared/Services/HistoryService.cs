@@ -44,7 +44,8 @@ public class HistoryService
             StatusCode = response.StatusCode,
             StatusText = response.StatusText,
             Body = response.Body,
-            Headers = response.Headers.Select(h => new HeaderItem { Key = h.Key, Value = h.Value, Enabled = h.Enabled }).ToList(),
+            Headers = response.Headers.Select(h => new HeaderItem { Key = h.Key, Value = h.Value, Enabled = h.Enabled })
+                .ToList(),
             ContentType = response.ContentType,
             ResponseTimeMs = response.ResponseTimeMs,
             ResponseSizeBytes = response.ResponseSizeBytes,

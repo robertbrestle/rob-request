@@ -125,7 +125,7 @@ public class HttpRequestModelTests
         // Assert
         clone.Should().BeEquivalentTo(model);
         clone.Id.Should().Be(model.Id);
-        
+
         // Deep copy check
         clone.Headers.Should().NotBeSameAs(model.Headers);
         clone.Headers[0].Should().NotBeSameAs(model.Headers[0]);

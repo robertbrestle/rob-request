@@ -15,7 +15,8 @@
             }
             else
             {
-                <MudStack Spacing="0" Style="max-height: 300px; overflow-y: auto; border: 1px solid var(--mud-palette-lines-default); border-radius: 4px; padding: 4px;">
+                <MudStack Spacing="0"
+                          Style="max-height: 300px; overflow-y: auto; border: 1px solid var(--mud-palette-lines-default); border-radius: 4px; padding: 4px;">
                     @foreach (var collection in _collections)
                     {
                         @CollectionOption(collection, 0)
@@ -38,7 +39,6 @@
 @code {
 
     [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
-
     [Parameter] public string? CurrentCollectionId { get; set; }
     [Parameter] public string RequestName { get; set; } = string.Empty;
 

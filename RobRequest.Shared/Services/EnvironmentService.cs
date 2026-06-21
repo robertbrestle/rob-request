@@ -116,7 +116,7 @@ public partial class EnvironmentService
             IsSecret = v.IsSecret,
             Enabled = v.Enabled
         }).ToList();
-        
+
         existing.Auth.CopyFrom(environment.Auth);
         existing.UpdatedAt = DateTime.Now;
 

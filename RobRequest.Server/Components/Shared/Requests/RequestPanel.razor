@@ -1,11 +1,5 @@
 @using MudBlazor.Utilities
 @using RobRequest.Server.Components.Shared.Collections
-@inject ApiService ApiService
-@inject HistoryService HistoryService
-@inject CollectionService CollectionService
-@inject EnvironmentService EnvironmentService
-@inject IDialogService DialogService
-@inject ISnackbar Snackbar
 @implements IDisposable
 
 <MudHotkey Key="JsKey.Enter" KeyModifiers="[JsKeyModifier.ControlRight]" OnHotkeyPressed="SendRequest"/>
@@ -310,9 +304,16 @@
 
 @code {
 
+    [Inject] private ApiService ApiService { get; set; } = default!;
+    [Inject] private HistoryService HistoryService {get;set;} = default!;
+    [Inject] private CollectionService CollectionService {get;set;} = default!;
+    [Inject] private EnvironmentService EnvironmentService {get;set;} = default!;
+    [Inject] private IDialogService DialogService {get;set;} = default!;
+    [Inject] private ISnackbar Snackbar {get;set;} = default!;
+
+    [CascadingParameter] public required MainLayout Layout { get; set; }
     [Parameter] public EventCallback<HttpResponseModel> OnResponseReceived { get; set; }
     [Parameter] public EventCallback<bool> OnSendingChanged { get; set; }
-    [CascadingParameter] public required MainLayout Layout { get; set; }
 
     private HttpRequestModel _request = new();
     private bool _isSending;
