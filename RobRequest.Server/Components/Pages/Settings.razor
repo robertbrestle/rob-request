@@ -330,7 +330,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await Layout.DrawerEnabledToggleAsync(true);
+        await Layout.DrawerEnabledToggleAsync(true, false);
         _settings = await SettingsService.GetSettingsAsync();
 
         _collections = await CollectionService.GetCollectionTreeAsync();

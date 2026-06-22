@@ -64,68 +64,156 @@
         }
         else
         {
-            @* expanded drawer *@
-            <MudStack Row="true" Justify="Justify.Center" AlignItems="AlignItems.Center">
-                <MudIconButton Icon="@Icons.Material.Filled.Menu"
-                               Size="Size.Small"
-                               Class="pl-3"
-                               OnClick="OnDrawerToggle"
-                               aria-label="toggle drawer"/>
-                <MudLink Href="/" Color="Color.Inherit">
-                    <MudStack Row="true" AlignItems="AlignItems.Center">
-                        <MudImage Src="/favicon.png" Height="24"/>
-                        <MudText Typo="Typo.h6" Class="mr-4">
-                            <b>RobRequest</b>
-                        </MudText>
+            @* expanded drawer with section *@
+            if (IsDrawerSectionEnabled)
+            {
+                <MudStack Row="true" Justify="Justify.Center" AlignItems="AlignItems.Center">
+                    <MudIconButton Icon="@Icons.Material.Filled.Menu"
+                                   Size="Size.Small"
+                                   Class="pl-3"
+                                   OnClick="OnDrawerToggle"
+                                   aria-label="toggle drawer"/>
+                    <MudLink Href="/" Color="Color.Inherit">
+                        <MudStack Row="true" AlignItems="AlignItems.Center">
+                            <MudImage Src="/favicon.png" Height="24"/>
+                            <MudText Typo="Typo.h6" Class="mr-4">
+                                <b>RobRequest</b>
+                            </MudText>
+                        </MudStack>
+                    </MudLink>
+                    <MudSpacer/>
+                    <MudMenu Icon="@Icons.Material.Filled.MoreVert"
+                             AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                        <MudMenuItem Icon="@Icons.Material.Filled.Home"
+                                     Href="/">
+                            Home
+                        </MudMenuItem>
+                        <MudMenuItem Icon="@Icons.Material.Filled.Folder"
+                                     Href="/collections">
+                            Collections
+                        </MudMenuItem>
+                        <MudMenuItem Icon="@Icons.Material.Filled.Dns"
+                                     Href="/environments">
+                            Environments
+                        </MudMenuItem>
+                        <MudDivider/>
+                        <MudMenuItem Icon="@Icons.Material.Filled.Info"
+                                     OnClick="OnAboutDialog">
+                            About
+                        </MudMenuItem>
+                        <MudMenuItem
+                            Icon="@(IsDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
+                            OnClick="OnToggleDarkMode">
+                            Theme
+                        </MudMenuItem>
+                        <MudMenuItem Icon="@Icons.Material.Filled.Settings"
+                                     Href="/settings">
+                            Settings
+                        </MudMenuItem>
+                        <AuthorizeView Policy="Admin">
+                            <Authorized>
+                                <MudDivider/>
+                                <MudMenuItem Icon="@Icons.Material.Filled.AdminPanelSettings"
+                                             Href="/admin/users">
+                                    User Management
+                                </MudMenuItem>
+                            </Authorized>
+                        </AuthorizeView>
+                        <MudDivider/>
+                        <MudMenuItem Icon="@Icons.Material.Filled.Logout"
+                                     Href="/api/auth/logout"
+                                     ForceLoad="true">
+                            Logout (@CurrentUser.Username)
+                        </MudMenuItem>
+                    </MudMenu>
+                </MudStack>
+                <SectionOutlet SectionName="Drawer"/>
+            }
+            else
+            {
+                @* full navmenu section *@
+                <MudStack Spacing="3" Class="pt-3 pl-4" Justify="Justify.FlexStart">
+                    <MudStack Row="true" Justify="Justify.FlexStart">
+                        <MudIconButton Icon="@Icons.Material.Filled.Menu"
+                                       Size="Size.Small"
+                                       OnClick="OnDrawerToggle"
+                                       aria-label="toggle drawer"/>
+                        <MudLink Href="/" Color="Color.Inherit">
+                            <MudStack Row="true" AlignItems="AlignItems.Center">
+                                <MudImage Src="/favicon.png" Height="24"/>
+                                <MudText Typo="Typo.h6" Class="mr-4">
+                                    <b>RobRequest</b>
+                                </MudText>
+                            </MudStack>
+                        </MudLink>
                     </MudStack>
-                </MudLink>
-                <MudSpacer/>
-                <MudMenu Icon="@Icons.Material.Filled.MoreVert"
-                         AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
-                    <MudMenuItem Icon="@Icons.Material.Filled.Home"
-                                 Href="/">
-                        Home
-                    </MudMenuItem>
-                    <MudMenuItem Icon="@Icons.Material.Filled.Folder"
-                                 Href="/collections">
-                        Collections
-                    </MudMenuItem>
-                    <MudMenuItem Icon="@Icons.Material.Filled.Dns"
-                                 Href="/environments">
-                        Environments
-                    </MudMenuItem>
                     <MudDivider/>
-                    <MudMenuItem Icon="@Icons.Material.Filled.Info"
-                                 OnClick="OnAboutDialog">
+                    <MudButton StartIcon="@Icons.Material.Filled.Home"
+                               Class="justify-start"
+                               Href="/"
+                               aria-label="go home"
+                               title="Home">
+                        Home
+                    </MudButton>
+                    <MudButton StartIcon="@Icons.Material.Filled.Folder"
+                               Class="justify-start"
+                               Href="/collections"
+                               aria-label="open collections"
+                               title="Collections">
+                        Collections
+                    </MudButton>
+                    <MudButton StartIcon="@Icons.Material.Filled.Dns"
+                               Class="justify-start"
+                               Href="/environments"
+                               aria-label="open environments"
+                               title="Environments">
+                        Environments
+                    </MudButton>
+                    <MudDivider/>
+                    <MudButton StartIcon="@Icons.Material.Filled.Info"
+                               Class="justify-start"
+                               OnClick="OnAboutDialog"
+                               aria-label="open about dialog"
+                               title="About">
                         About
-                    </MudMenuItem>
-                    <MudMenuItem
-                        Icon="@(IsDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
-                        OnClick="OnToggleDarkMode">
+                    </MudButton>
+                    <MudButton
+                        StartIcon="@(IsDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
+                        Class="justify-start"
+                        OnClick="OnToggleDarkMode"
+                        aria-label="change theme"
+                        title="Theme">
                         Theme
-                    </MudMenuItem>
-                    <MudMenuItem Icon="@Icons.Material.Filled.Settings"
-                                 Href="/settings">
+                    </MudButton>
+                    <MudButton StartIcon="@Icons.Material.Filled.Settings"
+                               Class="justify-start"
+                               Href="/settings"
+                               aria-label="open settings"
+                               title="Settings">
                         Settings
-                    </MudMenuItem>
+                    </MudButton>
                     <AuthorizeView Policy="Admin">
                         <Authorized>
                             <MudDivider/>
-                            <MudMenuItem Icon="@Icons.Material.Filled.AdminPanelSettings"
-                                         Href="/admin/users">
+                            <MudButton StartIcon="@Icons.Material.Filled.AdminPanelSettings"
+                                       Class="justify-start"
+                                       Href="/admin/users"
+                                       aria-label="open user management"
+                                       title="User Management">
                                 User Management
-                            </MudMenuItem>
+                            </MudButton>
                         </Authorized>
                     </AuthorizeView>
                     <MudDivider/>
-                    <MudMenuItem Icon="@Icons.Material.Filled.Logout"
-                                 Href="/api/auth/logout"
-                                 ForceLoad="true">
-                        Logout (@CurrentUser.Username)
-                    </MudMenuItem>
-                </MudMenu>
-            </MudStack>
-            <SectionOutlet SectionName="Drawer"/>
+                    <MudButton StartIcon="@Icons.Material.Filled.Logout"
+                               Class="justify-start"
+                               Href="/api/auth/logout"
+                               aria-label="logout"
+                               title="Logout">
+                        Logout
+                    </MudButton>
+                </MudStack>
+            }
         }
     </MudDrawer>
 }
@@ -134,6 +222,7 @@
     [Parameter] public bool IsEnabled { get; set; }
     [Parameter] public bool IsDrawerOpen { get; set; }
     [Parameter] public bool IsDarkMode { get; set; }
+    [Parameter] public bool IsDrawerSectionEnabled { get; set; } = true;
     [Parameter] public EventCallback<bool> IsDrawerOpenChanged { get; set; }
     [Parameter] public EventCallback OnToggleDarkMode { get; set; }
     [Parameter] public EventCallback OnDrawerToggle { get; set; }
