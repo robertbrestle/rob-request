@@ -48,6 +48,7 @@ public class MainLayoutBase : LayoutComponentBase, IDisposable
         var settings = await SettingsService.GetSettingsAsync();
         settings.DarkMode = !settings.DarkMode;
         await SettingsService.UpdateSettingsAsync(settings);
+        IsDarkMode = settings.DarkMode;
         await InvokeAsync(StateHasChanged);
     }
     

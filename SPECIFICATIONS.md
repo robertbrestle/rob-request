@@ -1,7 +1,7 @@
 # Application Specification: RobRequest, a Blazor API Client (Simplified Postman Clone)
 
 ## Executive Summary
-A lightweight, modern REST API development client built with .NET 10 Blazor Web Application using **Interactive Server** rendering. This browser-based tool provides developers with a fast, intuitive interface for testing and debugging RESTful APIs, serving as a streamlined alternative to heavyweight desktop clients like Postman. The server-side rendering model enables full access to .NET server capabilities — including EF Core with SQLite for persistent storage and unrestricted `HttpClient` usage — while delivering a rich, interactive UI over a SignalR connection.
+A minimal REST API development client built with .NET 10 Blazor Web Application using **Interactive Server** rendering. This browser-based tool provides developers with a fast, intuitive interface for testing and debugging RESTful APIs, serving as a streamlined alternative to heavyweight desktop clients like Postman. The server-side rendering model enables full access to .NET server capabilities — including EF Core with SQLite for persistent storage and unrestricted `HttpClient` usage — while delivering a rich, interactive UI over a SignalR connection.
 
 ---
 

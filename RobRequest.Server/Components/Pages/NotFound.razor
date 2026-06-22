@@ -1,15 +1,40 @@
 @page "/not-found"
+@attribute [Microsoft.AspNetCore.Authorization.AllowAnonymous]
 @layout MainLayout
 
-<MudAlert Severity="Severity.Warning">Sorry, there's nothing at this address.</MudAlert>
+<MudGrid Spacing="2">
+    <MudItem xs="12">
+        <MudPaper Elevation="1" Class="pa-4" Style="min-height: 100%;">
+            <MudStack Spacing="3">
+                <MudStack Row="true" AlignItems="AlignItems.Center">
+                    <MudIcon Icon="@Icons.Material.Filled.Close" Color="Color.Warning" Size="Size.Large"/>
+                    <MudText Typo="Typo.h5">Page Not Found</MudText>
+                    <MudSpacer/>
+                    <MudIconButton Icon="@Icons.Custom.Uncategorized.Empty" Disabled="true" Ripple="false"/>
+                </MudStack>
+                <MudAlert Severity="Severity.Warning">Sorry, there's nothing at this address.</MudAlert>
+                <MudStack Row="true">
+                    <MudButton StartIcon="@Icons.Material.Filled.Home"
+                               Href="/"
+                               Color="Color.Primary"
+                               Variant="Variant.Filled"
+                               aria-label="go home"
+                               title="Home">
+                        Home
+                    </MudButton>
+                </MudStack>
+            </MudStack>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
 
 @code {
 
     [CascadingParameter] public required MainLayout Layout { get; set; }
-    
+
     protected override async Task OnInitializedAsync()
     {
-        await Layout.DrawerEnabledToggleAsync(false);
+        await Layout.DrawerEnabledToggleAsync(true);
     }
 
 }

@@ -123,6 +123,10 @@ else
     app.UseHttpsRedirection();
 }
 
+// allows for proper redirection to NotFound.razor
+// https://github.com/dotnet/aspnetcore/issues/62404
+app.UseStatusCodePagesWithReExecute("/not-found", "?statusCode={0}");
+
 app.UseAuthentication();
 app.UseAuthorization();
 

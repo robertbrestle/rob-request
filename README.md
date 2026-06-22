@@ -1,6 +1,6 @@
 # RobRequest
 
-A lightweight, modern REST API development client built with .NET 10 Blazor Server, SQLite, and MudBlazor. A streamlined alternative to Postman, accessible via web browser.
+A minimal REST API client built with .NET 10 Blazor, SQLite, and the MudBlazor component library.
 
 ## Prerequisites
 
