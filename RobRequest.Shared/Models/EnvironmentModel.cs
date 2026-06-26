@@ -4,12 +4,11 @@ namespace RobRequest.Shared.Models;
 
 public class EnvironmentModel
 {
-    [Key]
-    public string Id { get; set; } = Guid.NewGuid().ToString();
-    public string UserId { get; set; } = string.Empty;
+    [Key, StringLength(36)] public string Id { get; set; } = Guid.NewGuid().ToString();
+    [StringLength(36)] public string UserId { get; set; } = string.Empty;
     public User? User { get; set; }
-    public string Name { get; set; } = string.Empty;
-    public string? Description { get; set; }
+    [StringLength(50)] public string Name { get; set; } = string.Empty;
+    [StringLength(255)] public string? Description { get; set; }
     public int SortOrder { get; set; }
     public List<EnvironmentVariable> Variables { get; set; } = new();
     public AuthSettings Auth { get; set; } = new();
@@ -37,12 +36,4 @@ public class EnvironmentModel
             UpdatedAt = UpdatedAt
         };
     }
-}
-
-public class EnvironmentVariable
-{
-    public string Key { get; set; } = string.Empty;
-    public string Value { get; set; } = string.Empty;
-    public bool IsSecret { get; set; }
-    public bool Enabled { get; set; } = true;
 }

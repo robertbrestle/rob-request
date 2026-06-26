@@ -86,6 +86,7 @@
                         <MudTh>Approved</MudTh>
                         <MudTh>Created</MudTh>
                         <MudTh>Updated</MudTh>
+                        <MudTh>Last Login</MudTh>
                         <MudTh Style="text-align: right">Actions</MudTh>
                     </HeaderContent>
                     <RowTemplate>
@@ -120,6 +121,7 @@
                         </MudTd>
                         <MudTd>@context.CreatedAt.ToString("g")</MudTd>
                         <MudTd>@context.UpdatedAt.ToString("g")</MudTd>
+                        <MudTd>@context.LastLogin?.ToString("g")</MudTd>
                         <MudTd Style="text-align: right">
                             <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small"
                                      AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">

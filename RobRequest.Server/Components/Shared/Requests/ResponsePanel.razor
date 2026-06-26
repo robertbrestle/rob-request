@@ -17,6 +17,9 @@
         <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Style="min-height: 200px;">
             <MudProgressCircular Indeterminate="true" Color="Color.Primary" Size="Size.Large"/>
             <MudText Typo="Typo.body1" Class="mt-3">Sending request...</MudText>
+            <MudWatch @ref="_watch" Interval="TimeSpan.FromSeconds(1)" Mode="WatchMode.StopWatch" 
+                      ShowHour="false" ShowMinute="true" ShowSecond="true" ShowMillisecond="false" 
+                      Delimiter=":" Typo="Typo.body1" TypoMillisecond="Typo.body1" />
         </MudStack>
     }
     else if (Response != null)
@@ -93,8 +96,6 @@
                 <MudStack Spacing="2">
                     @if (!string.IsNullOrEmpty(Response.ErrorMessage))
                     {
-                        <MudAlert Severity="Severity.Error">@Response.ErrorMessage</MudAlert>
-
                         @if (!string.IsNullOrEmpty(Response.StackTrace))
                         {
                             <MonacoEditor Id="response-body-editor"
@@ -138,6 +139,22 @@
     private string _headerSearch = string.Empty;
     private string _headerSortField = "key";
     private bool _headerSortAsc = true;
+    private MudWatch? _watch;
+    private bool _isWatchStarted;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        switch (IsSending)
+        {
+            case true when _watch != null && !_isWatchStarted:
+                _isWatchStarted = true;
+                _watch.Start();
+                break;
+            case false:
+                _isWatchStarted = false;
+                break;
+        }
+    }
 
     private string GetDisplayBody()
     {

@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using MudBlazor.Services;
+using MudExtensions.Services;
 using RobRequest.Shared.Data;
 using RobRequest.Shared.Models;
 using RobRequest.Shared.Services;
@@ -22,6 +23,7 @@ builder.Services.AddMudServices(config =>
     config.SnackbarConfiguration.HideTransitionDuration = 300;
     config.SnackbarConfiguration.ShowTransitionDuration = 300;
 });
+builder.Services.AddMudExtensions();
 
 // Authentication & Authorization
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

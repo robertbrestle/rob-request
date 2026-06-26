@@ -4,8 +4,9 @@ namespace RobRequest.Shared.Models;
 
 public class UserSettings
 {
-    [Key]
+    [Key, StringLength(36)]
     public string Id { get; set; } = Guid.NewGuid().ToString();
+    [StringLength(36)]
     public string UserId { get; set; } = string.Empty;
     public User? User { get; set; }
     public bool DarkMode { get; set; } = true;
@@ -14,5 +15,6 @@ public class UserSettings
     public bool AutoFormatJson { get; set; } = true;
     public bool FollowRedirects { get; set; } = true;
     public bool ValidateSslCertificates { get; set; } = true;
+    [StringLength(36)]
     public string? ActiveEnvironmentId { get; set; }
 }

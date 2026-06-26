@@ -80,6 +80,9 @@ public class AuthService
             await _db.SaveChangesAsync();
         }
 
+        user.LastLogin = DateTime.Now;
+        await _db.SaveChangesAsync();
+
         return user;
     }
 

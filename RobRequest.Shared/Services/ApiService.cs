@@ -33,6 +33,10 @@ public class ApiService(IHttpClientFactory httpClientFactory, SettingsService se
             }
 
             var settings = await settingsService.GetSettingsAsync();
+
+            // override default timeout with user setting
+            request.TimeoutSeconds = settings.DefaultTimeoutSeconds;
+
             var httpClient = GetHttpClient(settings.ValidateSslCertificates);
 
             using var httpRequest = new HttpRequestMessage(new HttpMethod(request.Method), uri);

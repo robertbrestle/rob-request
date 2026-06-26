@@ -11,7 +11,7 @@ h1:focus {
 
 #response-body-editor,
 .response-body-editor {
-    height: calc(100vh - 200px);
+    height: calc(100vh - 150px);
     min-height: 200px;
 }
 
