@@ -192,6 +192,7 @@
         {
             await UpdateEditorContent();
         }
+        await Js.InvokeVoidAsync("initializeMonacoCodeLens");
     }
 
     private async Task UpdateEditorContent()
@@ -243,7 +244,7 @@
             Value = Value ?? string.Empty,
             ReadOnly = ReadOnly,
             Minimap = new EditorMinimapOptions { Enabled = ShowMinimap },
-            ScrollBeyondLastLine = false,
+            ScrollBeyondLastLine = true,
             FontFamily = "monospace",
             FontSize = FontSize,
             LineNumbers = ShowLineNumbers ? "on" : "off",
@@ -251,7 +252,9 @@
             OverviewRulerLanes = 0,
             Folding = Folding,
             WordWrap = WordWrap,
-            Theme = IsDarkMode ? "vs-dark" : "vs-light"
+            Theme = IsDarkMode ? "vs-dark" : "vs-light",
+            MouseWheelZoom = true,
+            CodeLens = true
         };
     }
 

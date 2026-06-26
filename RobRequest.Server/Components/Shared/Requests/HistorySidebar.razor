@@ -28,7 +28,11 @@
         }
     </MudStack>
 
-    @if (_history.Count == 0)
+    @if (_isLoading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary"/>
+    }
+    else if (_history.Count == 0)
     {
         <MudText Typo="Typo.body2" Color="Color.Default" Align="Align.Center" Class="pa-4">
             No requests yet
@@ -70,11 +74,15 @@
 
     private IReadOnlyList<HistoryItem> _history = Array.Empty<HistoryItem>();
     private string _searchQuery = string.Empty;
+    private bool _isLoading = true;
 
     protected override async Task OnInitializedAsync()
     {
         HistoryService.OnHistoryChanged += OnHistoryChanged;
+        // delay loading to prevent UI lag
+        await Task.Delay(500);
         await LoadHistory();
+        _isLoading = false;
     }
 
     private async void OnHistoryChanged()
