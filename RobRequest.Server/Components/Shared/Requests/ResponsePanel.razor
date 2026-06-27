@@ -100,7 +100,7 @@
                         {
                             <MonacoEditor Id="response-body-editor"
                                           Value="@Response.StackTrace"
-                                          Language="@(Response?.ContentType ?? string.Empty)"
+                                          Language="@GetMonacoLanguage()"
                                           ReadOnly="true"
                                           IsDarkMode="Layout.IsDarkMode"
                                           CssClass="response-body-editor"/>
@@ -108,12 +108,33 @@
                     }
                     else if (!string.IsNullOrEmpty(Response.Body))
                     {
-                        <MonacoEditor Id="response-body-editor"
-                                      Value="@GetDisplayBody()"
-                                      Language="@(Response?.ContentType ?? string.Empty)"
-                                      ReadOnly="true"
-                                      IsDarkMode="Layout.IsDarkMode"
-                                      CssClass="response-body-editor"/>
+                        @if (IsLargeResponse())
+                        {
+                            <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Style="min-height: 200px;" Spacing="3">
+                                <MudIcon Icon="@Icons.Material.Filled.Warning" Color="Color.Warning" Style="font-size: 3rem;"/>
+                                <MudText Typo="Typo.h6" Align="Align.Center">
+                                    Response body is too large to display (@Response.FormattedSize)
+                                </MudText>
+                                <MudAlert Severity="Severity.Warning" Variant="Variant.Outlined">
+                                    Responses over 5 MB are not rendered to preserve application stability.
+                                </MudAlert>
+                                <MudButton Variant="Variant.Filled"
+                                           Color="Color.Primary"
+                                           StartIcon="@Icons.Material.Filled.Download"
+                                           OnClick="DownloadResponseBody">
+                                    Download Response Body
+                                </MudButton>
+                            </MudStack>
+                        }
+                        else
+                        {
+                            <MonacoEditor Id="response-body-editor"
+                                          Value="@GetDisplayBody()"
+                                          Language="@GetMonacoLanguage()"
+                                          ReadOnly="true"
+                                          IsDarkMode="Layout.IsDarkMode"
+                                          CssClass="response-body-editor"/>
+                        }
                     }
                     else
                     {
@@ -131,6 +152,7 @@
 
     [Inject] private IJSRuntime Js { get; set; } = default!;
     [Inject] private ISnackbar Snackbar { get; set; } = default!;
+    [Inject] private SettingsService SettingsService { get; set; } = default!;
 
     [CascadingParameter] public required MainLayout Layout { get; set; }
     [Parameter] public HttpResponseModel? Response { get; set; }
@@ -141,6 +163,12 @@
     private bool _headerSortAsc = true;
     private MudWatch? _watch;
     private bool _isWatchStarted;
+    private UserSettings _settings = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _settings = await SettingsService.GetSettingsAsync();
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -156,9 +184,58 @@
         }
     }
 
+    private string GetMonacoLanguage()
+    {
+        var contentType = Response?.ContentType ?? string.Empty;
+        if (contentType.Contains("json", StringComparison.OrdinalIgnoreCase))
+            return "json";
+        if (contentType.Contains("xml", StringComparison.OrdinalIgnoreCase))
+            return "xml";
+        if (contentType.Contains("html", StringComparison.OrdinalIgnoreCase))
+            return "html";
+        if (contentType.Contains("javascript", StringComparison.OrdinalIgnoreCase))
+            return "javascript";
+        if (contentType.Contains("css", StringComparison.OrdinalIgnoreCase))
+            return "css";
+        return "plaintext";
+    }
+
+    private const long LargeResponseThresholdBytes = 5 * 1024 * 1024; // 5 MB
+
+    private bool IsLargeResponse()
+    {
+        return Response != null && System.Text.Encoding.UTF8.GetByteCount(Response.Body) > LargeResponseThresholdBytes;
+    }
+
+    private async Task DownloadResponseBody()
+    {
+        if (Response == null) return;
+
+        var fileName = $"response-{DateTime.Now:yyyyMMdd-HHmmss}.txt";
+        var contentType = string.IsNullOrEmpty(Response.ContentType) ? "text/plain" : Response.ContentType;
+        var bytes = System.Text.Encoding.UTF8.GetBytes(Response.Body);
+        var base64 = Convert.ToBase64String(bytes);
+        await Js.InvokeVoidAsync("downloadFileFromBytes", fileName, contentType, base64);
+    }
+
     private string GetDisplayBody()
     {
-        return Response == null ? string.Empty : Response.Body;
+        if (Response == null) return string.Empty;
+
+        if (_settings.AutoFormatJson && GetMonacoLanguage() == "json" && !string.IsNullOrEmpty(Response.Body))
+        {
+            try
+            {
+                var doc = System.Text.Json.JsonDocument.Parse(Response.Body);
+                return System.Text.Json.JsonSerializer.Serialize(doc, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+            }
+            catch
+            {
+                // Not valid JSON — fall through to raw body
+            }
+        }
+
+        return Response.Body;
     }
 
     private IEnumerable<HeaderItem> GetFilteredHeaders()

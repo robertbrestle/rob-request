@@ -16,6 +16,19 @@ window.downloadFileFromBytes = (fileName, contentType, base64) => {
     URL.revokeObjectURL(url);
 }
 
+window.downloadFileFromStream = async (fileName, contentType, streamRef) => {
+    const arrayBuffer = await streamRef.arrayBuffer();
+    const blob = new Blob([arrayBuffer], {type: contentType});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
 // renders item count for JSON arrays
 window.initializeMonacoCodeLens = () => {
     if (window._monacoCodeLensRegistered) return;

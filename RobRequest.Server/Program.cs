@@ -76,6 +76,10 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await db.Database.MigrateAsync();
 
+    // vacuum the database automatically
+    await db.Database.ExecuteSqlRawAsync("PRAGMA auto_vacuum = INCREMENTAL;");
+    await db.Database.ExecuteSqlRawAsync("PRAGMA incremental_vacuum;");
+
     // Seed user groups
     if (!await db.UserGroups.AnyAsync())
     {
