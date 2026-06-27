@@ -18,6 +18,7 @@ Then open `https://localhost:7025` in your browser.
 
 ## Project Structure
 
+- **RobRequest.MockApi/** — Mock API project for testing and development
 - **RobRequest.Server/** — Blazor Server project
   - `Components/` - Routable pages and reusable UI components
   - `wwwroot/` - Static files (favicon, images, etc.)

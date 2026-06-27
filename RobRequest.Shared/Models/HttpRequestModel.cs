@@ -1,8 +1,12 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace RobRequest.Shared.Models;
 
 public class HttpRequestModel
 {
+    [StringLength(36)]
     public string Id { get; set; } = Guid.NewGuid().ToString();
+    [StringLength(7)]
     public string Method { get; set; } = "GET";
     public string Url { get; set; } = string.Empty;
     public List<HeaderItem> Headers { get; set; } = new();

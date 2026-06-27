@@ -7,11 +7,8 @@ using RobRequest.Shared.Models;
 
 namespace RobRequest.Shared.Services;
 
-public class ImportExportService
+public class ImportExportService(AppDbContext db, CurrentUserService currentUser)
 {
-    private readonly AppDbContext _db;
-    private readonly CurrentUserService _currentUser;
-
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         WriteIndented = true,
@@ -26,12 +23,6 @@ public class ImportExportService
         PropertyNameCaseInsensitive = true,
         Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
     };
-
-    public ImportExportService(AppDbContext db, CurrentUserService currentUser)
-    {
-        _db = db;
-        _currentUser = currentUser;
-    }
 
     public async Task<RobRequestExport> BuildExportAsync(
         List<string>? collectionIds = null,
@@ -104,8 +95,8 @@ public class ImportExportService
     private async Task<List<ExportedCollection>> BuildCollectionExportAsync(List<string> collectionIds)
     {
         // Get all collections to traverse subtrees (scoped to current user)
-        var allCollections = await _db.Collections
-            .Where(c => c.UserId == _currentUser.UserId)
+        var allCollections = await db.Collections
+            .Where(c => c.UserId == currentUser.UserId)
             .Include(c => c.Requests)
             .AsNoTracking()
             .ToListAsync();
@@ -156,8 +147,8 @@ public class ImportExportService
 
     private async Task<List<ExportedEnvironment>> BuildEnvironmentExportAsync(List<string> environmentIds)
     {
-        var environments = await _db.Environments
-            .Where(e => e.UserId == _currentUser.UserId && environmentIds.Contains(e.Id))
+        var environments = await db.Environments
+            .Where(e => e.UserId == currentUser.UserId && environmentIds.Contains(e.Id))
             .AsNoTracking()
             .ToListAsync();
 
@@ -176,8 +167,8 @@ public class ImportExportService
 
     private async Task<List<ExportedHistoryItem>> BuildHistoryExportAsync(List<string> historyIds)
     {
-        var items = await _db.HistoryItems
-            .Where(h => h.UserId == _currentUser.UserId && historyIds.Contains(h.Id))
+        var items = await db.HistoryItems
+            .Where(h => h.UserId == currentUser.UserId && historyIds.Contains(h.Id))
             .AsNoTracking()
             .ToListAsync();
 
@@ -196,8 +187,8 @@ public class ImportExportService
     private async Task ImportCollectionsAsync(List<ExportedCollection> collections, ImportResult result)
     {
         var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-        var existingNames = await _db.Collections
-            .Where(c => c.UserId == _currentUser.UserId && c.ParentId == null)
+        var existingNames = await db.Collections
+            .Where(c => c.UserId == currentUser.UserId && c.ParentId == null)
             .Select(c => c.Name)
             .ToListAsync();
         var existingNameSet = new HashSet<string>(existingNames, StringComparer.OrdinalIgnoreCase);
@@ -237,14 +228,14 @@ public class ImportExportService
                 Id = newId,
                 Name = name,
                 Description = col.Description,
-                UserId = _currentUser.UserId ?? string.Empty,
+                UserId = currentUser.UserId ?? string.Empty,
                 ParentId = newParentId,
                 SortOrder = col.SortOrder,
                 CreatedAt = col.CreatedAt,
                 UpdatedAt = col.UpdatedAt
             };
 
-            _db.Collections.Add(newCollection);
+            db.Collections.Add(newCollection);
 
             foreach (var req in col.Requests)
             {
@@ -259,21 +250,21 @@ public class ImportExportService
                     UpdatedAt = req.UpdatedAt
                 };
 
-                _db.CollectionRequests.Add(newRequest);
+                db.CollectionRequests.Add(newRequest);
                 result.RequestsImported++;
             }
 
             result.CollectionsImported++;
         }
 
-        await _db.SaveChangesAsync();
+        await db.SaveChangesAsync();
     }
 
     private async Task ImportEnvironmentsAsync(List<ExportedEnvironment> environments, ImportResult result)
     {
         var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-        var existingNames = await _db.Environments
-            .Where(e => e.UserId == _currentUser.UserId)
+        var existingNames = await db.Environments
+            .Where(e => e.UserId == currentUser.UserId)
             .Select(e => e.Name)
             .ToListAsync();
         var existingNameSet = new HashSet<string>(existingNames, StringComparer.OrdinalIgnoreCase);
@@ -291,7 +282,7 @@ public class ImportExportService
                 Id = Guid.NewGuid().ToString(),
                 Name = name,
                 Description = env.Description,
-                UserId = _currentUser.UserId ?? string.Empty,
+                UserId = currentUser.UserId ?? string.Empty,
                 SortOrder = env.SortOrder,
                 Variables = env.Variables.Select(v => new EnvironmentVariable
                 {
@@ -305,11 +296,11 @@ public class ImportExportService
                 UpdatedAt = env.UpdatedAt
             };
 
-            _db.Environments.Add(newEnv);
+            db.Environments.Add(newEnv);
             result.EnvironmentsImported++;
         }
 
-        await _db.SaveChangesAsync();
+        await db.SaveChangesAsync();
     }
 
     private async Task ImportHistoryAsync(List<ExportedHistoryItem> historyItems, ImportResult result)
@@ -323,17 +314,17 @@ public class ImportExportService
                 Url = item.Url,
                 StatusCode = item.StatusCode,
                 ResponseTimeMs = item.ResponseTimeMs,
-                UserId = _currentUser.UserId ?? string.Empty,
+                UserId = currentUser.UserId ?? string.Empty,
                 Timestamp = item.Timestamp,
                 Request = item.Request != null ? CloneRequest(item.Request) : null,
                 Response = item.Response != null ? CloneResponse(item.Response) : null
             };
 
-            _db.HistoryItems.Add(newItem);
+            db.HistoryItems.Add(newItem);
             result.HistoryImported++;
         }
 
-        await _db.SaveChangesAsync();
+        await db.SaveChangesAsync();
     }
 
     private static HttpRequestModel CloneRequest(HttpRequestModel source)

@@ -89,7 +89,8 @@
                                      Label="Default Request Timeout (seconds)"
                                      Variant="Variant.Outlined"
                                      Min="1"
-                                     Max="300"/>
+                                     Max="900"
+                                     HelperText="Limit 900 seconds"/>
 
                     <MudNumericField T="int"
                                      @bind-Value="_settings.MaxHistoryItems"
@@ -97,14 +98,21 @@
                                      Label="Max History Items"
                                      Variant="Variant.Outlined"
                                      Min="10"
-                                     Max="10000"/>
+                                     Max="1000"
+                                     HelperText="Limit 1000 items"/>
                 </MudStack>
 
-                <MudStack Row="true" Justify="Justify.SpaceAround">
+                <MudStack Row="true" Justify="Justify.SpaceAround" Wrap="Wrap.Wrap">
                     <MudSwitch T="bool"
                                @bind-Value="_settings.AutoFormatJson"
                                @bind-Value:after="SaveSettings"
                                Label="Auto-format JSON responses"
+                               Color="Color.Primary"/>
+                    
+                    <MudSwitch T="bool"
+                               @bind-Value="_settings.ShowLineNumbers"
+                               @bind-Value:after="SaveSettings"
+                               Label="Show Line Numbers"
                                Color="Color.Primary"/>
 
                     <MudSwitch T="bool"

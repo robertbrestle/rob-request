@@ -4,41 +4,33 @@ using RobRequest.Shared.Models;
 
 namespace RobRequest.Shared.Services;
 
-public class SettingsService
+public class SettingsService(AppDbContext db, CurrentUserService currentUser)
 {
-    private readonly AppDbContext _db;
-    private readonly CurrentUserService _currentUser;
     private UserSettings _settings = new();
 
     public event Action? OnSettingsChanged;
-
-    public SettingsService(AppDbContext db, CurrentUserService currentUser)
-    {
-        _db = db;
-        _currentUser = currentUser;
-    }
 
     public UserSettings Settings => _settings;
 
     public virtual async Task<UserSettings> GetSettingsAsync()
     {
-        var userId = _currentUser.UserId;
-        if (string.IsNullOrEmpty(userId) || !_currentUser.IsAuthenticated)
+        var userId = currentUser.UserId;
+        if (string.IsNullOrEmpty(userId) || !currentUser.IsAuthenticated)
             return _settings;
 
         // if user doesn't exist, return _settings
         // TODO: refactor for better authentication/user status detection
-        var user = await _db.Users.FindAsync(userId);
+        var user = await db.Users.FindAsync(userId);
         if (user is null)
             return _settings;
 
-        var settings = await _db.UserSettings
+        var settings = await db.UserSettings
             .FirstOrDefaultAsync(s => s.UserId == userId);
         if (settings is null)
         {
             settings = new UserSettings { UserId = userId };
-            _db.UserSettings.Add(settings);
-            await _db.SaveChangesAsync();
+            db.UserSettings.Add(settings);
+            await db.SaveChangesAsync();
         }
 
         _settings = settings;
@@ -47,18 +39,18 @@ public class SettingsService
 
     public async Task UpdateSettingsAsync(UserSettings settings)
     {
-        var userId = _currentUser.UserId;
+        var userId = currentUser.UserId;
         if (string.IsNullOrEmpty(userId))
         {
             return;
         }
 
-        var existing = await _db.UserSettings
+        var existing = await db.UserSettings
             .FirstOrDefaultAsync(s => s.UserId == userId);
         if (existing is null)
         {
             settings.UserId = userId;
-            _db.UserSettings.Add(settings);
+            db.UserSettings.Add(settings);
         }
         else
         {
@@ -66,13 +58,14 @@ public class SettingsService
             existing.DefaultTimeoutSeconds = settings.DefaultTimeoutSeconds;
             existing.MaxHistoryItems = settings.MaxHistoryItems;
             existing.AutoFormatJson = settings.AutoFormatJson;
+            existing.ShowLineNumbers = settings.ShowLineNumbers;
             existing.FollowRedirects = settings.FollowRedirects;
             existing.ValidateSslCertificates = settings.ValidateSslCertificates;
             existing.ActiveEnvironmentId = settings.ActiveEnvironmentId;
             settings = existing;
         }
 
-        await _db.SaveChangesAsync();
+        await db.SaveChangesAsync();
         _settings = settings;
         OnSettingsChanged?.Invoke();
     }
@@ -81,7 +74,7 @@ public class SettingsService
     {
         var settings = await GetSettingsAsync();
         settings.DarkMode = !settings.DarkMode;
-        await _db.SaveChangesAsync();
+        await db.SaveChangesAsync();
         OnSettingsChanged?.Invoke();
     }
 }

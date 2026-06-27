@@ -63,13 +63,16 @@ app.MapMethods("/api/status/{code:int}", methodVerbs, (int code) =>
 // ---------------------------------------------------------------------------
 app.MapGet("/api/timeout/{seconds:int}", async (int seconds, CancellationToken ct) =>
 {
-    if (seconds is < 0 or > 300)
+    switch (seconds)
     {
-        return Results.BadRequest(new { error = "Seconds must be between 0 and 300." });
+        case <= 0:
+            return Results.Json(new { delayedSeconds = seconds });
+        case > 3600:
+            return Results.BadRequest(new { error = "Seconds must be less than 3600." });
+        default:
+            await Task.Delay(TimeSpan.FromSeconds(seconds), ct);
+            return Results.Json(new { delayedSeconds = seconds });
     }
-
-    await Task.Delay(TimeSpan.FromSeconds(seconds), ct);
-    return Results.Json(new { delayedSeconds = seconds });
 });
 
 // ---------------------------------------------------------------------------

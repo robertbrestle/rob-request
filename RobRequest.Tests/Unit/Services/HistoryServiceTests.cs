@@ -14,7 +14,7 @@ public class HistoryServiceTests : IDisposable
         _db.Database.OpenConnection();
         _db.Database.EnsureCreated();
         TestHelpers.SeedTestUser(_db);
-        _sut = new HistoryService(_db, TestHelpers.CreateTestCurrentUser());
+        _sut = new HistoryService(_db, TestHelpers.CreateTestSettingsService(_db), TestHelpers.CreateTestCurrentUser());
     }
 
     public void Dispose()
@@ -93,16 +93,16 @@ public class HistoryServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task SetMaxItems_TrimsHistoryOnAdd()
+    public async Task AddToHistoryAsync_TrimsHistoryToMaxItems()
     {
-        _sut.SetMaxItems(2);
+        var sut = new HistoryService(_db, TestHelpers.CreateTestSettingsService(_db, maxHistoryItems: 2), TestHelpers.CreateTestCurrentUser());
 
         var response = new HttpResponseModel { StatusCode = 200 };
-        await _sut.AddToHistoryAsync(new HttpRequestModel { Url = "https://1.com" }, response);
-        await _sut.AddToHistoryAsync(new HttpRequestModel { Url = "https://2.com" }, response);
-        await _sut.AddToHistoryAsync(new HttpRequestModel { Url = "https://3.com" }, response);
+        await sut.AddToHistoryAsync(new HttpRequestModel { Url = "https://1.com" }, response);
+        await sut.AddToHistoryAsync(new HttpRequestModel { Url = "https://2.com" }, response);
+        await sut.AddToHistoryAsync(new HttpRequestModel { Url = "https://3.com" }, response);
 
-        var history = await _sut.GetHistoryAsync();
+        var history = await sut.GetHistoryAsync();
         history.Should().HaveCount(2);
     }
 

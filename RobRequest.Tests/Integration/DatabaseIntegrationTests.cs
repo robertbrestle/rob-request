@@ -26,7 +26,7 @@ public class DatabaseIntegrationTests : IDisposable
     [Fact]
     public async Task HistoryItem_PersistsAndReloads()
     {
-        var service = new HistoryService(_db, _currentUser);
+        var service = new HistoryService(_db, TestHelpers.CreateTestSettingsService(_db), _currentUser);
         var request = new HttpRequestModel
         {
             Method = "POST",
@@ -66,7 +66,7 @@ public class DatabaseIntegrationTests : IDisposable
     [Fact]
     public async Task HistoryItem_RemoveById_DeletesOnlyTarget()
     {
-        var service = new HistoryService(_db, _currentUser);
+        var service = new HistoryService(_db, TestHelpers.CreateTestSettingsService(_db), _currentUser);
         var response = new HttpResponseModel { StatusCode = 200 };
 
         await service.AddToHistoryAsync(new HttpRequestModel { Url = "https://keep.com" }, response);
@@ -143,8 +143,7 @@ public class DatabaseIntegrationTests : IDisposable
     [Fact]
     public async Task HistoryItem_TrimOldestWhenOverMax()
     {
-        var service = new HistoryService(_db, _currentUser);
-        service.SetMaxItems(3);
+        var service = new HistoryService(_db, TestHelpers.CreateTestSettingsService(_db, maxHistoryItems: 3), _currentUser);
 
         var response = new HttpResponseModel { StatusCode = 200 };
         for (int i = 1; i <= 5; i++)
@@ -166,7 +165,7 @@ public class DatabaseIntegrationTests : IDisposable
     [Fact]
     public async Task HistoryItem_ClearRemovesAll()
     {
-        var service = new HistoryService(_db, _currentUser);
+        var service = new HistoryService(_db, TestHelpers.CreateTestSettingsService(_db), _currentUser);
         var response = new HttpResponseModel { StatusCode = 200 };
 
         await service.AddToHistoryAsync(new HttpRequestModel { Url = "https://1.com" }, response);
@@ -185,7 +184,7 @@ public class DatabaseIntegrationTests : IDisposable
     [Fact]
     public async Task HistoryItem_SearchByMethod()
     {
-        var service = new HistoryService(_db, _currentUser);
+        var service = new HistoryService(_db, TestHelpers.CreateTestSettingsService(_db), _currentUser);
         var response = new HttpResponseModel { StatusCode = 200 };
 
         await service.AddToHistoryAsync(new HttpRequestModel { Method = "GET", Url = "https://a.com" }, response);

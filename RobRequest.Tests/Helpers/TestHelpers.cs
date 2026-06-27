@@ -15,6 +15,25 @@ public static class TestHelpers
         };
     }
 
+    public static SettingsService CreateTestSettingsService(AppDbContext db, int maxHistoryItems = 1000)
+    {
+        var currentUser = CreateTestCurrentUser();
+        var service = new SettingsService(db, currentUser);
+
+        var existing = db.UserSettings.FirstOrDefault(s => s.UserId == TestUserId);
+        if (existing is null)
+        {
+            db.UserSettings.Add(new UserSettings { UserId = TestUserId, MaxHistoryItems = maxHistoryItems });
+        }
+        else
+        {
+            existing.MaxHistoryItems = maxHistoryItems;
+        }
+        db.SaveChanges();
+
+        return service;
+    }
+
     public static void SeedTestUser(AppDbContext db)
     {
         db.UserGroups.Add(new UserGroup

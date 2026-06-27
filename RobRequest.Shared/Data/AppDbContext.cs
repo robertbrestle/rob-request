@@ -3,10 +3,8 @@ using RobRequest.Shared.Models;
 
 namespace RobRequest.Shared.Data;
 
-public class AppDbContext : DbContext
+public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
-    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
-
     public DbSet<User> Users => Set<User>();
     public DbSet<UserGroup> UserGroups => Set<UserGroup>();
     public DbSet<HistoryItem> HistoryItems => Set<HistoryItem>();
@@ -121,15 +119,9 @@ public class AppDbContext : DbContext
                 .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            entity.OwnsOne(e => e.Auth, a =>
-            {
-                a.ToJson();
-            });
+            entity.OwnsOne(e => e.Auth, a => { a.ToJson(); });
 
-            entity.OwnsMany(e => e.Variables, v =>
-            {
-                v.ToJson();
-            });
+            entity.OwnsMany(e => e.Variables, v => { v.ToJson(); });
         });
     }
 }

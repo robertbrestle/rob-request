@@ -13,6 +13,7 @@ public class UserSettings
     public int DefaultTimeoutSeconds { get; set; } = 30;
     public int MaxHistoryItems { get; set; } = 1000;
     public bool AutoFormatJson { get; set; } = true;
+    public bool ShowLineNumbers { get; set; }
     public bool FollowRedirects { get; set; } = true;
     public bool ValidateSslCertificates { get; set; } = true;
     [StringLength(36)]

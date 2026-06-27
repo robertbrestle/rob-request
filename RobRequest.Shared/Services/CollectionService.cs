@@ -4,23 +4,14 @@ using RobRequest.Shared.Models;
 
 namespace RobRequest.Shared.Services;
 
-public class CollectionService
+public class CollectionService(AppDbContext db, CurrentUserService currentUser)
 {
-    private readonly AppDbContext _db;
-    private readonly CurrentUserService _currentUser;
-
     public event Action? OnCollectionsChanged;
-
-    public CollectionService(AppDbContext db, CurrentUserService currentUser)
-    {
-        _db = db;
-        _currentUser = currentUser;
-    }
 
     public async Task<List<CollectionModel>> GetRootCollectionsAsync()
     {
-        return await _db.Collections
-            .Where(c => c.UserId == _currentUser.UserId)
+        return await db.Collections
+            .Where(c => c.UserId == currentUser.UserId)
             .Where(c => c.ParentId == null)
             .Include(c => c.Children)
             .Include(c => c.Requests)
@@ -32,8 +23,8 @@ public class CollectionService
 
     public async Task<List<CollectionModel>> GetAllCollectionsAsync()
     {
-        return await _db.Collections
-            .Where(c => c.UserId == _currentUser.UserId)
+        return await db.Collections
+            .Where(c => c.UserId == currentUser.UserId)
             .Include(c => c.Requests)
             .OrderBy(c => c.SortOrder)
             .ThenBy(c => c.Name)
@@ -43,8 +34,8 @@ public class CollectionService
 
     public async Task<List<CollectionModel>> GetCollectionTreeAsync()
     {
-        var all = await _db.Collections
-            .Where(c => c.UserId == _currentUser.UserId)
+        var all = await db.Collections
+            .Where(c => c.UserId == currentUser.UserId)
             .Include(c => c.Requests.OrderBy(r => r.SortOrder).ThenBy(r => r.Name))
             .OrderBy(c => c.SortOrder)
             .ThenBy(c => c.Name)
@@ -71,7 +62,7 @@ public class CollectionService
 
     public async Task<CollectionModel?> GetCollectionAsync(string id)
     {
-        return await _db.Collections
+        return await db.Collections
             .Include(c => c.Children)
             .Include(c => c.Requests.OrderBy(r => r.SortOrder).ThenBy(r => r.Name))
             .AsNoTracking()
@@ -81,7 +72,7 @@ public class CollectionService
     public async Task<CollectionModel> CreateCollectionAsync(string name, string? parentId = null,
         string? description = null)
     {
-        var maxSort = await _db.Collections
+        var maxSort = await db.Collections
             .Where(c => c.ParentId == parentId)
             .MaxAsync(c => (int?)c.SortOrder) ?? -1;
 
@@ -89,22 +80,22 @@ public class CollectionService
         {
             Name = name,
             Description = description,
-            UserId = _currentUser.UserId ?? string.Empty,
+            UserId = currentUser.UserId ?? string.Empty,
             ParentId = parentId,
             SortOrder = maxSort + 1,
             CreatedAt = DateTime.Now,
             UpdatedAt = DateTime.Now
         };
 
-        _db.Collections.Add(collection);
-        await _db.SaveChangesAsync();
+        db.Collections.Add(collection);
+        await db.SaveChangesAsync();
         OnCollectionsChanged?.Invoke();
         return collection;
     }
 
     public async Task UpdateCollectionAsync(CollectionModel collection)
     {
-        var existing = await _db.Collections.FindAsync(collection.Id);
+        var existing = await db.Collections.FindAsync(collection.Id);
         if (existing == null) return;
 
         existing.Name = collection.Name;
@@ -113,24 +104,24 @@ public class CollectionService
         existing.SortOrder = collection.SortOrder;
         existing.UpdatedAt = DateTime.Now;
 
-        await _db.SaveChangesAsync();
+        await db.SaveChangesAsync();
         OnCollectionsChanged?.Invoke();
     }
 
     public async Task DeleteCollectionAsync(string id)
     {
-        var collection = await _db.Collections.FindAsync(id);
+        var collection = await db.Collections.FindAsync(id);
         if (collection == null) return;
 
-        _db.Collections.Remove(collection);
-        await _db.SaveChangesAsync();
+        db.Collections.Remove(collection);
+        await db.SaveChangesAsync();
         OnCollectionsChanged?.Invoke();
     }
 
     public async Task<CollectionRequestModel> AddRequestToCollectionAsync(string collectionId, string name,
         HttpRequestModel request)
     {
-        var maxSort = await _db.CollectionRequests
+        var maxSort = await db.CollectionRequests
             .Where(r => r.CollectionId == collectionId)
             .MaxAsync(r => (int?)r.SortOrder) ?? -1;
 
@@ -146,15 +137,15 @@ public class CollectionService
             UpdatedAt = DateTime.Now
         };
 
-        _db.CollectionRequests.Add(collectionRequest);
-        await _db.SaveChangesAsync();
+        db.CollectionRequests.Add(collectionRequest);
+        await db.SaveChangesAsync();
         OnCollectionsChanged?.Invoke();
         return collectionRequest;
     }
 
     public async Task UpdateCollectionRequestAsync(CollectionRequestModel collectionRequest)
     {
-        var existing = await _db.CollectionRequests.FindAsync(collectionRequest.Id);
+        var existing = await db.CollectionRequests.FindAsync(collectionRequest.Id);
         if (existing == null) return;
 
         existing.Name = collectionRequest.Name;
@@ -163,23 +154,23 @@ public class CollectionService
         existing.Request = collectionRequest.Request;
         existing.UpdatedAt = DateTime.Now;
 
-        await _db.SaveChangesAsync();
+        await db.SaveChangesAsync();
         OnCollectionsChanged?.Invoke();
     }
 
     public async Task DeleteCollectionRequestAsync(string id)
     {
-        var request = await _db.CollectionRequests.FindAsync(id);
+        var request = await db.CollectionRequests.FindAsync(id);
         if (request == null) return;
 
-        _db.CollectionRequests.Remove(request);
-        await _db.SaveChangesAsync();
+        db.CollectionRequests.Remove(request);
+        await db.SaveChangesAsync();
         OnCollectionsChanged?.Invoke();
     }
 
     public async Task<CollectionRequestModel?> GetCollectionRequestAsync(string id)
     {
-        return await _db.CollectionRequests
+        return await db.CollectionRequests
             .AsNoTracking()
             .FirstOrDefaultAsync(r => r.Id == id);
     }
@@ -187,8 +178,8 @@ public class CollectionService
     public async Task<List<CollectionModel>> SearchCollectionsAsync(string query)
     {
         query = query.ToLower();
-        var allCollections = await _db.Collections
-            .Where(c => c.UserId == _currentUser.UserId)
+        var allCollections = await db.Collections
+            .Where(c => c.UserId == currentUser.UserId)
             .Include(c => c.Requests)
             .AsNoTracking()
             .ToListAsync();
@@ -198,7 +189,7 @@ public class CollectionService
                         (c.Description ?? "").ToLower().Contains(query))
             .ToList();
 
-        var matchingRequests = await _db.CollectionRequests
+        var matchingRequests = await db.CollectionRequests
             .Where(r => r.Name.ToLower().Contains(query) ||
                         r.Request.Url.ToLower().Contains(query))
             .AsNoTracking()
@@ -222,10 +213,10 @@ public class CollectionService
 
     public async Task MoveRequestToCollectionAsync(string requestId, string targetCollectionId)
     {
-        var request = await _db.CollectionRequests.FindAsync(requestId);
+        var request = await db.CollectionRequests.FindAsync(requestId);
         if (request == null) return;
 
-        var maxSort = await _db.CollectionRequests
+        var maxSort = await db.CollectionRequests
             .Where(r => r.CollectionId == targetCollectionId)
             .MaxAsync(r => (int?)r.SortOrder) ?? -1;
 
@@ -233,18 +224,18 @@ public class CollectionService
         request.SortOrder = maxSort + 1;
         request.UpdatedAt = DateTime.Now;
 
-        await _db.SaveChangesAsync();
+        await db.SaveChangesAsync();
         OnCollectionsChanged?.Invoke();
     }
 
     public async Task ClearAllCollectionsAsync()
     {
-        var userCollectionIds = await _db.Collections
-            .Where(c => c.UserId == _currentUser.UserId)
+        var userCollectionIds = await db.Collections
+            .Where(c => c.UserId == currentUser.UserId)
             .Select(c => c.Id)
             .ToListAsync();
-        await _db.CollectionRequests.Where(r => userCollectionIds.Contains(r.CollectionId)).ExecuteDeleteAsync();
-        await _db.Collections.Where(c => c.UserId == _currentUser.UserId).ExecuteDeleteAsync();
+        await db.CollectionRequests.Where(r => userCollectionIds.Contains(r.CollectionId)).ExecuteDeleteAsync();
+        await db.Collections.Where(c => c.UserId == currentUser.UserId).ExecuteDeleteAsync();
         OnCollectionsChanged?.Invoke();
     }
 }

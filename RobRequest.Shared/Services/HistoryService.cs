@@ -4,29 +4,14 @@ using RobRequest.Shared.Models;
 
 namespace RobRequest.Shared.Services;
 
-public class HistoryService
+public class HistoryService(AppDbContext db, SettingsService settingsService, CurrentUserService currentUser)
 {
-    private readonly AppDbContext _db;
-    private readonly CurrentUserService _currentUser;
-    private int _maxItems = 1000;
-
     public event Action? OnHistoryChanged;
-
-    public HistoryService(AppDbContext db, CurrentUserService currentUser)
-    {
-        _db = db;
-        _currentUser = currentUser;
-    }
-
-    public void SetMaxItems(int maxItems)
-    {
-        _maxItems = maxItems;
-    }
 
     public async Task<IReadOnlyList<HistoryItem>> GetHistoryAsync(int limit = 100)
     {
-        return await _db.HistoryItems
-            .Where(h => h.UserId == _currentUser.UserId)
+        return await db.HistoryItems
+            .Where(h => h.UserId == currentUser.UserId)
             .OrderByDescending(h => h.Timestamp)
             .Take(limit)
             .AsNoTracking()
@@ -35,6 +20,8 @@ public class HistoryService
 
     public async Task AddToHistoryAsync(HttpRequestModel request, HttpResponseModel response)
     {
+        var settings = await settingsService.GetSettingsAsync();
+
         // Snapshot request/response into fresh instances to avoid change-tracker
         // conflicts when the caller reuses the same object across multiple calls.
         var requestSnapshot = request.Clone();
@@ -60,26 +47,26 @@ public class HistoryService
             Url = request.GetFullUrl(),
             StatusCode = response.StatusCode,
             ResponseTimeMs = response.ResponseTimeMs,
-            UserId = _currentUser.UserId ?? string.Empty,
+            UserId = currentUser.UserId ?? string.Empty,
             Timestamp = DateTime.Now,
             Request = requestSnapshot,
             Response = responseSnapshot
         };
 
-        _db.HistoryItems.Add(item);
-        await _db.SaveChangesAsync();
+        db.HistoryItems.Add(item);
+        await db.SaveChangesAsync();
 
         // Trim history to max items for this user
-        var count = await _db.HistoryItems.Where(h => h.UserId == _currentUser.UserId).CountAsync();
-        if (count > _maxItems)
+        var count = await db.HistoryItems.Where(h => h.UserId == currentUser.UserId).CountAsync();
+        if (count > settings.MaxHistoryItems)
         {
-            var excess = await _db.HistoryItems
-                .Where(h => h.UserId == _currentUser.UserId)
+            var excess = await db.HistoryItems
+                .Where(h => h.UserId == currentUser.UserId)
                 .OrderBy(h => h.Timestamp)
-                .Take(count - _maxItems)
+                .Take(count - settings.MaxHistoryItems)
                 .ToListAsync();
-            _db.HistoryItems.RemoveRange(excess);
-            await _db.SaveChangesAsync();
+            db.HistoryItems.RemoveRange(excess);
+            await db.SaveChangesAsync();
         }
 
         OnHistoryChanged?.Invoke();
@@ -87,15 +74,15 @@ public class HistoryService
 
     public async Task ClearHistoryAsync()
     {
-        await _db.HistoryItems.Where(h => h.UserId == _currentUser.UserId).ExecuteDeleteAsync();
+        await db.HistoryItems.Where(h => h.UserId == currentUser.UserId).ExecuteDeleteAsync();
         OnHistoryChanged?.Invoke();
     }
 
     public async Task<IReadOnlyList<HistoryItem>> SearchHistoryAsync(string query)
     {
         query = query.ToLower();
-        return await _db.HistoryItems
-            .Where(h => h.UserId == _currentUser.UserId)
+        return await db.HistoryItems
+            .Where(h => h.UserId == currentUser.UserId)
             .Where(h => h.Url.ToLower().Contains(query) ||
                         h.Method.ToLower().Contains(query) ||
                         h.StatusCode.ToString().Contains(query))
@@ -106,7 +93,7 @@ public class HistoryService
 
     public async Task RemoveFromHistoryAsync(string id)
     {
-        await _db.HistoryItems.Where(h => h.Id == id && h.UserId == _currentUser.UserId).ExecuteDeleteAsync();
+        await db.HistoryItems.Where(h => h.Id == id && h.UserId == currentUser.UserId).ExecuteDeleteAsync();
         OnHistoryChanged?.Invoke();
     }
 }
