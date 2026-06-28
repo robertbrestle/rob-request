@@ -81,6 +81,8 @@
     [Parameter]
     public int FontSize { get; set; } = 13;
 
+    [Parameter] public bool AutoFormatJson { get; set; }
+
     private StandaloneCodeEditor? _editor;
     private bool _editorReady;
     private bool _pendingUpdate;
@@ -192,7 +194,9 @@
         {
             await UpdateEditorContent();
         }
-        await Js.InvokeVoidAsync("initializeMonacoCodeLens");
+
+        if (AutoFormatJson)
+            await Js.InvokeVoidAsync("initializeMonacoCodeLens");
     }
 
     private async Task UpdateEditorContent()
