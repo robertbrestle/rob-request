@@ -27,6 +27,43 @@ public class UserServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task GetUserDiskUsageAsync_AggregatesBytesPerUserAndExcludesUsersWithoutData()
+    {
+        // Arrange
+        var group = new UserGroup { Id = "group-1", Name = "user" };
+        _db.UserGroups.Add(group);
+
+        var user1 = new User { Id = "user-1", Username = "alice", GroupId = "group-1" };
+        var user2 = new User { Id = "user-2", Username = "bob", GroupId = "group-1" };
+        var user3 = new User { Id = "user-3", Username = "carol", GroupId = "group-1" };
+        _db.Users.AddRange(user1, user2, user3);
+
+        _db.HistoryItems.AddRange(
+            new HistoryItem
+            {
+                UserId = "user-1", Method = "GET", Url = "https://example.com/1", Request = new HttpRequestModel()
+            },
+            new HistoryItem
+            {
+                UserId = "user-1", Method = "POST", Url = "https://example.com/2", Request = new HttpRequestModel()
+            });
+        _db.UserSettings.Add(new UserSettings { UserId = "user-2" });
+
+        await _db.SaveChangesAsync();
+
+        // Act
+        var usage = await _sut.GetUserDiskUsageAsync();
+
+        // Assert
+        usage.Should().ContainKey("user-1");
+        usage["user-1"].Should().BeGreaterThan(0);
+        usage.Should().ContainKey("user-2");
+        usage["user-2"].Should().BeGreaterThan(0);
+        usage.Should().NotContainKey("user-3");
+        usage["user-1"].Should().BeGreaterThan(usage["user-2"]);
+    }
+
+    [Fact]
     public async Task ChangeGroupAsync_WithValidData_ReturnsTrueAndUpdatesGroup()
     {
         // Arrange

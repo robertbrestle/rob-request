@@ -1,3 +1,6 @@
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using RobRequest.Shared.Data;
@@ -7,6 +10,11 @@ namespace RobRequest.Shared.Services;
 
 public class UserService(AppDbContext db, IPasswordHasher<User> passwordHasher)
 {
+    private static readonly JsonSerializerOptions DiskUsageJsonOptions = new()
+    {
+        ReferenceHandler = ReferenceHandler.IgnoreCycles
+    };
+
     public async Task<List<User>> GetAllUsersAsync()
     {
         return await db.Users
@@ -15,6 +23,47 @@ public class UserService(AppDbContext db, IPasswordHasher<User> passwordHasher)
             .AsNoTracking()
             .ToListAsync();
     }
+
+    /// <summary>
+    /// Estimates the database (disk) storage used by each user, keyed by user id.
+    /// The estimate is based on the UTF-8 byte size of every record a user owns
+    /// (history, collections and their requests, environments and settings),
+    /// which closely mirrors how the data is persisted as JSON in the database.
+    /// </summary>
+    public async Task<Dictionary<string, long>> GetUserDiskUsageAsync()
+    {
+        var usage = new Dictionary<string, long>();
+
+        void Add(string userId, long bytes)
+        {
+            if (string.IsNullOrEmpty(userId)) return;
+            usage[userId] = usage.GetValueOrDefault(userId) + bytes;
+        }
+
+        var history = await db.HistoryItems.AsNoTracking().ToListAsync();
+        foreach (var item in history)
+            Add(item.UserId, EstimateSize(item));
+
+        var collections = await db.Collections
+            .Include(c => c.Requests)
+            .AsNoTracking()
+            .ToListAsync();
+        foreach (var collection in collections)
+            Add(collection.UserId, EstimateSize(collection));
+
+        var environments = await db.Environments.AsNoTracking().ToListAsync();
+        foreach (var environment in environments)
+            Add(environment.UserId, EstimateSize(environment));
+
+        var settings = await db.UserSettings.AsNoTracking().ToListAsync();
+        foreach (var setting in settings)
+            Add(setting.UserId, EstimateSize(setting));
+
+        return usage;
+    }
+
+    private static long EstimateSize<T>(T entity) =>
+        Encoding.UTF8.GetByteCount(JsonSerializer.Serialize(entity, DiskUsageJsonOptions));
 
     public async Task<User?> GetUserAsync(string id)
     {

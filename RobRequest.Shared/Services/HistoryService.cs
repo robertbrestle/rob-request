@@ -77,6 +77,12 @@ public class HistoryService(AppDbContext db, SettingsService settingsService, Cu
         await db.HistoryItems.Where(h => h.UserId == currentUser.UserId).ExecuteDeleteAsync();
         OnHistoryChanged?.Invoke();
     }
+    
+    public async Task ClearUserHistoryAsync(string id)
+    {
+        await db.HistoryItems.Where(h => h.UserId == id).ExecuteDeleteAsync();
+        OnHistoryChanged?.Invoke();
+    }
 
     public async Task<IReadOnlyList<HistoryItem>> SearchHistoryAsync(string query)
     {

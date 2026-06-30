@@ -2,6 +2,7 @@
 @attribute [Microsoft.AspNetCore.Authorization.Authorize(Policy = "Admin")]
 @using RobRequest.Server.Components.Shared.UserManagement
 @inject UserService UserService
+@inject HistoryService HistoryService
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
 @implements IDisposable
@@ -84,6 +85,7 @@
                         <MudTh>Group</MudTh>
                         <MudTh>Status</MudTh>
                         <MudTh>Approved</MudTh>
+                        <MudTh>Disk Usage</MudTh>
                         <MudTh>Created</MudTh>
                         <MudTh>Last Login</MudTh>
                         <MudTh Style="text-align: right">Actions</MudTh>
@@ -118,6 +120,13 @@
                                          Size="Size.Small"/>
                             }
                         </MudTd>
+                        <MudTd>
+                            <MudChip T="string" Size="Size.Small"
+                                     Icon="@Icons.Material.Filled.Storage"
+                                     Color="Color.Info" Variant="Variant.Outlined">
+                                <b>@FormatBytes(_diskUsage.GetValueOrDefault(context.Id))</b>
+                            </MudChip>
+                        </MudTd>
                         <MudTd>@context.CreatedAt.ToString("g")</MudTd>
                         <MudTd>@context.LastLogin?.ToString("g")</MudTd>
                         <MudTd Style="text-align: right">
@@ -144,6 +153,11 @@
                                     Change Group
                                 </MudMenuItem>
                                 <MudDivider/>
+                                <MudMenuItem Icon="@Icons.Material.Filled.History"
+                                             IconColor="Color.Error"
+                                             OnClick="() => ClearUserHistoryAsync(context.Id, context.Username)">
+                                    Clear History
+                                </MudMenuItem>
                                 <MudMenuItem Icon="@Icons.Material.Filled.Delete"
                                              IconColor="Color.Error"
                                              OnClick="() => DeleteUserAsync(context.Id, context.Username)">
@@ -168,6 +182,7 @@
     private List<User> _users = new();
     private List<User> _pendingApprovals = new();
     private List<UserGroup> _groups = new();
+    private Dictionary<string, long> _diskUsage = new();
     private bool _loading = true;
 
     protected override async Task OnInitializedAsync()
@@ -182,6 +197,7 @@
         _loading = true;
         _users = await UserService.GetAllUsersAsync();
         _pendingApprovals = await UserService.GetPendingApprovalsAsync();
+        _diskUsage = await UserService.GetUserDiskUsageAsync();
         _loading = false;
     }
 
@@ -263,6 +279,21 @@
         }
     }
 
+    private async Task ClearUserHistoryAsync(string userId, string username)
+    {
+        var confirm = await DialogService.ShowMessageBoxAsync(
+            "Clear User Request History",
+            (MarkupString)$"<strong>Warning:</strong> This will permanently delete request history for user \"{username}\". This cannot be undone.",
+            yesText: "Delete", cancelText: "Cancel");
+
+        if (confirm == true)
+        {
+            await HistoryService.ClearUserHistoryAsync(userId);
+            Snackbar.Add($"User \"{username}\" history deleted.", Severity.Success);
+            await RefreshUsersAsync();
+        }
+    }
+
     private async Task DeleteUserAsync(string userId, string username)
     {
         var confirm = await DialogService.ShowMessageBoxAsync(
@@ -279,6 +310,22 @@
                 await RefreshUsersAsync();
             }
         }
+    }
+
+    private static string FormatBytes(long bytes)
+    {
+        string[] units = { "B", "KB", "MB", "GB", "TB" };
+        double size = bytes;
+        var unit = 0;
+        while (size >= 1024 && unit < units.Length - 1)
+        {
+            size /= 1024;
+            unit++;
+        }
+
+        return unit == 0
+            ? $"{size:0} {units[unit]}"
+            : $"{size:0.#} {units[unit]}";
     }
 
     public void Dispose()
