@@ -85,7 +85,6 @@
                         <MudTh>Status</MudTh>
                         <MudTh>Approved</MudTh>
                         <MudTh>Created</MudTh>
-                        <MudTh>Updated</MudTh>
                         <MudTh>Last Login</MudTh>
                         <MudTh Style="text-align: right">Actions</MudTh>
                     </HeaderContent>
@@ -95,16 +94,16 @@
                         </MudTd>
                         <MudTd>
                             <MudChip T="string" Size="Size.Small"
-                                     Color="@(context.Group?.Name == "admin" ? Color.Primary : Color.Default)"
+                                     Color="@(context.Group?.Name == "admin" ? Color.Warning : Color.Default)"
                                      Variant="Variant.Outlined">
-                                @(context.Group?.Name ?? "unknown")
+                                <b>@(context.Group?.Name ?? "unknown")</b>
                             </MudChip>
                         </MudTd>
                         <MudTd>
                             <MudChip T="string" Size="Size.Small"
                                      Color="@(context.IsEnabled ? Color.Success : Color.Error)"
-                                     Variant="Variant.Filled">
-                                @(context.IsEnabled ? "Enabled" : "Disabled")
+                                     Variant="Variant.Filled" Class="mud-dark-text">
+                                <b>@(context.IsEnabled ? "Enabled" : "Disabled")</b>
                             </MudChip>
                         </MudTd>
                         <MudTd>
@@ -120,7 +119,6 @@
                             }
                         </MudTd>
                         <MudTd>@context.CreatedAt.ToString("g")</MudTd>
-                        <MudTd>@context.UpdatedAt.ToString("g")</MudTd>
                         <MudTd>@context.LastLogin?.ToString("g")</MudTd>
                         <MudTd Style="text-align: right">
                             <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small"
@@ -174,7 +172,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await Layout.DrawerEnabledToggleAsync(true, false);
+        await Layout.DrawerEnabledToggleAsync(true, false, false);
         _groups = await UserService.GetAllGroupsAsync();
         await RefreshUsersAsync();
     }

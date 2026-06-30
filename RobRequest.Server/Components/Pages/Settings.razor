@@ -108,7 +108,7 @@
                                @bind-Value:after="SaveSettings"
                                Label="Auto-format JSON responses"
                                Color="Color.Primary"/>
-                    
+
                     <MudSwitch T="bool"
                                @bind-Value="_settings.ShowLineNumbers"
                                @bind-Value:after="SaveSettings"
@@ -338,12 +338,12 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await Layout.DrawerEnabledToggleAsync(true, false);
+        await Layout.DrawerEnabledToggleAsync(true, false, false);
         _settings = await SettingsService.GetSettingsAsync();
 
         _collections = await CollectionService.GetCollectionTreeAsync();
         _environments = await EnvironmentService.GetAllEnvironmentsAsync();
-        _historyItems = await HistoryService.GetHistoryAsync(1000);
+        _historyItems = await HistoryService.GetHistoryAsync(_settings.MaxHistoryItems);
     }
 
     private async Task SaveSettings()
@@ -457,8 +457,8 @@
         try
         {
             _importFileName = file.Name;
-            using var stream = file.OpenReadStream(maxAllowedSize: 50 * 1024 * 1024);
-            using var reader = new System.IO.StreamReader(stream);
+            await using var stream = file.OpenReadStream(maxAllowedSize: 50 * 1024 * 1024);
+            using var reader = new StreamReader(stream);
             _importJson = await reader.ReadToEndAsync();
 
             var preview = ImportExportService.DeserializeExport(_importJson);
@@ -492,7 +492,7 @@
         if (result == true)
         {
             await HistoryService.ClearHistoryAsync();
-            _historyItems = await HistoryService.GetHistoryAsync(1000);
+            _historyItems = await HistoryService.GetHistoryAsync(_settings.MaxHistoryItems);
             _exportAllHistory = false;
             Snackbar.Add("All history cleared.", Severity.Success);
         }
@@ -560,7 +560,7 @@
             // Refresh lists
             _collections = await CollectionService.GetCollectionTreeAsync();
             _environments = await EnvironmentService.GetAllEnvironmentsAsync();
-            _historyItems = await HistoryService.GetHistoryAsync(1000);
+            _historyItems = await HistoryService.GetHistoryAsync(_settings.MaxHistoryItems);
 
             _importPreview = null;
             _importJson = null;

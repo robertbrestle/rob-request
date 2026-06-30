@@ -17,6 +17,7 @@ public class MainLayoutBase : LayoutComponentBase, IDisposable
     protected bool IsInitialized { get; set; }
     protected bool IsDrawerEnabled { get; private set; }
     protected bool IsDrawerSectionEnabled { get; private set; }
+    protected bool IsNavMenuEnabled { get; private set; }
 
     public MudTheme Theme { get; } = new()
     {
@@ -38,10 +39,11 @@ public class MainLayoutBase : LayoutComponentBase, IDisposable
         IsDrawerOpen = !IsDrawerOpen;
     }
 
-    public async Task DrawerEnabledToggleAsync(bool enabled, bool enableDrawerSection = true)
+    public async Task DrawerEnabledToggleAsync(bool enabled, bool enableDrawerSection = true, bool enableNavMenu = true)
     {
         IsDrawerEnabled = enabled;
         IsDrawerSectionEnabled = enableDrawerSection;
+        IsNavMenuEnabled = enableNavMenu;
         await InvokeAsync(StateHasChanged);
     }
 

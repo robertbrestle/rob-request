@@ -6,10 +6,12 @@
 <PageTitle>RobRequest - Register</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.Small" Class="d-flex align-center floating-container">
-    <MudPaper Elevation="3" Class="pa-8" Style="width: 100%;">
+    <MudPaper Elevation="3" Class="pa-8 w-100">
         <MudStack Spacing="4" AlignItems="AlignItems.Center">
-            <MudIcon Icon="@Icons.Material.Filled.Api" Size="Size.Large" Color="Color.Primary"/>
-            <MudText Typo="Typo.h4">RobRequest</MudText>
+            <MudStack Row="true" AlignItems="AlignItems.Center">
+                <MudImage Src="/favicon.png" Height="48"/>
+                <MudText Typo="Typo.h4">RobRequest</MudText>
+            </MudStack>
             <MudText Typo="Typo.body1" Color="Color.Default">Create a new account</MudText>
 
             @if (_error != null)
@@ -19,7 +21,7 @@
                 </MudAlert>
             }
 
-            <form method="post" action="/api/auth/register" id="registerForm" style="width: 100%;">
+            <form method="post" action="/api/auth/register" id="registerForm" class="w-100">
                 <MudStack Spacing="3">
                     <MudTextField T="string"
                                   @bind-Value="_username"
@@ -53,7 +55,7 @@
                 After registering, an administrator must approve your account before you can sign in.
             </MudAlert>
 
-            <MudLink Href="/login" Typo="Typo.body2">
+            <MudLink Href="/login" Typo="Typo.body2" Color="Color.Default">
                 Already have an account? Sign in
             </MudLink>
         </MudStack>
@@ -61,6 +63,7 @@
 </MudContainer>
 
 @code {
+
     private string _username = string.Empty;
     private string _password = string.Empty;
     private string _confirmPassword = string.Empty;
