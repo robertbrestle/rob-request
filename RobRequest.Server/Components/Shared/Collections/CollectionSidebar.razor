@@ -1,5 +1,7 @@
 @inject CollectionService CollectionService
 @inject IDialogService DialogService
+@using RobRequest.Shared.Models.Collections
+@using Collections = RobRequest.Shared.Models.Collections.Collection
 @implements IDisposable
 
 <MudStack Spacing="2" Class="pa-2">
@@ -44,9 +46,9 @@
 
 @code {
 
-    [Parameter] public EventCallback<CollectionRequestModel> OnRequestSelected { get; set; }
+    [Parameter] public EventCallback<CollectionRequest> OnRequestSelected { get; set; }
 
-    private List<CollectionModel> _collections = new();
+    private List<Collections> _collections = new();
     private string _searchQuery = string.Empty;
     private HashSet<string> _expandedCollections = new();
 
@@ -104,7 +106,7 @@
         }
     }
 
-    private async Task RenameCollection(CollectionModel collection)
+    private async Task RenameCollection(Collections collection)
     {
         var name = await PromptForName("Rename", "New name", collection.Name);
         if (!string.IsNullOrWhiteSpace(name))
@@ -114,7 +116,7 @@
         }
     }
 
-    private async Task DeleteCollection(CollectionModel collection)
+    private async Task DeleteCollection(Collections collection)
     {
         var result = await DialogService.ShowMessageBoxAsync(
             "Delete Collection",
@@ -127,7 +129,7 @@
         }
     }
 
-    private async Task DeleteRequest(CollectionRequestModel request)
+    private async Task DeleteRequest(CollectionRequest request)
     {
         var result = await DialogService.ShowMessageBoxAsync(
             "Delete Request",
@@ -153,7 +155,7 @@
         return result?.Canceled == false ? result.Data as string : null;
     }
 
-    private RenderFragment CollectionNode(CollectionModel collection, int depth) => __builder =>
+    private RenderFragment CollectionNode(Collections collection, int depth) => __builder =>
     {
         var isExpanded = IsExpanded(collection.Id);
         var hasChildren = collection.Children.Count > 0 || collection.Requests.Count > 0;

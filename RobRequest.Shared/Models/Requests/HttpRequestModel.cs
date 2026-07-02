@@ -1,23 +1,22 @@
 using System.ComponentModel.DataAnnotations;
+using RobRequest.Shared.Models.Auth;
 
-namespace RobRequest.Shared.Models;
+namespace RobRequest.Shared.Models.Requests;
 
 public class HttpRequestModel
 {
-    [StringLength(36)]
-    public string Id { get; set; } = Guid.NewGuid().ToString();
-    [StringLength(7)]
-    public string Method { get; set; } = "GET";
+    [StringLength(36)] public string Id { get; set; } = Guid.NewGuid().ToString();
+    [StringLength(7)] public string Method { get; set; } = "GET";
     public string Url { get; set; } = string.Empty;
-    public List<HeaderItem> Headers { get; set; } = new();
-    public List<QueryParamItem> QueryParams { get; set; } = new();
+    public List<KeyValueEntry> Headers { get; set; } = new();
+    public List<KeyValueEntry> QueryParams { get; set; } = new();
     public List<FormDataItem> FormData { get; set; } = new();
     public string BodyType { get; set; } = "none";
     public string Body { get; set; } = string.Empty;
     public string ContentType { get; set; } = "application/json";
     public AuthSettings Auth { get; set; } = new() { AuthType = AuthType.Inherit };
     public int TimeoutSeconds { get; set; } = 30;
-    public DateTime CreatedAt { get; set; } = DateTime.Now;
+    public DateTime CreatedAt { get; init; } = DateTime.Now;
 
     public string GetFullUrl()
     {
@@ -30,7 +29,7 @@ public class HttpRequestModel
         if (Auth.AuthType == AuthType.ApiKey && Auth.ApiKeyLocation == ApiKeyLocation.QueryParam &&
             !string.IsNullOrWhiteSpace(Auth.ApiKeyName) && !string.IsNullOrWhiteSpace(Auth.ApiKeyValue))
         {
-            enabledParams.Add(new QueryParamItem
+            enabledParams.Add(new KeyValueEntry
             {
                 Key = Auth.ApiKeyName,
                 Value = Auth.ApiKeyValue,
@@ -56,9 +55,9 @@ public class HttpRequestModel
             Method = Method,
             Url = Url,
             Headers =
-                Headers.Select(h => new HeaderItem { Key = h.Key, Value = h.Value, Enabled = h.Enabled }).ToList(),
+                Headers.Select(h => new KeyValueEntry { Key = h.Key, Value = h.Value, Enabled = h.Enabled }).ToList(),
             QueryParams = QueryParams
-                .Select(q => new QueryParamItem { Key = q.Key, Value = q.Value, Enabled = q.Enabled }).ToList(),
+                .Select(q => new KeyValueEntry { Key = q.Key, Value = q.Value, Enabled = q.Enabled }).ToList(),
             FormData = FormData.Select(f => new FormDataItem
             {
                 Key = f.Key,

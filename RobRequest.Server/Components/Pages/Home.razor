@@ -2,6 +2,9 @@
 @using RobRequest.Server.Components.Shared.Collections
 @using RobRequest.Server.Components.Shared.Environments
 @using RobRequest.Server.Components.Shared.Requests
+@using RobRequest.Shared.Models.Collections
+@using RobRequest.Shared.Models.History
+@using RobRequest.Shared.Models.Requests
 @implements IDisposable
 
 <PageTitle>RobRequest - API Client</PageTitle>
@@ -91,7 +94,7 @@
         }
     }
 
-    private void OnCollectionRequestSelected(CollectionRequestModel collectionRequest)
+    private void OnCollectionRequestSelected(CollectionRequest collectionRequest)
     {
         _requestPanel?.LoadRequest(collectionRequest.Request);
         _response = null;

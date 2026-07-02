@@ -1,23 +1,24 @@
 using System.ComponentModel.DataAnnotations;
+using RobRequest.Shared.Models.Auth;
 
-namespace RobRequest.Shared.Models;
+namespace RobRequest.Shared.Models.Environments;
 
-public class EnvironmentModel
+public class Environment
 {
     [Key, StringLength(36)] public string Id { get; set; } = Guid.NewGuid().ToString();
     [StringLength(36)] public string UserId { get; set; } = string.Empty;
-    public User? User { get; set; }
+    public Users.User? User { get; set; }
     [StringLength(50)] public string Name { get; set; } = string.Empty;
     [StringLength(255)] public string? Description { get; set; }
     public int SortOrder { get; set; }
     public List<EnvironmentVariable> Variables { get; set; } = new();
     public AuthSettings Auth { get; set; } = new();
-    public DateTime CreatedAt { get; set; } = DateTime.Now;
+    public DateTime CreatedAt { get; init; } = DateTime.Now;
     public DateTime UpdatedAt { get; set; } = DateTime.Now;
 
-    public EnvironmentModel Clone()
+    public Environment Clone()
     {
-        return new EnvironmentModel
+        return new Environment
         {
             Id = Id,
             UserId = UserId,

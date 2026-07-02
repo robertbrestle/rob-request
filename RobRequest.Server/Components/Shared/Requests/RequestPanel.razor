@@ -1,5 +1,7 @@
 @using MudBlazor.Utilities
 @using RobRequest.Server.Components.Shared.Collections
+@using RobRequest.Shared.Models.Auth
+@using RobRequest.Shared.Models.Requests
 @implements IDisposable
 
 <MudHotkey Key="JsKey.Enter" KeyModifiers="[JsKeyModifier.ControlRight]" OnHotkeyPressed="SendRequest"/>
@@ -66,7 +68,7 @@
     <MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true" TabPanelsClass="pa-3">
         @* Params Tab *@
         <MudTabPanel Text="Params" BadgeData="@GetParamsBadge()" BadgeColor="Color.Primary">
-            <KeyValueEditor TItem="QueryParamItem"
+            <KeyValueEditor TItem="KeyValueEntry"
                             Items="_request.QueryParams"
                             ItemsChanged="OnQueryParamsChanged"
                             KeyLabel="Parameter"
@@ -97,7 +99,7 @@
                         Authorization
                     </MudButton>
                 </MudStack>
-                <KeyValueEditor TItem="HeaderItem"
+                <KeyValueEditor TItem="KeyValueEntry"
                                 Items="_request.Headers"
                                 ItemsChanged="OnHeadersChanged"
                                 KeyLabel="Header Name"
@@ -366,10 +368,10 @@
         try
         {
             // Substitute environment variables in headers
-            var substitutedHeaders = new List<HeaderItem>();
+            var substitutedHeaders = new List<KeyValueEntry>();
             foreach (var h in _request.Headers)
             {
-                substitutedHeaders.Add(new HeaderItem
+                substitutedHeaders.Add(new KeyValueEntry
                 {
                     Key = h.Key,
                     Value = await EnvironmentService.SubstituteVariablesAsync(h.Value),
@@ -378,10 +380,10 @@
             }
 
             // Substitute environment variables in query params
-            var substitutedQueryParams = new List<QueryParamItem>();
+            var substitutedQueryParams = new List<KeyValueEntry>();
             foreach (var q in _request.QueryParams)
             {
-                substitutedQueryParams.Add(new QueryParamItem
+                substitutedQueryParams.Add(new KeyValueEntry
                 {
                     Key = q.Key,
                     Value = await EnvironmentService.SubstituteVariablesAsync(q.Value),
@@ -597,7 +599,7 @@
         foreach (var pair in queryString.Split('&', StringSplitOptions.RemoveEmptyEntries))
         {
             var parts = pair.Split('=', 2);
-            _request.QueryParams.Add(new QueryParamItem
+            _request.QueryParams.Add(new KeyValueEntry
             {
                 Key = Uri.UnescapeDataString(parts[0]),
                 Value = parts.Length > 1 ? Uri.UnescapeDataString(parts[1]) : string.Empty,
@@ -606,13 +608,13 @@
         }
     }
 
-    private Task OnQueryParamsChanged(List<QueryParamItem> items)
+    private Task OnQueryParamsChanged(List<KeyValueEntry> items)
     {
         _request.QueryParams = items;
         return Task.CompletedTask;
     }
 
-    private Task OnHeadersChanged(List<HeaderItem> items)
+    private Task OnHeadersChanged(List<KeyValueEntry> items)
     {
         _request.Headers = items;
         return Task.CompletedTask;
@@ -628,7 +630,7 @@
     {
         if (!_request.Headers.Any(h => h.Key.Equals(key, StringComparison.OrdinalIgnoreCase)))
         {
-            _request.Headers.Add(new HeaderItem { Key = key, Value = value, Enabled = true });
+            _request.Headers.Add(new KeyValueEntry { Key = key, Value = value, Enabled = true });
         }
     }
 

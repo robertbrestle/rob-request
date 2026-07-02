@@ -1,3 +1,5 @@
+using RobRequest.Shared.Models.Requests;
+
 namespace RobRequest.Tests.Unit.Services;
 
 public class HistoryServiceTests : IDisposable

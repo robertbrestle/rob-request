@@ -2,6 +2,9 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using Moq.Protected;
+using RobRequest.Shared.Models.Auth;
+using RobRequest.Shared.Models.Requests;
+using RobRequest.Shared.Models.Users;
 
 namespace RobRequest.Tests.Unit.Services;
 

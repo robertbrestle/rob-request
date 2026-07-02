@@ -1,3 +1,6 @@
+using RobRequest.Shared.Models.Auth;
+using RobRequest.Shared.Models.Requests;
+
 namespace RobRequest.Tests.Unit.Models;
 
 public class HttpRequestModelTests
@@ -16,7 +19,7 @@ public class HttpRequestModelTests
         var model = new HttpRequestModel
         {
             Url = "https://example.com",
-            QueryParams = new List<QueryParamItem>
+            QueryParams = new List<KeyValueEntry>
             {
                 new() { Key = "page", Value = "1", Enabled = true },
                 new() { Key = "limit", Value = "10", Enabled = true }
@@ -34,7 +37,7 @@ public class HttpRequestModelTests
         var model = new HttpRequestModel
         {
             Url = "https://example.com",
-            QueryParams = new List<QueryParamItem>
+            QueryParams = new List<KeyValueEntry>
             {
                 new() { Key = "active", Value = "true", Enabled = true },
                 new() { Key = "disabled", Value = "skip", Enabled = false }
@@ -98,8 +101,8 @@ public class HttpRequestModelTests
         {
             Method = "POST",
             Url = "https://example.com",
-            Headers = new List<HeaderItem> { new() { Key = "K1", Value = "V1" } },
-            QueryParams = new List<QueryParamItem> { new() { Key = "Q1", Value = "V1" } },
+            Headers = new List<KeyValueEntry> { new() { Key = "K1", Value = "V1" } },
+            QueryParams = new List<KeyValueEntry> { new() { Key = "Q1", Value = "V1" } },
             FormData = new List<FormDataItem> { new() { Key = "F1", Value = "V1" } },
             BodyType = "json",
             Body = "{}",

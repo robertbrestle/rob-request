@@ -1,3 +1,5 @@
+using RobRequest.Shared.Models.Environments;
+
 namespace RobRequest.Tests.Unit.Services;
 
 public class EnvironmentServiceTests : IDisposable

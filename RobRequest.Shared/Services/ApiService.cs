@@ -2,6 +2,8 @@ using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Text;
 using RobRequest.Shared.Models;
+using RobRequest.Shared.Models.Auth;
+using RobRequest.Shared.Models.Requests;
 
 namespace RobRequest.Shared.Services;
 
@@ -60,7 +62,7 @@ public class ApiService(IHttpClientFactory httpClientFactory, SettingsService se
             // Read response headers
             foreach (var header in httpResponse.Headers)
             {
-                response.Headers.Add(new HeaderItem
+                response.Headers.Add(new KeyValueEntry
                 {
                     Key = header.Key,
                     Value = string.Join(", ", header.Value)
@@ -69,7 +71,7 @@ public class ApiService(IHttpClientFactory httpClientFactory, SettingsService se
 
             foreach (var header in httpResponse.Content.Headers)
             {
-                response.Headers.Add(new HeaderItem
+                response.Headers.Add(new KeyValueEntry
                 {
                     Key = header.Key,
                     Value = string.Join(", ", header.Value)

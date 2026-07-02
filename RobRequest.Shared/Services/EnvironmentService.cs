@@ -2,6 +2,8 @@ using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 using RobRequest.Shared.Data;
 using RobRequest.Shared.Models;
+using RobRequest.Shared.Models.Environments;
+using Environment = RobRequest.Shared.Models.Environments.Environment;
 
 namespace RobRequest.Shared.Services;
 
@@ -49,7 +51,7 @@ public partial class EnvironmentService(
         }
     }
 
-    public async Task<List<EnvironmentModel>> GetAllEnvironmentsAsync()
+    public async Task<List<Environment>> GetAllEnvironmentsAsync()
     {
         return await db.Environments
             .Where(e => e.UserId == currentUser.UserId)
@@ -59,32 +61,31 @@ public partial class EnvironmentService(
             .ToListAsync();
     }
 
-    public async Task<EnvironmentModel?> GetEnvironmentAsync(string id)
+    public async Task<Environment?> GetEnvironmentAsync(string id)
     {
         return await db.Environments
             .AsNoTracking()
             .FirstOrDefaultAsync(e => e.Id == id);
     }
 
-    public async Task<EnvironmentModel?> GetActiveEnvironmentAsync()
+    public async Task<Environment?> GetActiveEnvironmentAsync()
     {
         if (_activeEnvironmentId == null) return null;
         return await GetEnvironmentAsync(_activeEnvironmentId);
     }
 
-    public async Task<EnvironmentModel> CreateEnvironmentAsync(string name, string? description = null)
+    public async Task<Environment> CreateEnvironmentAsync(string name, string? description = null)
     {
         var maxSort = await db.Environments
             .Where(e => e.UserId == currentUser.UserId)
             .MaxAsync(e => (int?)e.SortOrder) ?? -1;
 
-        var environment = new EnvironmentModel
+        var environment = new Environment
         {
             Name = name,
             Description = description,
             UserId = currentUser.UserId ?? string.Empty,
             SortOrder = maxSort + 1,
-            CreatedAt = DateTime.Now,
             UpdatedAt = DateTime.Now
         };
 
@@ -94,7 +95,7 @@ public partial class EnvironmentService(
         return environment;
     }
 
-    public async Task UpdateEnvironmentAsync(EnvironmentModel environment)
+    public async Task UpdateEnvironmentAsync(Environment environment)
     {
         var existing = await db.Environments.FindAsync(environment.Id);
         if (existing == null) return;
@@ -136,7 +137,7 @@ public partial class EnvironmentService(
         OnEnvironmentChanged?.Invoke();
     }
 
-    public async Task<List<EnvironmentModel>> SearchEnvironmentsAsync(string query)
+    public async Task<List<Environment>> SearchEnvironmentsAsync(string query)
     {
         query = query.ToLower();
         return await db.Environments

@@ -10,6 +10,7 @@ using RobRequest.Shared.Data;
 using RobRequest.Shared.Models;
 using RobRequest.Shared.Services;
 using RobRequest.Server.Components;
+using RobRequest.Shared.Models.Users;
 
 var builder = WebApplication.CreateBuilder(args);
 

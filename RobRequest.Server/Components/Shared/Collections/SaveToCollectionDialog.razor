@@ -1,3 +1,5 @@
+@using RobRequest.Shared.Models.Requests
+@using Collections = RobRequest.Shared.Models.Collections.Collection
 @inject CollectionService CollectionService
 
 <MudDialog>
@@ -65,7 +67,7 @@
     [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
     [Parameter] public HttpRequestModel? Request { get; set; }
 
-    private List<CollectionModel> _collections = new();
+    private List<Collections> _collections = new();
     private string _requestName = string.Empty;
     private string? _selectedCollectionId;
     private string _newCollectionName = string.Empty;
@@ -117,7 +119,7 @@
 
     private void Cancel() => MudDialog.Cancel();
 
-    private RenderFragment CollectionOption(CollectionModel collection, int depth) => __builder =>
+    private RenderFragment CollectionOption(Collections collection, int depth) => __builder =>
     {
         var isSelected = _selectedCollectionId == collection.Id;
 

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Identity;
+using RobRequest.Shared.Models.Users;
 
 namespace RobRequest.Tests.Unit.Services;
 

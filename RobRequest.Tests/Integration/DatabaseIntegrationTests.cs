@@ -1,3 +1,6 @@
+using RobRequest.Shared.Models.Requests;
+using RobRequest.Shared.Models.Users;
+
 namespace RobRequest.Tests.Integration;
 
 public class DatabaseIntegrationTests : IDisposable
@@ -32,7 +35,7 @@ public class DatabaseIntegrationTests : IDisposable
             Method = "POST",
             Url = "https://api.example.com/data",
             Body = "{\"key\":\"value\"}",
-            Headers = [new HeaderItem { Key = "Content-Type", Value = "application/json" }]
+            Headers = [new KeyValueEntry { Key = "Content-Type", Value = "application/json" }]
         };
         var response = new HttpResponseModel
         {

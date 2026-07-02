@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using RobRequest.Shared.Data;
 using RobRequest.Shared.Models;
+using RobRequest.Shared.Models.Users;
 
 namespace RobRequest.Shared.Services;
 

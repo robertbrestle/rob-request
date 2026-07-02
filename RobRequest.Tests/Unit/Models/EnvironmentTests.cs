@@ -1,12 +1,16 @@
+using RobRequest.Shared.Models.Auth;
+using RobRequest.Shared.Models.Environments;
+using Environment = RobRequest.Shared.Models.Environments.Environment;
+
 namespace RobRequest.Tests.Unit.Models;
 
-public class EnvironmentModelTests
+public class EnvironmentTests
 {
     [Fact]
     public void Clone_ShouldCopyAllFields()
     {
         // Arrange
-        var model = new EnvironmentModel
+        var model = new Environment
         {
             Id = "env-1",
             Name = "Production",
@@ -38,7 +42,7 @@ public class EnvironmentModelTests
     [Fact]
     public void Defaults_AreCorrect()
     {
-        var model = new EnvironmentModel();
+        var model = new Environment();
 
         model.Name.Should().BeEmpty();
         model.Variables.Should().BeEmpty();

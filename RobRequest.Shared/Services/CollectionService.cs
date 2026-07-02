@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using RobRequest.Shared.Data;
 using RobRequest.Shared.Models;
+using RobRequest.Shared.Models.Collections;
+using RobRequest.Shared.Models.Requests;
 
 namespace RobRequest.Shared.Services;
 
@@ -8,7 +10,7 @@ public class CollectionService(AppDbContext db, CurrentUserService currentUser)
 {
     public event Action? OnCollectionsChanged;
 
-    public async Task<List<CollectionModel>> GetRootCollectionsAsync()
+    public async Task<List<Collection>> GetRootCollectionsAsync()
     {
         return await db.Collections
             .Where(c => c.UserId == currentUser.UserId)
@@ -21,7 +23,7 @@ public class CollectionService(AppDbContext db, CurrentUserService currentUser)
             .ToListAsync();
     }
 
-    public async Task<List<CollectionModel>> GetAllCollectionsAsync()
+    public async Task<List<Collection>> GetAllCollectionsAsync()
     {
         return await db.Collections
             .Where(c => c.UserId == currentUser.UserId)
@@ -32,7 +34,7 @@ public class CollectionService(AppDbContext db, CurrentUserService currentUser)
             .ToListAsync();
     }
 
-    public async Task<List<CollectionModel>> GetCollectionTreeAsync()
+    public async Task<List<Collection>> GetCollectionTreeAsync()
     {
         var all = await db.Collections
             .Where(c => c.UserId == currentUser.UserId)
@@ -43,7 +45,7 @@ public class CollectionService(AppDbContext db, CurrentUserService currentUser)
             .ToListAsync();
 
         var lookup = all.ToDictionary(c => c.Id);
-        var roots = new List<CollectionModel>();
+        var roots = new List<Collection>();
 
         foreach (var c in all)
         {
@@ -60,7 +62,7 @@ public class CollectionService(AppDbContext db, CurrentUserService currentUser)
         return roots;
     }
 
-    public async Task<CollectionModel?> GetCollectionAsync(string id)
+    public async Task<Collection?> GetCollectionAsync(string id)
     {
         return await db.Collections
             .Include(c => c.Children)
@@ -69,21 +71,20 @@ public class CollectionService(AppDbContext db, CurrentUserService currentUser)
             .FirstOrDefaultAsync(c => c.Id == id);
     }
 
-    public async Task<CollectionModel> CreateCollectionAsync(string name, string? parentId = null,
+    public async Task<Collection> CreateCollectionAsync(string name, string? parentId = null,
         string? description = null)
     {
         var maxSort = await db.Collections
             .Where(c => c.ParentId == parentId)
             .MaxAsync(c => (int?)c.SortOrder) ?? -1;
 
-        var collection = new CollectionModel
+        var collection = new Collection
         {
             Name = name,
             Description = description,
             UserId = currentUser.UserId ?? string.Empty,
             ParentId = parentId,
             SortOrder = maxSort + 1,
-            CreatedAt = DateTime.Now,
             UpdatedAt = DateTime.Now
         };
 
@@ -93,7 +94,7 @@ public class CollectionService(AppDbContext db, CurrentUserService currentUser)
         return collection;
     }
 
-    public async Task UpdateCollectionAsync(CollectionModel collection)
+    public async Task UpdateCollectionAsync(Collection collection)
     {
         var existing = await db.Collections.FindAsync(collection.Id);
         if (existing == null) return;
@@ -118,7 +119,7 @@ public class CollectionService(AppDbContext db, CurrentUserService currentUser)
         OnCollectionsChanged?.Invoke();
     }
 
-    public async Task<CollectionRequestModel> AddRequestToCollectionAsync(string collectionId, string name,
+    public async Task<CollectionRequest> AddRequestToCollectionAsync(string collectionId, string name,
         HttpRequestModel request)
     {
         var maxSort = await db.CollectionRequests
@@ -127,13 +128,12 @@ public class CollectionService(AppDbContext db, CurrentUserService currentUser)
 
         var requestSnapshot = request.Clone();
 
-        var collectionRequest = new CollectionRequestModel
+        var collectionRequest = new CollectionRequest
         {
             CollectionId = collectionId,
             Name = name,
             SortOrder = maxSort + 1,
             Request = requestSnapshot,
-            CreatedAt = DateTime.Now,
             UpdatedAt = DateTime.Now
         };
 
@@ -143,7 +143,7 @@ public class CollectionService(AppDbContext db, CurrentUserService currentUser)
         return collectionRequest;
     }
 
-    public async Task UpdateCollectionRequestAsync(CollectionRequestModel collectionRequest)
+    public async Task UpdateCollectionRequestAsync(CollectionRequest collectionRequest)
     {
         var existing = await db.CollectionRequests.FindAsync(collectionRequest.Id);
         if (existing == null) return;
@@ -168,14 +168,14 @@ public class CollectionService(AppDbContext db, CurrentUserService currentUser)
         OnCollectionsChanged?.Invoke();
     }
 
-    public async Task<CollectionRequestModel?> GetCollectionRequestAsync(string id)
+    public async Task<CollectionRequest?> GetCollectionRequestAsync(string id)
     {
         return await db.CollectionRequests
             .AsNoTracking()
             .FirstOrDefaultAsync(r => r.Id == id);
     }
 
-    public async Task<List<CollectionModel>> SearchCollectionsAsync(string query)
+    public async Task<List<Collection>> SearchCollectionsAsync(string query)
     {
         query = query.ToLower();
         var allCollections = await db.Collections

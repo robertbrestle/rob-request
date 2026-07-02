@@ -1,5 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using RobRequest.Shared.Models;
+using RobRequest.Shared.Models.Collections;
+using RobRequest.Shared.Models.Environments;
+using RobRequest.Shared.Models.History;
+using RobRequest.Shared.Models.Users;
+using Environment = RobRequest.Shared.Models.Environments.Environment;
 
 namespace RobRequest.Shared.Data;
 
@@ -9,9 +14,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<UserGroup> UserGroups => Set<UserGroup>();
     public DbSet<HistoryItem> HistoryItems => Set<HistoryItem>();
     public DbSet<UserSettings> UserSettings => Set<UserSettings>();
-    public DbSet<CollectionModel> Collections => Set<CollectionModel>();
-    public DbSet<CollectionRequestModel> CollectionRequests => Set<CollectionRequestModel>();
-    public DbSet<EnvironmentModel> Environments => Set<EnvironmentModel>();
+    public DbSet<Collection> Collections => Set<Collection>();
+    public DbSet<CollectionRequest> CollectionRequests => Set<CollectionRequest>();
+    public DbSet<Environment> Environments => Set<Environment>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -70,7 +75,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
-        modelBuilder.Entity<CollectionModel>(entity =>
+        modelBuilder.Entity<Collection>(entity =>
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.ParentId);
@@ -93,7 +98,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
-        modelBuilder.Entity<CollectionRequestModel>(entity =>
+        modelBuilder.Entity<CollectionRequest>(entity =>
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.CollectionId);
@@ -108,7 +113,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             });
         });
 
-        modelBuilder.Entity<EnvironmentModel>(entity =>
+        modelBuilder.Entity<Environment>(entity =>
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.Name);

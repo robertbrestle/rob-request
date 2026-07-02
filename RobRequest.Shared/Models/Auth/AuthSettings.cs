@@ -1,27 +1,4 @@
-using System.ComponentModel.DataAnnotations;
-
-namespace RobRequest.Shared.Models;
-
-public enum AuthType
-{
-    None,
-    Inherit,
-    Bearer,
-    Basic,
-    ApiKey,
-    OAuth2
-}
-
-public enum OAuth2GrantType
-{
-    ClientCredentials
-}
-
-public enum ApiKeyLocation
-{
-    Header,
-    QueryParam
-}
+namespace RobRequest.Shared.Models.Auth;
 
 public class AuthSettings
 {

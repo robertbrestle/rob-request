@@ -1,3 +1,5 @@
+using RobRequest.Shared.Models.Users;
+
 namespace RobRequest.Tests.Helpers;
 
 public static class TestHelpers

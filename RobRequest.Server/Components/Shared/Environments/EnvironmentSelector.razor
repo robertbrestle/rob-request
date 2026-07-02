@@ -1,4 +1,6 @@
 @inject EnvironmentService EnvironmentService
+@using RobRequest.Shared.Models.Environments
+@using Environment = RobRequest.Shared.Models.Environments.Environment
 @implements IDisposable
 
 <MudSelect T="string"
@@ -19,7 +21,7 @@
 
 @code {
 
-    private List<EnvironmentModel> _environments = new();
+    private List<Environment> _environments = new();
     private string? _activeId;
 
     protected override async Task OnInitializedAsync()

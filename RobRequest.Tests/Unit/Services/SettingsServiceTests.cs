@@ -1,3 +1,5 @@
+using RobRequest.Shared.Models.Users;
+
 namespace RobRequest.Tests.Unit.Services;
 
 public class SettingsServiceTests : IDisposable

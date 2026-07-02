@@ -1,3 +1,5 @@
+@using RobRequest.Shared.Models.Requests
+@using RobRequest.Shared.Models.Users
 @implements IDisposable
 
 <MudPaper Elevation="1" Class="pa-4">
@@ -242,9 +244,9 @@
         return Response.Body;
     }
 
-    private IEnumerable<HeaderItem> GetFilteredHeaders()
+    private IEnumerable<KeyValueEntry> GetFilteredHeaders()
     {
-        if (Response == null) return Enumerable.Empty<HeaderItem>();
+        if (Response == null) return Enumerable.Empty<KeyValueEntry>();
 
         var headers = Response.Headers.AsEnumerable();
 

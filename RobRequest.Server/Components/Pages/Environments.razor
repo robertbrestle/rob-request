@@ -2,6 +2,10 @@
 @inject ApiService ApiService
 @inject ISnackbar Snackbar
 @inject IJSRuntime Js
+@using RobRequest.Shared.Models.Auth
+@using RobRequest.Shared.Models.Environments
+@using RobRequest.Shared.Models.Requests
+@using Environment = RobRequest.Shared.Models.Environments.Environment
 @implements IDisposable
 
 <PageTitle>RobRequest - Environments</PageTitle>
@@ -458,10 +462,10 @@
 
     [CascadingParameter] public required MainLayout Layout { get; set; }
 
-    private List<EnvironmentModel> _environments = new();
+    private List<Environment> _environments = new();
     private string _searchQuery = string.Empty;
     private string? _selectedEnvironmentId;
-    private EnvironmentModel? _selectedEnvironment;
+    private Environment? _selectedEnvironment;
 
     private bool _isGettingToken;
 
@@ -639,7 +643,7 @@
         }
     }
 
-    private async Task DeleteEnvironmentFromList(EnvironmentModel env)
+    private async Task DeleteEnvironmentFromList(Environment env)
     {
         var result = await DialogService.ShowMessageBoxAsync(
             "Delete Environment",

@@ -3,6 +3,7 @@
 @inject IDialogService DialogService
 @inject NavigationManager NavigationManager
 @using RobRequest.Server.Components.Shared.Collections
+@using RobRequest.Shared.Models.Collections
 @implements IDisposable
 
 <PageTitle>RobRequest - Collections</PageTitle>
@@ -246,12 +247,12 @@
 
     [CascadingParameter] public required MainLayout Layout { get; set; }
 
-    private List<CollectionModel> _collections = new();
-    private List<CollectionModel> _allCollections = new();
+    private List<Collection> _collections = new();
+    private List<Collection> _allCollections = new();
     private string _searchQuery = string.Empty;
     private string? _selectedCollectionId;
-    private CollectionModel? _selectedCollection;
-    private List<CollectionRequestModel> _selectedCollectionRequests = new();
+    private Collection? _selectedCollection;
+    private List<CollectionRequest> _selectedCollectionRequests = new();
     private HashSet<string> _expandedNodes = new();
 
     protected override async Task OnInitializedAsync()
@@ -350,7 +351,7 @@
         await LoadCollections();
     }
 
-    private async Task OnRequestNameChanged(CollectionRequestModel request, string value)
+    private async Task OnRequestNameChanged(CollectionRequest request, string value)
     {
         if (string.IsNullOrWhiteSpace(value)) return;
         request.Name = value;
@@ -376,7 +377,7 @@
         }
     }
 
-    private async Task DeleteRequest(CollectionRequestModel request)
+    private async Task DeleteRequest(CollectionRequest request)
     {
         var result = await DialogService.ShowMessageBoxAsync(
             "Delete Request",
@@ -390,7 +391,7 @@
         }
     }
 
-    private async Task MoveRequest(CollectionRequestModel request)
+    private async Task MoveRequest(CollectionRequest request)
     {
         var parameters = new DialogParameters<MoveToCollectionDialog>
         {
@@ -408,7 +409,7 @@
         }
     }
 
-    private void LoadRequestInPanel(CollectionRequestModel request)
+    private void LoadRequestInPanel(CollectionRequest request)
     {
         NavigationManager.NavigateTo("/");
     }
@@ -436,7 +437,7 @@
         return result?.Canceled == false ? result.Data as string : null;
     }
 
-    private RenderFragment TreeNode(CollectionModel collection, int depth) => __builder =>
+    private RenderFragment TreeNode(Collection collection, int depth) => __builder =>
     {
         var isExpanded = IsExpanded(collection.Id);
         var isSelected = _selectedCollectionId == collection.Id;
@@ -494,7 +495,7 @@
         }
     };
 
-    private async Task DeleteTreeCollection(CollectionModel collection)
+    private async Task DeleteTreeCollection(Collection collection)
     {
         var result = await DialogService.ShowMessageBoxAsync(
             "Delete Collection",

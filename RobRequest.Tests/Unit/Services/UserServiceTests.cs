@@ -1,4 +1,7 @@
 using Microsoft.AspNetCore.Identity;
+using RobRequest.Shared.Models.History;
+using RobRequest.Shared.Models.Requests;
+using RobRequest.Shared.Models.Users;
 
 namespace RobRequest.Tests.Unit.Services;
 

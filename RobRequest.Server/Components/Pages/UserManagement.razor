@@ -1,6 +1,7 @@
 @page "/admin/users"
 @attribute [Microsoft.AspNetCore.Authorization.Authorize(Policy = "Admin")]
 @using RobRequest.Server.Components.Shared.UserManagement
+@using RobRequest.Shared.Models.Users
 @inject UserService UserService
 @inject HistoryService HistoryService
 @inject ISnackbar Snackbar

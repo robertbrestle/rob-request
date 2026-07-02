@@ -8,6 +8,12 @@
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
 @inject SettingsService SettingsService
+@using RobRequest.Shared.Models.Collections
+@using RobRequest.Shared.Models.Environments
+@using RobRequest.Shared.Models.Export
+@using RobRequest.Shared.Models.History
+@using RobRequest.Shared.Models.Users
+@using Environment = RobRequest.Shared.Models.Environments.Environment
 @implements IDisposable
 
 <PageTitle>RobRequest - Settings</PageTitle>
@@ -309,8 +315,8 @@
     private UserSettings _settings = new();
 
     // Export state
-    private List<CollectionModel> _collections = new();
-    private List<EnvironmentModel> _environments = new();
+    private List<Collection> _collections = new();
+    private List<Environment> _environments = new();
     private IReadOnlyList<HistoryItem> _historyItems = Array.Empty<HistoryItem>();
     private IReadOnlyCollection<string> _selectedCollectionIds = Array.Empty<string>();
     private IReadOnlyCollection<string> _selectedEnvironmentIds = Array.Empty<string>();
@@ -330,7 +336,7 @@
     private string _passwordInputIcon => _showPassword ? Icons.Material.Filled.Visibility : Icons.Material.Filled.VisibilityOff;
 
     // Import state
-    private RobRequestExport? _importPreview;
+    private Export? _importPreview;
     private string? _importFileName;
     private string? _importJson;
     private string? _importError;

@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using RobRequest.Shared.Data;
 using RobRequest.Shared.Models;
+using RobRequest.Shared.Models.History;
+using RobRequest.Shared.Models.Requests;
 
 namespace RobRequest.Shared.Services;
 
@@ -31,7 +33,7 @@ public class HistoryService(AppDbContext db, SettingsService settingsService, Cu
             StatusCode = response.StatusCode,
             StatusText = response.StatusText,
             Body = response.Body,
-            Headers = response.Headers.Select(h => new HeaderItem { Key = h.Key, Value = h.Value, Enabled = h.Enabled })
+            Headers = response.Headers.Select(h => new KeyValueEntry { Key = h.Key, Value = h.Value, Enabled = h.Enabled })
                 .ToList(),
             ContentType = response.ContentType,
             ResponseTimeMs = response.ResponseTimeMs,

@@ -1,11 +1,11 @@
-namespace RobRequest.Shared.Models;
+namespace RobRequest.Shared.Models.Requests;
 
 public class HttpResponseModel
 {
     public int StatusCode { get; set; }
     public string StatusText { get; set; } = string.Empty;
     public string Body { get; set; } = string.Empty;
-    public List<HeaderItem> Headers { get; set; } = new();
+    public List<KeyValueEntry> Headers { get; set; } = new();
     public string ContentType { get; set; } = string.Empty;
     public long ResponseTimeMs { get; set; }
     public long ResponseSizeBytes { get; set; }

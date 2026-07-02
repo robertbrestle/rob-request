@@ -4,6 +4,12 @@ using Microsoft.EntityFrameworkCore;
 using RobRequest.Shared.Data;
 using RobRequest.Shared.Extensions;
 using RobRequest.Shared.Models;
+using RobRequest.Shared.Models.Collections;
+using RobRequest.Shared.Models.Environments;
+using RobRequest.Shared.Models.Export;
+using RobRequest.Shared.Models.History;
+using RobRequest.Shared.Models.Requests;
+using Environment = RobRequest.Shared.Models.Environments.Environment;
 
 namespace RobRequest.Shared.Services;
 
@@ -24,12 +30,12 @@ public class ImportExportService(AppDbContext db, CurrentUserService currentUser
         Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
     };
 
-    public async Task<RobRequestExport> BuildExportAsync(
+    public async Task<Export> BuildExportAsync(
         List<string>? collectionIds = null,
         List<string>? environmentIds = null,
         List<string>? historyIds = null)
     {
-        var export = new RobRequestExport
+        var export = new Export
         {
             FormatVersion = "1",
             AppVersion = AppInfoExtensions.GetAppVersion,
@@ -54,17 +60,17 @@ public class ImportExportService(AppDbContext db, CurrentUserService currentUser
         return export;
     }
 
-    public string SerializeExport(RobRequestExport export)
+    public string SerializeExport(Export export)
     {
         return JsonSerializer.Serialize(export, JsonOptions);
     }
 
-    public RobRequestExport? DeserializeExport(string json)
+    public Export? DeserializeExport(string json)
     {
-        return JsonSerializer.Deserialize<RobRequestExport>(json, DeserializeOptions);
+        return JsonSerializer.Deserialize<Export>(json, DeserializeOptions);
     }
 
-    public async Task<ImportResult> ImportAsync(RobRequestExport data)
+    public async Task<ImportResult> ImportAsync(Export data)
     {
         var result = new ImportResult();
 
@@ -135,7 +141,7 @@ public class ImportExportService(AppDbContext db, CurrentUserService currentUser
             .ToList();
     }
 
-    private static void CollectSubtreeIds(string rootId, List<CollectionModel> allCollections, HashSet<string> ids)
+    private static void CollectSubtreeIds(string rootId, List<Collection> allCollections, HashSet<string> ids)
     {
         if (!ids.Add(rootId)) return;
 
@@ -223,7 +229,7 @@ public class ImportExportService(AppDbContext db, CurrentUserService currentUser
                 name = $"{name} ({timestamp})";
             }
 
-            var newCollection = new CollectionModel
+            var newCollection = new Collection
             {
                 Id = newId,
                 Name = name,
@@ -239,7 +245,7 @@ public class ImportExportService(AppDbContext db, CurrentUserService currentUser
 
             foreach (var req in col.Requests)
             {
-                var newRequest = new CollectionRequestModel
+                var newRequest = new CollectionRequest
                 {
                     Id = Guid.NewGuid().ToString(),
                     CollectionId = newId,
@@ -277,7 +283,7 @@ public class ImportExportService(AppDbContext db, CurrentUserService currentUser
                 name = $"{name} ({timestamp})";
             }
 
-            var newEnv = new EnvironmentModel
+            var newEnv = new Environment
             {
                 Id = Guid.NewGuid().ToString(),
                 Name = name,
@@ -339,7 +345,7 @@ public class ImportExportService(AppDbContext db, CurrentUserService currentUser
             StatusCode = source.StatusCode,
             StatusText = source.StatusText,
             Body = source.Body,
-            Headers = source.Headers.Select(h => new HeaderItem { Key = h.Key, Value = h.Value, Enabled = h.Enabled })
+            Headers = source.Headers.Select(h => new KeyValueEntry { Key = h.Key, Value = h.Value, Enabled = h.Enabled })
                 .ToList(),
             ContentType = source.ContentType,
             ResponseTimeMs = source.ResponseTimeMs,

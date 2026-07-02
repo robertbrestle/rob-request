@@ -1,19 +1,17 @@
 using System.ComponentModel.DataAnnotations;
+using RobRequest.Shared.Models.Requests;
 
-namespace RobRequest.Shared.Models;
+namespace RobRequest.Shared.Models.History;
 
 public class HistoryItem
 {
-    [Key,StringLength(36)]
-    public string Id { get; set; } = Guid.CreateVersion7().ToString();
-    [StringLength(7)]
-    public string Method { get; set; } = string.Empty;
+    [Key, StringLength(36)] public string Id { get; set; } = Guid.CreateVersion7().ToString();
+    [StringLength(7)] public string Method { get; set; } = string.Empty;
     public string Url { get; set; } = string.Empty;
     public int StatusCode { get; set; }
     public long ResponseTimeMs { get; set; }
-    [StringLength(36)]
-    public string UserId { get; set; } = string.Empty;
-    public User? User { get; set; }
+    [StringLength(36)] public string UserId { get; set; } = string.Empty;
+    public Users.User? User { get; set; }
     public DateTime Timestamp { get; set; } = DateTime.Now;
     public HttpRequestModel? Request { get; set; }
     public HttpResponseModel? Response { get; set; }

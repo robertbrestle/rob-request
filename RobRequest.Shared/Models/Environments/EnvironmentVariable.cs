@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace RobRequest.Shared.Models;
+namespace RobRequest.Shared.Models.Environments;
 
 public class EnvironmentVariable
 {

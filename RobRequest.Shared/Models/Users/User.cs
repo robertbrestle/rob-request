@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace RobRequest.Shared.Models;
+namespace RobRequest.Shared.Models.Users;
 
 public class User
 {
@@ -11,7 +11,7 @@ public class User
     public UserGroup? Group { get; set; }
     public bool IsEnabled { get; set; } = true;
     public bool IsApproved { get; set; }
-    public DateTime CreatedAt { get; set; } = DateTime.Now;
+    public DateTime CreatedAt { get; init; } = DateTime.Now;
     public DateTime UpdatedAt { get; set; } = DateTime.Now;
     public DateTime? LastLogin { get; set; }
 }
