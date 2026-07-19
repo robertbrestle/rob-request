@@ -28,7 +28,7 @@
                            aria-label="clear request history"/>
         }
     </MudStack>
-
+    
     @if (_isLoading)
     {
         <MudProgressLinear Indeterminate="true" Color="Color.Primary"/>
@@ -41,8 +41,7 @@
     }
     else
     {
-        <MudList T="string" Dense="true" Class="history-list"
-                 Style="max-height: calc(100vh - 250px); overflow-y: auto;">
+        <MudList T="string" Dense="true" Class="history-list">
             @foreach (var item in _history)
             {
                 var id = item.Id;
@@ -65,7 +64,7 @@
                         </MudText>
                         <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
                             <MudText Typo="Typo.caption" Color="Color.Default">
-                                @item.Timestamp.ToString("HH:mm:ss")
+                                @item.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")
                             </MudText>
                             <MudSpacer/>
                             <MudText Typo="Typo.caption" Color="Color.Default">
@@ -76,6 +75,22 @@
                 </MudListItem>
             }
         </MudList>
+        @if (_isLoadingMore)
+        {
+            <div class="d-flex justify-center pa-2">
+                <MudProgressCircular Indeterminate="true" Color="Color.Primary" Size="Size.Small"/>
+            </div>
+        }
+        else if (_hasMore)
+        {
+            <div class="d-flex justify-center pa-2">
+                <MudButton Variant="Variant.Text"
+                           Color="Color.Primary"
+                           Size="Size.Small"
+                           OnClick="LoadMore">Load More
+                </MudButton>
+            </div>
+        }
     }
 </MudStack>
 
@@ -83,9 +98,13 @@
 
     [Parameter] public EventCallback<HistoryItem> OnRequestSelected { get; set; }
 
-    private IReadOnlyList<HistoryItem> _history = Array.Empty<HistoryItem>();
+    private const int PageSize = 10;
+
+    private readonly List<HistoryItem> _history = new();
     private string _searchQuery = string.Empty;
     private bool _isLoading = true;
+    private bool _isLoadingMore;
+    private bool _hasMore = true;
 
     protected override async Task OnInitializedAsync()
     {
@@ -98,15 +117,49 @@
 
     private async void OnHistoryChanged()
     {
-        await LoadHistory();
+        await ReloadPreservingCount();
         await InvokeAsync(StateHasChanged);
     }
 
+    // Resets the list and loads the first page. Used on initial load and search.
     private async Task LoadHistory()
     {
-        _history = string.IsNullOrWhiteSpace(_searchQuery)
-            ? await HistoryService.GetHistoryAsync()
-            : await HistoryService.SearchHistoryAsync(_searchQuery);
+        _history.Clear();
+        _hasMore = true;
+        await LoadMore();
+    }
+
+    // Loads the next page and appends it to the current list.
+    private async Task LoadMore()
+    {
+        if (_isLoadingMore || !_hasMore) return;
+        _isLoadingMore = true;
+        try
+        {
+            var page = string.IsNullOrWhiteSpace(_searchQuery)
+                ? await HistoryService.GetHistoryAsync(PageSize, _history.Count)
+                : await HistoryService.SearchHistoryAsync(_searchQuery, PageSize, _history.Count);
+            _history.AddRange(page);
+            _hasMore = page.Count == PageSize;
+        }
+        finally
+        {
+            _isLoadingMore = false;
+        }
+    }
+
+    // Reloads the items currently in view in a single query (e.g. after an item
+    // is added, deleted or cleared) so the user keeps their scroll depth instead
+    // of snapping back to the first page.
+    private async Task ReloadPreservingCount()
+    {
+        var count = Math.Max(PageSize, _history.Count);
+        var page = string.IsNullOrWhiteSpace(_searchQuery)
+            ? await HistoryService.GetHistoryAsync(count)
+            : await HistoryService.SearchHistoryAsync(_searchQuery, count);
+        _history.Clear();
+        _history.AddRange(page);
+        _hasMore = page.Count == count;
     }
 
     private async Task SearchHistory(string query)

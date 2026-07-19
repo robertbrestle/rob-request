@@ -29,6 +29,31 @@ window.downloadFileFromStream = async (fileName, contentType, streamRef) => {
     URL.revokeObjectURL(url);
 }
 
+// Infinite scroll: notifies .NET when a sentinel element scrolls into view.
+window.historyInfiniteScroll = {
+    observers: {},
+    observe: function (id, sentinel, root, dotnetRef) {
+        if (!sentinel) return;
+        this.disconnect(id);
+        const observer = new IntersectionObserver((entries) => {
+            for (const entry of entries) {
+                if (entry.isIntersecting) {
+                    dotnetRef.invokeMethodAsync('OnScrolledToBottom');
+                }
+            }
+        }, { root: root || null, rootMargin: '150px', threshold: 0 });
+        observer.observe(sentinel);
+        this.observers[id] = observer;
+    },
+    disconnect: function (id) {
+        const existing = this.observers[id];
+        if (existing) {
+            existing.disconnect();
+            delete this.observers[id];
+        }
+    }
+};
+
 // renders item count for JSON arrays
 window.initializeMonacoCodeLens = () => {
     if (window._monacoCodeLensRegistered) return;

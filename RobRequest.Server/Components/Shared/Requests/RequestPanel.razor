@@ -56,8 +56,7 @@
 
     @if (_showUrlPreview && !string.IsNullOrEmpty(_resolvedUrlPreview))
     {
-        <MudText Typo="Typo.caption" Color="Color.Inherit" Class="ml-1 mb-1"
-                 Style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+        <MudText Typo="Typo.caption" Color="Color.Inherit" Class="ml-1 mb-1 d-flex" Style="word-break: break-all;">
             <MudIcon Icon="@Icons.Material.Filled.SwapHoriz" Size="Size.Small" Class="mr-1"
                      Style="vertical-align: middle; font-size: 14px;"/>
             @_resolvedUrlPreview
@@ -65,7 +64,7 @@
     }
 
     @* Request Tabs *@
-    <MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true" TabPanelsClass="pa-3">
+    <MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true" TabPanelsClass="">
         @* Params Tab *@
         <MudTabPanel Text="Params" BadgeData="@GetParamsBadge()" BadgeColor="Color.Primary">
             <KeyValueEditor TItem="KeyValueEntry"
@@ -117,16 +116,15 @@
         @* Body Tab *@
         <MudTabPanel Text="Body">
             <MudStack Spacing="2">
-                <MudRadioGroup T="string" @bind-Value="_request.BodyType">
-                    <MudRadio Value="@("none")" Color="Color.Primary" Dense="true">None</MudRadio>
-                    <MudRadio Value="@("json")" Color="Color.Primary" Dense="true">JSON</MudRadio>
-                    <MudRadio Value="@("form-data")" Color="Color.Primary" Dense="true">Form Data</MudRadio>
-                    <MudRadio Value="@("text")" Color="Color.Primary" Dense="true">Raw Text</MudRadio>
-                    <MudRadio Value="@("xml")" Color="Color.Primary" Dense="true">XML</MudRadio>
-                </MudRadioGroup>
-
-                @if (_request.BodyType != "none")
-                {
+                <MudStack Row="true">
+                    <MudRadioGroup T="string" @bind-Value="_request.BodyType">
+                        <MudRadio Value="@("none")" Color="Color.Primary" Dense="true">None</MudRadio>
+                        <MudRadio Value="@("json")" Color="Color.Primary" Dense="true">JSON</MudRadio>
+                        <MudRadio Value="@("form-data")" Color="Color.Primary" Dense="true">Form Data</MudRadio>
+                        <MudRadio Value="@("text")" Color="Color.Primary" Dense="true">Raw Text</MudRadio>
+                        <MudRadio Value="@("xml")" Color="Color.Primary" Dense="true">XML</MudRadio>
+                    </MudRadioGroup>
+                    <MudSpacer/>
                     @if (_request.BodyType == "json")
                     {
                         <MudStack Row="true" Spacing="1" Class="mb-1">
@@ -137,6 +135,12 @@
                                 Format JSON
                             </MudButton>
                         </MudStack>
+                    }
+                </MudStack>
+
+                @switch (_request.BodyType)
+                {
+                    case "json":
                         <MonacoEditor Id="request-body-editor-json"
                                       Value="@_request.Body"
                                       ValueChanged="OnBodyChanged"
@@ -145,9 +149,8 @@
                                       IsDarkMode="Layout.IsDarkMode"
                                       ShowMinimap="false"
                                       CssClass="request-body-editor"/>
-                    }
-                    else if (_request.BodyType == "form-data")
-                    {
+                        break;
+                    case "form-data":
                         <KeyValueEditor TItem="FormDataItem"
                                         Items="_request.FormData"
                                         ItemsChanged="OnFormDataChanged"
@@ -159,9 +162,10 @@
                                         SetKey="@((i, v) => i.Key = v)"
                                         SetValue="@((i, v) => i.Value = v)"
                                         SetEnabled="@((i, v) => i.Enabled = v)"/>
-                    }
-                    else
-                    {
+                        break;
+                    case "none":
+                        break;
+                    default:
                         <MonacoEditor Id="@($"request-body-editor-{_request.BodyType}")"
                                       Value="@_request.Body"
                                       ValueChanged="OnBodyChanged"
@@ -170,7 +174,7 @@
                                       IsDarkMode="Layout.IsDarkMode"
                                       ShowMinimap="false"
                                       CssClass="request-body-editor"/>
-                    }
+                        break;
                 }
             </MudStack>
         </MudTabPanel>
@@ -178,7 +182,8 @@
         @* Auth Tab *@
         <MudTabPanel Text="Auth">
             <MudStack Spacing="3">
-                <MudSelect T="AuthType" @bind-Value="_request.Auth.AuthType" Label="Auth Type" Variant="Variant.Outlined"
+                <MudSelect T="AuthType" @bind-Value="_request.Auth.AuthType" Label="Auth Type"
+                           Variant="Variant.Outlined"
                            Margin="Margin.Dense">
                     <MudSelectItem Value="AuthType.Inherit">Inherit from Environment</MudSelectItem>
                     <MudSelectItem Value="AuthType.None">No Auth</MudSelectItem>
@@ -307,11 +312,11 @@
 @code {
 
     [Inject] private ApiService ApiService { get; set; } = default!;
-    [Inject] private HistoryService HistoryService {get;set;} = default!;
-    [Inject] private CollectionService CollectionService {get;set;} = default!;
-    [Inject] private EnvironmentService EnvironmentService {get;set;} = default!;
-    [Inject] private IDialogService DialogService {get;set;} = default!;
-    [Inject] private ISnackbar Snackbar {get;set;} = default!;
+    [Inject] private HistoryService HistoryService { get; set; } = default!;
+    [Inject] private CollectionService CollectionService { get; set; } = default!;
+    [Inject] private EnvironmentService EnvironmentService { get; set; } = default!;
+    [Inject] private IDialogService DialogService { get; set; } = default!;
+    [Inject] private ISnackbar Snackbar { get; set; } = default!;
 
     [CascadingParameter] public required MainLayout Layout { get; set; }
     [Parameter] public EventCallback<HttpResponseModel> OnResponseReceived { get; set; }

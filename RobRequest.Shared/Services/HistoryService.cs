@@ -10,11 +10,12 @@ public class HistoryService(AppDbContext db, SettingsService settingsService, Cu
 {
     public event Action? OnHistoryChanged;
 
-    public async Task<IReadOnlyList<HistoryItem>> GetHistoryAsync(int limit = 100)
+    public async Task<IReadOnlyList<HistoryItem>> GetHistoryAsync(int limit = 100, int offset = 0)
     {
         return await db.HistoryItems
             .Where(h => h.UserId == currentUser.UserId)
             .OrderByDescending(h => h.Timestamp)
+            .Skip(offset)
             .Take(limit)
             .AsNoTracking()
             .ToListAsync();
@@ -86,7 +87,7 @@ public class HistoryService(AppDbContext db, SettingsService settingsService, Cu
         OnHistoryChanged?.Invoke();
     }
 
-    public async Task<IReadOnlyList<HistoryItem>> SearchHistoryAsync(string query)
+    public async Task<IReadOnlyList<HistoryItem>> SearchHistoryAsync(string query, int limit = 100, int offset = 0)
     {
         query = query.ToLower();
         return await db.HistoryItems
@@ -95,6 +96,8 @@ public class HistoryService(AppDbContext db, SettingsService settingsService, Cu
                         h.Method.ToLower().Contains(query) ||
                         h.StatusCode.ToString().Contains(query))
             .OrderByDescending(h => h.Timestamp)
+            .Skip(offset)
+            .Take(limit)
             .AsNoTracking()
             .ToListAsync();
     }

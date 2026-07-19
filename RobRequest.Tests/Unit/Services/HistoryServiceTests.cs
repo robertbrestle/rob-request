@@ -109,6 +109,47 @@ public class HistoryServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task GetHistoryAsync_RespectsLimitAndOffset()
+    {
+        var response = new HttpResponseModel { StatusCode = 200 };
+        for (var i = 0; i < 25; i++)
+        {
+            await _sut.AddToHistoryAsync(new HttpRequestModel { Method = "GET", Url = $"https://example.com/{i}" }, response);
+            await Task.Delay(2);
+        }
+
+        var firstPage = await _sut.GetHistoryAsync(limit: 10, offset: 0);
+        var secondPage = await _sut.GetHistoryAsync(limit: 10, offset: 10);
+        var thirdPage = await _sut.GetHistoryAsync(limit: 10, offset: 20);
+
+        firstPage.Should().HaveCount(10);
+        secondPage.Should().HaveCount(10);
+        thirdPage.Should().HaveCount(5);
+
+        // Pages should not overlap (most-recent first, no duplicates across pages).
+        var allIds = firstPage.Concat(secondPage).Concat(thirdPage).Select(h => h.Id).ToList();
+        allIds.Should().OnlyHaveUniqueItems();
+    }
+
+    [Fact]
+    public async Task SearchHistoryAsync_RespectsLimitAndOffset()
+    {
+        var response = new HttpResponseModel { StatusCode = 200 };
+        for (var i = 0; i < 15; i++)
+        {
+            await _sut.AddToHistoryAsync(new HttpRequestModel { Method = "GET", Url = $"https://api.example.com/users/{i}" }, response);
+            await Task.Delay(2);
+        }
+
+        var firstPage = await _sut.SearchHistoryAsync("users", limit: 10, offset: 0);
+        var secondPage = await _sut.SearchHistoryAsync("users", limit: 10, offset: 10);
+
+        firstPage.Should().HaveCount(10);
+        secondPage.Should().HaveCount(5);
+        firstPage.Concat(secondPage).Select(h => h.Id).Should().OnlyHaveUniqueItems();
+    }
+
+    [Fact]
     public async Task OnHistoryChanged_FiresWhenItemAdded()
     {
         var fired = false;
