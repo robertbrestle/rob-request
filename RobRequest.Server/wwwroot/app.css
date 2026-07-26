@@ -24,6 +24,13 @@ h1:focus {
     min-height: 200px;
 }
 
+@media (max-width: 1280px) {
+    .request-body-editor,
+    .response-body-editor {
+        height: 30vh !important;
+    }
+}
+
 .method-selector .mud-input-slot {
     font-weight: 700;
 }

@@ -117,13 +117,13 @@
         <MudTabPanel Text="Body">
             <MudStack Spacing="2">
                 <MudStack Row="true">
-                    <MudRadioGroup T="string" @bind-Value="_request.BodyType">
-                        <MudRadio Value="@("none")" Color="Color.Primary" Dense="true">None</MudRadio>
-                        <MudRadio Value="@("json")" Color="Color.Primary" Dense="true">JSON</MudRadio>
-                        <MudRadio Value="@("form-data")" Color="Color.Primary" Dense="true">Form Data</MudRadio>
-                        <MudRadio Value="@("text")" Color="Color.Primary" Dense="true">Raw Text</MudRadio>
-                        <MudRadio Value="@("xml")" Color="Color.Primary" Dense="true">XML</MudRadio>
-                    </MudRadioGroup>
+                    <MudSelect @bind-Value="_request.BodyType" Dense="true" Style="width: 100px;">
+                        <MudSelectItem Value="@("none")" Color="Color.Primary">None</MudSelectItem>
+                        <MudSelectItem Value="@("json")" Color="Color.Primary">JSON</MudSelectItem>
+                        <MudSelectItem Value="@("form-data")" Color="Color.Primary">Form</MudSelectItem>
+                        <MudSelectItem Value="@("text")" Color="Color.Primary">Text</MudSelectItem>
+                        <MudSelectItem Value="@("xml")" Color="Color.Primary">XML</MudSelectItem>
+                    </MudSelect>
                     <MudSpacer/>
                     @if (_request.BodyType == "json")
                     {
