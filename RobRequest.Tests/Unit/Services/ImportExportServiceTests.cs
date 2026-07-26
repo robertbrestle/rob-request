@@ -1,3 +1,4 @@
+using RobRequest.Shared.Models.Auth;
 using RobRequest.Shared.Models.Collections;
 using RobRequest.Shared.Models.Environments;
 using RobRequest.Shared.Models.Export;
@@ -176,6 +177,62 @@ public class ImportExportServiceTests : IDisposable
         deserialized.Environments.Should().HaveCount(1);
         deserialized.Environments![0].Name.Should().Be("Dev");
         deserialized.Environments[0].Variables.Should().HaveCount(1);
+    }
+
+    // --- Single Request Serialization ---
+
+    [Fact]
+    public void SerializeAndDeserializeRequest_RoundTrip()
+    {
+        var request = new HttpRequestModel
+        {
+            Method = "POST",
+            Url = "https://api.example.com/users",
+            BodyType = "json",
+            Body = "{\"name\":\"test\"}",
+            ContentType = "application/json",
+            Headers = new List<KeyValueEntry>
+            {
+                new() { Key = "Accept", Value = "application/json", Enabled = true }
+            },
+            QueryParams = new List<KeyValueEntry>
+            {
+                new() { Key = "page", Value = "1", Enabled = true }
+            },
+            Auth = new AuthSettings { AuthType = AuthType.Bearer, AuthToken = "secret" }
+        };
+
+        var json = _sut.SerializeRequest(request);
+        var deserialized = _sut.DeserializeRequest(json);
+
+        deserialized.Should().NotBeNull();
+        deserialized!.Method.Should().Be("POST");
+        deserialized.Url.Should().Be("https://api.example.com/users");
+        deserialized.BodyType.Should().Be("json");
+        deserialized.Body.Should().Be("{\"name\":\"test\"}");
+        deserialized.Headers.Should().ContainSingle();
+        deserialized.Headers[0].Key.Should().Be("Accept");
+        deserialized.QueryParams.Should().ContainSingle();
+        deserialized.QueryParams[0].Key.Should().Be("page");
+        deserialized.Auth.AuthType.Should().Be(AuthType.Bearer);
+        deserialized.Auth.AuthToken.Should().Be("secret");
+    }
+
+    [Fact]
+    public void SerializeRequest_UsesCamelCaseAndEnumNames()
+    {
+        var request = new HttpRequestModel
+        {
+            Method = "GET",
+            Url = "https://example.com",
+            Auth = new AuthSettings { AuthType = AuthType.Bearer }
+        };
+
+        var json = _sut.SerializeRequest(request);
+
+        json.Should().Contain("\"method\"");
+        json.Should().Contain("\"url\"");
+        json.Should().Contain("\"bearer\"");
     }
 
     // --- Import Tests ---

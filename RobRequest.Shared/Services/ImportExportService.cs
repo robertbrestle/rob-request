@@ -70,6 +70,16 @@ public class ImportExportService(AppDbContext db, CurrentUserService currentUser
         return JsonSerializer.Deserialize<Export>(json, DeserializeOptions);
     }
 
+    public string SerializeRequest(HttpRequestModel request)
+    {
+        return JsonSerializer.Serialize(request, JsonOptions);
+    }
+
+    public HttpRequestModel? DeserializeRequest(string json)
+    {
+        return JsonSerializer.Deserialize<HttpRequestModel>(json, DeserializeOptions);
+    }
+
     public async Task<ImportResult> ImportAsync(Export data)
     {
         var result = new ImportResult();

@@ -47,6 +47,15 @@
                 Save to collection
             </MudMenuItem>
             <MudDivider/>
+            <MudMenuItem Icon="@Icons.Material.Filled.FileUpload"
+                         OnClick="ExportToClipboard">
+                Export to clipboard
+            </MudMenuItem>
+            <MudMenuItem Icon="@Icons.Material.Filled.FileDownload"
+                         OnClick="ImportFromClipboard">
+                Import from clipboard
+            </MudMenuItem>
+            <MudDivider/>
             <MudMenuItem Icon="@Icons.Material.Filled.Air"
                          OnClick="OnUrlChanged">
                 Clean query parameters
@@ -317,6 +326,8 @@
     [Inject] private EnvironmentService EnvironmentService { get; set; } = default!;
     [Inject] private IDialogService DialogService { get; set; } = default!;
     [Inject] private ISnackbar Snackbar { get; set; } = default!;
+    [Inject] private ImportExportService ImportExportService { get; set; } = default!;
+    [Inject] private IJSRuntime Js { get; set; } = default!;
 
     [CascadingParameter] public required MainLayout Layout { get; set; }
     [Parameter] public EventCallback<HttpResponseModel> OnResponseReceived { get; set; }
@@ -675,6 +686,51 @@
     private void OnBodyChanged(string value)
     {
         _request.Body = value;
+    }
+
+    private async Task ExportToClipboard()
+    {
+        try
+        {
+            var modifiedRequest = _request.Clone(newId: false);
+            modifiedRequest.Url = _resolvedUrlPreview ?? _request.Url;
+            // default authentication to prevent leaking secrets
+            modifiedRequest.Auth = new AuthSettings();
+            var json = ImportExportService.SerializeRequest(modifiedRequest);
+            await Js.InvokeVoidAsync("navigator.clipboard.writeText", json);
+            Snackbar.Add("Request copied to clipboard", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to export request: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task ImportFromClipboard()
+    {
+        try
+        {
+            var json = await Js.InvokeAsync<string>("navigator.clipboard.readText");
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                Snackbar.Add("Clipboard is empty", Severity.Warning);
+                return;
+            }
+
+            var imported = ImportExportService.DeserializeRequest(json);
+            if (imported == null)
+            {
+                Snackbar.Add("Clipboard does not contain a valid request", Severity.Error);
+                return;
+            }
+
+            LoadRequest(imported);
+            Snackbar.Add("Request imported from clipboard", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to import request: {ex.Message}", Severity.Error);
+        }
     }
 
     private async Task SaveToCollection()
