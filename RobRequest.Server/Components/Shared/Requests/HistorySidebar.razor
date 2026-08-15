@@ -47,9 +47,16 @@
                 var id = item.Id;
                 <MudListItem T="string" OnClick="@(() => OnRequestSelected.InvokeAsync(item))" Class="history-item">
                     <MudStack Spacing="0">
-                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="0">
                             <HttpMethodChip Method="@item.Method" IsError="@(item.StatusCode == 0)"/>
                             <HttpStatusChip StatusCode="@item.StatusCode" Variant="Variant.Outlined"/>
+                            @if (item.Response != null && item.StatusCode > 0)
+                            {
+                                <MudChip T="string" Color="Color.Default" Size="Size.Small" Variant="Variant.Outlined">
+                                    <MudIcon Icon="@Icons.Material.Filled.Storage" Size="Size.Small" Class="mr-1"/>
+                                    @item.Response.FormattedSize
+                                </MudChip>
+                            }
                             <MudSpacer/>
                             <MudIconButton Icon="@Icons.Material.Outlined.Delete"
                                            Size="Size.Small"
@@ -134,6 +141,8 @@
     {
         if (_isLoadingMore || !_hasMore) return;
         _isLoadingMore = true;
+        await InvokeAsync(StateHasChanged);
+        await Task.Delay(1);
         try
         {
             var page = string.IsNullOrWhiteSpace(_searchQuery)
@@ -145,6 +154,7 @@
         finally
         {
             _isLoadingMore = false;
+            await InvokeAsync(StateHasChanged);
         }
     }
 

@@ -59,7 +59,7 @@ public class MainLayoutBase : LayoutComponentBase, IDisposable
     protected async Task AboutDialog()
     {
         var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-        await DialogService.ShowAsync<AboutDialog>(null, options);
+        await DialogService.ShowAsync<AboutDialog>(options);
     }
 
     #endregion

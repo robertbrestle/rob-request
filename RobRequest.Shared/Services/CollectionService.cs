@@ -65,7 +65,8 @@ public class CollectionService(AppDbContext db, CurrentUserService currentUser)
     public async Task<Collection?> GetCollectionAsync(string id)
     {
         return await db.Collections
-            .Include(c => c.Children)
+            .Include(c => c.Children.OrderBy(child => child.SortOrder).ThenBy(child => child.Name))
+                .ThenInclude(child => child.Requests)
             .Include(c => c.Requests.OrderBy(r => r.SortOrder).ThenBy(r => r.Name))
             .AsNoTracking()
             .FirstOrDefaultAsync(c => c.Id == id);

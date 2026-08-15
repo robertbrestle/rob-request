@@ -55,6 +55,8 @@
 
 @code {
 
+    [Inject] private ISnackbar Snackbar { get; set; } = default!;
+
     [CascadingParameter] public required MainLayout Layout { get; set; }
 
     private RequestPanel? _requestPanel;
@@ -82,6 +84,12 @@
 
     private void OnHistoryItemSelected(HistoryItem item)
     {
+        if (_isSending)
+        {
+            Snackbar.Add("Please wait for the current request to complete or cancel it.", Severity.Warning);
+            return;
+        }
+
         if (item.Request != null)
         {
             _requestPanel?.LoadRequest(item.Request);

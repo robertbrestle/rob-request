@@ -1,6 +1,8 @@
 @using RobRequest.Shared.Models.Requests
+
 @code {
     [Parameter] public HttpResponseModel? Response { get; set; }
+    [Parameter] public EventCallback OnDownload { get; set; }
 }
 
 @if (Response != null)
@@ -26,6 +28,14 @@
                 <MudChip T="string" Color="Color.Default" Size="Size.Small" Variant="Variant.Outlined">
                     <MudIcon Icon="@Icons.Material.Filled.Storage" Size="Size.Small" Class="mr-1"/>
                     @Response.FormattedSize
+                </MudChip>
+                <MudChip T="string"
+                         Color="Color.Primary"
+                         Size="Size.Small"
+                         Icon="@Icons.Material.Filled.Download"
+                         OnClick="() => OnDownload.InvokeAsync()"
+                         title="download response">
+                    Download
                 </MudChip>
             }
         </MudStack>

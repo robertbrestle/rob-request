@@ -127,11 +127,11 @@
             <MudStack Spacing="2">
                 <MudStack Row="true">
                     <MudSelect @bind-Value="_request.BodyType" Dense="true" Style="width: 100px;">
-                        <MudSelectItem Value="@("none")" Color="Color.Primary">None</MudSelectItem>
-                        <MudSelectItem Value="@("json")" Color="Color.Primary">JSON</MudSelectItem>
-                        <MudSelectItem Value="@("form-data")" Color="Color.Primary">Form</MudSelectItem>
-                        <MudSelectItem Value="@("text")" Color="Color.Primary">Text</MudSelectItem>
-                        <MudSelectItem Value="@("xml")" Color="Color.Primary">XML</MudSelectItem>
+                        <MudSelectItem Value="@("none")">None</MudSelectItem>
+                        <MudSelectItem Value="@("json")">JSON</MudSelectItem>
+                        <MudSelectItem Value="@("form-data")">Form</MudSelectItem>
+                        <MudSelectItem Value="@("text")">Text</MudSelectItem>
+                        <MudSelectItem Value="@("xml")">XML</MudSelectItem>
                     </MudSelect>
                     <MudSpacer/>
                     @if (_request.BodyType == "json")

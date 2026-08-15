@@ -1,3 +1,4 @@
+@using Microsoft.AspNetCore.StaticFiles
 @using RobRequest.Shared.Models.Requests
 @using RobRequest.Shared.Models.Users
 @implements IDisposable
@@ -27,7 +28,7 @@
     else if (Response != null)
     {
         @* Status Bar *@
-        <StatusIndicator Response="Response"/>
+        <StatusIndicator Response="Response" OnDownload="DownloadResponseBody"/>
 
         <MudDivider Class="my-3"/>
 
@@ -217,8 +218,11 @@
     {
         if (Response == null) return;
 
-        var fileName = $"response-{DateTime.Now:yyyyMMdd-HHmmss}.txt";
         var contentType = string.IsNullOrEmpty(Response.ContentType) ? "text/plain" : Response.ContentType;
+        var provider = new FileExtensionContentTypeProvider();
+        var extension = provider.Mappings
+            .FirstOrDefault(m => m.Value.Equals(contentType, StringComparison.OrdinalIgnoreCase)).Key ?? ".txt";
+        var fileName = $"response-{DateTime.Now:yyyyMMdd-HHmmss}{extension}";
         var bytes = System.Text.Encoding.UTF8.GetBytes(Response.Body);
         var base64 = Convert.ToBase64String(bytes);
         await Js.InvokeVoidAsync("downloadFileFromBytes", fileName, contentType, base64);

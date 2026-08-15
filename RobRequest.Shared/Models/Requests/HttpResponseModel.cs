@@ -27,11 +27,13 @@ public class HttpResponseModel
     {
         get
         {
-            if (ResponseSizeBytes < 1024)
-                return $"{ResponseSizeBytes} B";
-            if (ResponseSizeBytes < 1024 * 1024)
-                return $"{ResponseSizeBytes / 1024.0:F1} KB";
-            return $"{ResponseSizeBytes / (1024.0 * 1024.0):F1} MB";
+            return ResponseSizeBytes switch
+            {
+                < 1024 => $"{ResponseSizeBytes} B",
+                < 1024 * 1024 => $"{ResponseSizeBytes / 1024.0:F1} KB",
+                < 1024 * 1024 * 1024 => $"{ResponseSizeBytes / (1024.0 * 1024.0):F1} MB",
+                _ => $"{ResponseSizeBytes / (1024.0 * 1024.0 * 1024.0):F1} GB"
+            };
         }
     }
 }

@@ -76,6 +76,10 @@
                         }
                         <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small" Dense="true"
                                  AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                            <MudMenuItem Icon="@Icons.Material.Filled.ContentCopy" IconColor="Color.Default"
+                                         OnClick="() => DuplicateEnvironment(env)">
+                                Duplicate
+                            </MudMenuItem>
                             <MudMenuItem Icon="@Icons.Material.Filled.Delete" IconColor="Color.Error"
                                          OnClick="() => DeleteEnvironmentFromList(env)">
                                 Delete
@@ -661,6 +665,26 @@
             await EnvironmentService.DeleteEnvironmentAsync(env.Id);
             await LoadEnvironments();
         }
+    }
+
+    private async Task DuplicateEnvironment(Environment env)
+    {
+        var source = await EnvironmentService.GetEnvironmentAsync(env.Id);
+        if (source == null) return;
+
+        var copy = await EnvironmentService.CreateEnvironmentAsync(source.Name + " (Copy)", source.Description);
+        copy.Variables = source.Variables.Select(v => new EnvironmentVariable
+        {
+            Key = v.Key,
+            Value = v.Value,
+            IsSecret = v.IsSecret,
+            Enabled = v.Enabled
+        }).ToList();
+        copy.Auth.CopyFrom(source.Auth);
+        await EnvironmentService.UpdateEnvironmentAsync(copy);
+
+        await LoadEnvironments();
+        await SelectEnvironment(copy.Id);
     }
 
     private async Task AddVariable()
